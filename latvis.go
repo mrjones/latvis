@@ -93,7 +93,10 @@ func generateHeatmap(points *vector.Vector, size int) heatmap {
 	fmt.Printf("xrange %f %f\n", minX, maxX)
 	fmt.Printf("yrange %f %f\n", minY, maxY)
 
-	var counts [512][512]int
+	counts := make([][]int, size, size)
+	for i := 0 ; i < size ; i++ {
+		counts[i] = make([]int, size, size)
+	}
 
 	xScale := float32(size-1) / (maxX - minX)
 	yScale := float32(size-1) / (maxY - minY)
@@ -105,8 +108,6 @@ func generateHeatmap(points *vector.Vector, size int) heatmap {
 	for i := 0; i < points.Len(); i++ {
 		xBucket := int((points.At(i).(coordinate).x - minX) * scale)
 		yBucket := size - int((points.At(i).(coordinate).y-minY)*scale) - 1
-		//        fmt.Printf("counter[%f][%f]++\n", points.At(i).(coordinate).x, points.At(i).(coordinate).y)
-		//        fmt.Printf("counter[%d][%d]++\n", xBucket, yBucket)
 		counts[xBucket][yBucket]++
 	}
 
@@ -115,7 +116,7 @@ func generateHeatmap(points *vector.Vector, size int) heatmap {
 		for y := 0; y < len(counts[x]); y++ {
 			if scaleHeat(counts[x][y]) > maxCount {
 				maxCount = scaleHeat(counts[x][y])
-				fmt.Printf("count[%d][%d] = %d\n", x, y, scaleHeat(counts[x][y]))
+				fmt.Printf("counts[%d][%d] = %d\n", x, y, scaleHeat(counts[x][y]))
 			}
 		}
 	}
@@ -137,6 +138,15 @@ func readAndAppendData(filename string, points *vector.Vector) {
 		log.Exit(err)
 	}
 	points.AppendVector(localPoints)
+}
+
+func readData(filenames []string) *vector.Vector {
+	points := new(vector.Vector)
+	for i := 0 ; i < len(filenames) ; i++ {
+		readAndAppendData(filenames[i], points)
+	}
+
+	return points
 }
 
 func imageOfHeatmap(mapdata heatmap, size int) image.Image {
@@ -167,19 +177,18 @@ func renderImage(img image.Image, filename string) {
 func main() {
 	size := 512
 
-	points := new(vector.Vector)
-	readAndAppendData("/home/mrjones/src/latvis/data/2010-07.kml", points)
-	readAndAppendData("/home/mrjones/src/latvis/data/2010-08.kml", points)
-	readAndAppendData("/home/mrjones/src/latvis/data/2010-09.kml", points)
-	readAndAppendData("/home/mrjones/src/latvis/data/2010-10.kml", points)
-	readAndAppendData("/home/mrjones/src/latvis/data/2010-11.kml", points)
-	readAndAppendData("/home/mrjones/src/latvis/data/2010-12.kml", points)
-	readAndAppendData("/home/mrjones/src/latvis/data/jan2011.kml", points)
-	readAndAppendData("/home/mrjones/src/latvis/data/feb2011.kml", points)
+	datafiles := [...]string{
+		"/home/mrjones/src/latvis/data/2010-07.kml",
+		"/home/mrjones/src/latvis/data/2010-08.kml",
+		"/home/mrjones/src/latvis/data/2010-09.kml",
+		"/home/mrjones/src/latvis/data/2010-10.kml",
+		"/home/mrjones/src/latvis/data/2010-11.kml",
+		"/home/mrjones/src/latvis/data/2010-12.kml",
+		"/home/mrjones/src/latvis/data/jan2011.kml",
+		"/home/mrjones/src/latvis/data/feb2011.kml" }
 
+	points := readData(datafiles[:])
 	mapdata := generateHeatmap(points, size)
-
 	img := imageOfHeatmap(mapdata, size)
 	renderImage(img, "vis.png")
-
 }
