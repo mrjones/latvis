@@ -8,39 +8,19 @@ import (
 )
 
 type Connection struct {
-	AccessToken *oauth.AccessToken
-	OauthConsumer *oauth.OAuthConsumer
+	consumer *oauth.OAuthConsumer
 }
 
-func (connection *Connection) FetchUrl(url string, params oauth.Params) (responseBody string, err os.Error) {
-	response, err := connection.OauthConsumer.Get(url, params, connection.AccessToken)
-
-	if err != nil { return "", err }
-	defer response.Body.Close()
-	responseBodyBytes, err := ioutil.ReadAll(response.Body)
-
-	if err != nil { return "", err }
-	return string(responseBodyBytes), nil
+type AuthorizedConnection struct {
+	accessToken *oauth.AccessToken
+	consumer *oauth.OAuthConsumer
 }
 
-func NewAccessToken(consumer *oauth.OAuthConsumer) (token *oauth.AccessToken, err os.Error) {
-	url, requestToken, err := consumer.GetRequestAuthorizationURL()
-	if err != nil{ return nil, err }
-
-	// The latitude API requires additional parameters
-	url = url + "&domain=mrjon.es&location=all&granularity=best"
-
-	fmt.Printf("Go to this URL: '%s'\n", url)
-	fmt.Printf("Grant access, and then enter the verification code here: ")
-
-	verificationCode := ""
-
-	fmt.Scanln(&verificationCode)
-
-	return consumer.GetAccessToken(requestToken.Token, verificationCode), nil
+func NewConnection() *Connection {
+	return &Connection{consumer: newConsumer()}
 }
 
-func NewConsumer() (consumer *oauth.OAuthConsumer) {
+func newConsumer() (consumer *oauth.OAuthConsumer) {
 	return &oauth.OAuthConsumer{
 	Service:"google",
 	RequestTokenURL:"https://www.google.com/accounts/OAuthGetRequestToken",
@@ -55,4 +35,38 @@ func NewConsumer() (consumer *oauth.OAuthConsumer) {
 			&oauth.Pair{ Key:"scope", Value:"https://www.googleapis.com/auth/latitude"},
 		},
 	}
+}
+
+func (connection *Connection) NewAccessToken() (token *oauth.AccessToken, err os.Error) {
+	url, requestToken, err := connection.consumer.GetRequestAuthorizationURL()
+	if err != nil{ return nil, err }
+
+	// The latitude API requires additional parameters
+	url = url + "&domain=mrjon.es&location=all&granularity=best"
+
+	fmt.Printf("Go to this URL: '%s'\n", url)
+	fmt.Printf("Grant access, and then enter the verification code here: ")
+
+	verificationCode := ""
+
+	fmt.Scanln(&verificationCode)
+
+	return connection.consumer.GetAccessToken(requestToken.Token, verificationCode), nil
+}
+
+func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedConnection {
+	return &AuthorizedConnection{accessToken: token, consumer: connection.consumer}
+}
+
+func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params) (responseBody string, err os.Error) {
+	response, err := connection.consumer.Get(url, params, connection.accessToken)
+
+	params.Add(&oauth.Pair{Key:"key", Value:"AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"})
+
+	if err != nil { return "", err }
+	defer response.Body.Close()
+	responseBodyBytes, err := ioutil.ReadAll(response.Body)
+
+	if err != nil { return "", err }
+	return string(responseBodyBytes), nil
 }

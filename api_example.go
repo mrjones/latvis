@@ -7,24 +7,22 @@ import (
 	"log"
 )
 
-var googleConsumer *oauth.OAuthConsumer
 var accessToken *oauth.AccessToken
 
 func main() {
-	googleConsumer = latitude_api.NewConsumer()
-	accessToken, err := latitude_api.NewAccessToken(googleConsumer)
+	connection := latitude_api.NewConnection()
+	accessToken, err := connection.NewAccessToken()
 	if err != nil{ log.Exit(err) }
-	connection := latitude_api.Connection{AccessToken: accessToken, OauthConsumer: googleConsumer}
+	authConnection := connection.Authorize(accessToken);
 
 	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
 
 	params := oauth.Params{
-		&oauth.Pair{Key:"key", Value:"AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"},
 		&oauth.Pair{Key:"granularity", Value:"best"},
 		&oauth.Pair{Key:"max-results", Value:"1"},
 	}
 
-	body, err := connection.FetchUrl(locationHistoryUrl, params)
+	body, err := authConnection.FetchUrl(locationHistoryUrl, params)
 	if err != nil{ log.Exit(err) }
 	fmt.Println(body)
 }
