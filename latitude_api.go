@@ -16,6 +16,13 @@ type AuthorizedConnection struct {
 	consumer *oauth.OAuthConsumer
 }
 
+const (
+	CONSUMER_KEY = "mrjon.es"
+	CONSUMER_SECRET = "UpS7//zXk60DkyDO8ES/xeS3"
+	API_KEY = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
+	OUT_OF_BAND_CALLBACK = "oob"
+)	
+
 func NewConnection() *Connection {
 	return &Connection{consumer: newConsumer()}
 }
@@ -28,9 +35,9 @@ func newConsumer() (consumer *oauth.OAuthConsumer) {
 		// NOTE: The AuthorizeToken URL for latitude is different than for
 		// standard Google applications.
 	AuthorizationURL:"https://www.google.com/latitude/apps/OAuthAuthorizeToken",
-	ConsumerKey:"mrjon.es",
-	ConsumerSecret:"UpS7//zXk60DkyDO8ES/xeS3",
-	CallBackURL:"oob",
+	ConsumerKey:CONSUMER_KEY,
+	ConsumerSecret:CONSUMER_SECRET,
+	CallBackURL:OUT_OF_BAND_CALLBACK,
 	AdditionalParams:oauth.Params{
 			&oauth.Pair{ Key:"scope", Value:"https://www.googleapis.com/auth/latitude"},
 		},
@@ -61,7 +68,7 @@ func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedCon
 func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params) (responseBody string, err os.Error) {
 	response, err := connection.consumer.Get(url, params, connection.accessToken)
 
-	params.Add(&oauth.Pair{Key:"key", Value:"AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"})
+	params.Add(&oauth.Pair{Key:"key", Value: API_KEY})
 
 	if err != nil { return "", err }
 	defer response.Body.Close()
