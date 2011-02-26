@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/png"
+	"./latitude_xml"
 	"./location"
 	"log"
 	"os"
@@ -10,7 +11,7 @@ import (
 )
 
 func readAndAppendData(filename string, history *location.History) {
-	xmlFile := location.NewLatitudeXmlFile(filename)
+	xmlFile := latitude_xml.New(filename)
 	localHistory, err := xmlFile.GetHistory()
 	if err != nil { log.Exit(err) }
 	history.AddAll(localHistory)
@@ -48,14 +49,6 @@ func main() {
 		"/home/mrjones/src/latvis/data/jan2011.kml",
 		"/home/mrjones/src/latvis/data/feb2011.kml",
 	}
-
-//	for i := 0 ; i < len(datafiles) ; i++ {
-//		xmlFile := location.NewLatitudeXmlFile(datafiles[i])
-//		history, err := xmlFile.GetHistory()
-//		if err != nil { log.Exit(err) }
-//		img := visualization.HeatmapToImage(visualization.LocationHistoryAsHeatmap(history, size));
-//		renderImage(img, fmt.Sprintf("vis%d.png", i))
-//	}
 
 	history := readData(datafiles[:])
 	img := visualization.HeatmapToImage(visualization.LocationHistoryAsHeatmap(history, size));

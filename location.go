@@ -2,9 +2,6 @@ package location
 
 import (
 	"os"
-	"xml"
-	"strconv"
-	"strings"
 )
 
 type Coordinate struct {
@@ -49,51 +46,4 @@ type HistorySource interface {
 
 type LatitudeXmlFile struct {
 	filename string
-}
-
-func NewLatitudeXmlFile(filename string) (xmlFile *LatitudeXmlFile) {
-	return &LatitudeXmlFile{filename: filename}
-}
-
-func (xmlFile *LatitudeXmlFile) GetHistory() (*History, os.Error) {
-	history := &History{}
-	file, err := os.Open(xmlFile.filename, os.O_RDONLY, 0666)
-	if err != nil {
-		return nil, err
-	}
-
-	p := xml.NewParser(file)
-	inCoordinates := false
-
-	for token, err := p.Token(); err == nil; token, err = p.Token() {
-		switch t := token.(type) {
-		case xml.StartElement:
-			if t.Name.Local == "coordinates" {
-				inCoordinates = true
-			}
-		case xml.CharData:
-			if inCoordinates {
-				parts := strings.Split(string([]byte(t)), ",", -1)
-				lat, err := strconv.Atof(parts[0])
-				if err != nil {
-					return nil, err
-				}
-				lng, err := strconv.Atof(parts[1])
-				if err != nil {
-					return nil, err
-				}
-				point := &Coordinate{Lat: lat, Lng: lng}
-				if lat > -74.02 && lat < -73.96 && lng > 40.703 && lng < 40.8 {
-					history.Add(point)
-				}
-			}
-		case xml.EndElement:
-			if t.Name.Local == "coordinates" {
-				inCoordinates = false
-			}
-		}
-	}
-
-	return history, nil
-
 }
