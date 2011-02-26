@@ -14,7 +14,7 @@ import (
 )
 
 type heatmap struct {
-	points [512][512]float
+	points [][]float
 }
 
 type coordinate struct {
@@ -68,8 +68,11 @@ func scaleHeat(input int) float {
 	return float(math.Sqrt(math.Sqrt(float64(input))))
 }
 
-func generateHeatmap(points *vector.Vector, size int) heatmap {
-	var result heatmap
+func generateHeatmap(points *vector.Vector, size int) [][]float {
+	result := make([][]float, size, size)
+	for i := 0 ; i < size ; i++ {
+		result[i] = make([]float, size, size)
+	}
 	maxX := points.At(0).(coordinate).x
 	minX := points.At(0).(coordinate).x
 	maxY := points.At(0).(coordinate).y
@@ -125,7 +128,7 @@ func generateHeatmap(points *vector.Vector, size int) heatmap {
 
 	for x := 0; x < len(counts); x++ {
 		for y := 0; y < len(counts[x]); y++ {
-			result.points[x][y] = scaleHeat(counts[x][y]) / float(maxCount)
+			result[x][y] = scaleHeat(counts[x][y]) / float(maxCount)
 		}
 	}
 
@@ -149,11 +152,11 @@ func readData(filenames []string) *vector.Vector {
 	return points
 }
 
-func imageOfHeatmap(mapdata heatmap, size int) image.Image {
+func imageOfHeatmap(mapdata [][]float, size int) image.Image {
 	img := image.NewNRGBA(size, size)
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
-			val := mapdata.points[x][y]
+			val := mapdata[x][y]
 			if val > 0 {
 				img.Pix[y*img.Stride+x] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
 			} else {
@@ -175,7 +178,7 @@ func renderImage(img image.Image, filename string) {
 }
 
 func main() {
-	size := 512
+	size := 300
 
 	datafiles := [...]string{
 		"/home/mrjones/src/latvis/data/2010-07.kml",
@@ -185,7 +188,8 @@ func main() {
 		"/home/mrjones/src/latvis/data/2010-11.kml",
 		"/home/mrjones/src/latvis/data/2010-12.kml",
 		"/home/mrjones/src/latvis/data/jan2011.kml",
-		"/home/mrjones/src/latvis/data/feb2011.kml" }
+		"/home/mrjones/src/latvis/data/feb2011.kml",
+	}
 
 	points := readData(datafiles[:])
 	mapdata := generateHeatmap(points, size)
