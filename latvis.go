@@ -8,6 +8,7 @@ import (
 	"./latitude_xml"
 	"./location"
 	"log"
+	oauth "github.com/hokapoka/goauth"
 	"os"
 	"./tokens"
 	"./visualization"
@@ -43,38 +44,47 @@ func renderImage(img image.Image, filename string) {
 	}
 }
 
-func main() {
-	size := 300
+func GetAccessToken(user string, apiConnection *latitude_api.Connection, cache *tokens.Storage) (*oauth.AccessToken, os.Error) {
 
-	xmlHistorySource := latitude_xml.New("/home/mrjones/src/latvis/data")
+	accessToken, err := cache.Fetch(user)
+	if err != nil{ return nil, err }
+	if accessToken == nil {
+		fmt.Printf("No saved token found. Generating new one")
+		accessToken, err = apiConnection.NewAccessToken()
+		if err != nil{ return nil, err }
+		err = cache.Store(user, accessToken)
+		if err != nil{ return nil, err }
+	}
+	return accessToken, nil
+}
 
+func GetLocalHistorySource() *latitude_xml.FileSet {
+	return latitude_xml.New("/home/mrjones/src/latvis/data")
+}
 
+func GetApiHistorySource() *latitude_api.AuthorizedConnection {
 	connection := latitude_api.NewConnection()
-
 	tokenStore := tokens.NewTokenStorage("tokens.txt")
+
 	fmt.Println("User to generate map for:")
 	var user string
 	fmt.Scanln(&user)
 
-	accessToken, err := tokenStore.Fetch(user)
+	accessToken, err := GetAccessToken(user, connection, tokenStore)
 	if err != nil{ log.Exit(err) }
-	if accessToken == nil {
-		fmt.Printf("No saved token found. Generating new one")
-		accessToken, err = connection.NewAccessToken()
-		if err != nil{ log.Exit(err) }
-		err = tokenStore.Store(user, accessToken)
-		if err != nil{ log.Exit(err) }
-	}
+	return connection.Authorize(accessToken);
+}
 
-	apiHistorySource := connection.Authorize(accessToken);
-
+func main() {
 	useApi := true
-	var history *location.History
+	var historySource location.HistorySource
 	if useApi {
-		history = readData(apiHistorySource)
+		historySource = GetApiHistorySource()
 	} else {
-		history = readData(xmlHistorySource)
+		historySource = GetLocalHistorySource()
 	}
+	history := readData(historySource)
+	size := 800
 	img := visualization.HeatmapToImage(visualization.LocationHistoryAsHeatmap(history, size));
 	renderImage(img, "vis.png")
 }
