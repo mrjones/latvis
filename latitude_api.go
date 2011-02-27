@@ -102,38 +102,36 @@ type JsonItem struct {
 	TimestampMs string
 }
 
-func (conn *AuthorizedConnection) AppendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) maxTs int64, itemsReturned int, os.Error) {
+func (conn *AuthorizedConnection) AppendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) (minTs int64, itemsReturned int, err os.Error) {
 	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
 
-	fmt.Printf("Time Range: %d - %d", startTimestamp, endTimestamp)
+	fmt.Printf("Time Range: %d - %d\n", startMs, endMs)
 
 	params := oauth.Params{
 		&oauth.Pair{Key:"granularity", Value:"best"},
-		&oauth.Pair{Key:"max-results", Value:strconv.Itoa64(windowSize)},
-		&oauth.Pair{Key:"min-time", Value:strconv.Itoa64(startTimestamp)},
-		&oauth.Pair{Key:"max-time", Value:strconv.Itoa64(endTimestamp)},
+		&oauth.Pair{Key:"max-results", Value:strconv.Itoa(windowSize)},
+		&oauth.Pair{Key:"min-time", Value:strconv.Itoa64(startMs)},
+		&oauth.Pair{Key:"max-time", Value:strconv.Itoa64(endMs)},
 	}
 
 	body, err := conn.FetchUrl(locationHistoryUrl, params)
 	if err != nil { return -1, -1, err }
 
 	var jsonObject JsonRoot
-	fmt.Printf("Got JSON: %s", body)
 	err = json.Unmarshal([]byte(body), &jsonObject)
 	if err != nil { return -1, -1, err }
 
-	var maxTs int64
 	for i := 0 ; i < len(jsonObject.Data.Items) ; i++ {
 //		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude }
 		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Longitude, Lng: jsonObject.Data.Items[i].Latitude }
-		fmt.Printf("Got point %f,%f\n", point.Lat, point.Lng)
 		if point.Lat > -74.02 && point.Lat < -73.96 && point.Lng > 40.703 && point.Lng < 40.8 {
 			history.Add(point)
 		}
-		maxTs = strconf.Atoi64(jsonObject.Data.Items[i].Timestamp)
+		minTs, err = strconv.Atoi64(jsonObject.Data.Items[i].TimestampMs)
+		if err != nil { return -1, -1, err }
 	}
 
-	return maxTs, len(jsonObject.Data.Items), nil
+	return minTs, len(jsonObject.Data.Items), nil
 }
 
 func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.History, os.Error) {
@@ -144,14 +142,16 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 
 	history := &location.History{}
 
-	windowStart := startTimestamp
-	windowSize := 100
+	windowEnd := endTimestamp
+	windowSize := 1000
 	keepGoing := true
 
-	while keepGoing {
-		windowStart, itemsReturned, err = AppendTimestampRange(windowStart, endTimestamp, windowSize, history)
+	for keepGoing {
+		minTs, itemsReturned, err := conn.AppendTimestampRange(startTimestamp, windowEnd, windowSize, history)
 		if err != nil { return nil, err }
+		fmt.Printf("Got %d items\n", itemsReturned)
 		keepGoing = (itemsReturned == windowSize)
+		windowEnd = minTs
 	}
 
 	return history, nil
