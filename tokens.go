@@ -1,7 +1,6 @@
 package tokens
 
 import (
-	"fmt"
 	"io/ioutil"
 	"json"
 	oauth "github.com/hokapoka/goauth"
@@ -37,5 +36,5 @@ func (storage *Storage) flush() os.Error {
 func (storage *Storage) read() os.Error {
 	bytes, err := ioutil.ReadFile(storage.filename)
 	if err != nil { return err }
-	return = json.Unmarshal(bytes, &storage.tokens)
+	return json.Unmarshal(bytes, &storage.tokens)
 }

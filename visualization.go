@@ -38,6 +38,11 @@ func LocationHistoryAsHeatmap(history *location.History, size int) *Heatmap {
 	for i := 0 ; i < size ; i++ {
 		heatmap.Points[i] = make([]float, size, size)
 	}
+
+	if history.Len() < 1 {
+		fmt.Println("Problem, Len() == 0")
+	}
+
 	maxX := history.At(0).Lat
 	minX := history.At(0).Lat
 

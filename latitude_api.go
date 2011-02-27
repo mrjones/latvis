@@ -4,6 +4,7 @@ import (
 	oauth "github.com/hokapoka/goauth"
 	"fmt"
 	"io/ioutil"
+	"json"
 	"./location"
 	"strconv"
 	"time"
@@ -84,26 +85,58 @@ func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params
 type NIE struct { }
 func (nie NIE) String() string { return "NOT IMPLEMENTED" }
 
+
+type JsonRoot struct {
+	Data JsonData
+}
+
+type JsonData struct {
+	Kind string
+	Items []JsonItem
+}
+
+type JsonItem struct {
+	Kind string
+	Latitude float
+	Longitude float
+	TimestampMs string
+}
+
 func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.History, os.Error) {
 	startTime := time.Time{Year: year, Month: month, Day: 1}
 	endTime := time.Time{Year: year, Month: month + 1, Day: 1}
-	startTimestamp := startTime.Seconds()
-	endTimestamp := endTime.Seconds()
+	startTimestamp := 1000* startTime.Seconds()
+	endTimestamp := 1000 * endTime.Seconds()
 
 	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
 
+
+	fmt.Printf("Time Range: %d - %d", startTimestamp, endTimestamp)
+
 	params := oauth.Params{
 		&oauth.Pair{Key:"granularity", Value:"best"},
-		&oauth.Pair{Key:"max-results", Value:"1"},
-		&oauth.Pair{Key:"start-time", Value:strconv.Itoa64(startTimestamp)},
-		&oauth.Pair{Key:"end-time", Value:strconv.Itoa64(endTimestamp)},
+		&oauth.Pair{Key:"max-results", Value:"100"},
+		&oauth.Pair{Key:"min-time", Value:strconv.Itoa64(startTimestamp)},
+		&oauth.Pair{Key:"max-time", Value:strconv.Itoa64(endTimestamp)},
 	}
 
 	body, err := conn.FetchUrl(locationHistoryUrl, params)
-	
 	if err != nil { return nil, err }
 
-	fmt.Println(body)
+	var jsonObject JsonRoot
+	fmt.Printf("Got JSON: %s", body)
+	err = json.Unmarshal([]byte(body), &jsonObject)
+	if err != nil { return nil, err }
 
-	return nil, NIE{}
+	history := &location.History{}
+	for i := 0 ; i < len(jsonObject.Data.Items) ; i++ {
+//		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude }
+		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Longitude, Lng: jsonObject.Data.Items[i].Latitude }
+		fmt.Printf("Got point %f,%f\n", point.Lat, point.Lng)
+		if point.Lat > -74.02 && point.Lat < -73.96 && point.Lng > 40.703 && point.Lng < 40.8 {
+			history.Add(point)
+		}
+	}
+
+	return history, nil
 }
