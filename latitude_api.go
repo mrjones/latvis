@@ -4,6 +4,9 @@ import (
 	oauth "github.com/hokapoka/goauth"
 	"fmt"
 	"io/ioutil"
+	"./location"
+	"strconv"
+	"time"
 	"os"
 )
 
@@ -76,4 +79,31 @@ func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params
 
 	if err != nil { return "", err }
 	return string(responseBodyBytes), nil
+}
+
+type NIE struct { }
+func (nie NIE) String() string { return "NOT IMPLEMENTED" }
+
+func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.History, os.Error) {
+	startTime := time.Time{Year: year, Month: month, Day: 1}
+	endTime := time.Time{Year: year, Month: month + 1, Day: 1}
+	startTimestamp := startTime.Seconds()
+	endTimestamp := endTime.Seconds()
+
+	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
+
+	params := oauth.Params{
+		&oauth.Pair{Key:"granularity", Value:"best"},
+		&oauth.Pair{Key:"max-results", Value:"1"},
+		&oauth.Pair{Key:"start-time", Value:strconv.Itoa64(startTimestamp)},
+		&oauth.Pair{Key:"end-time", Value:strconv.Itoa64(endTimestamp)},
+	}
+
+	body, err := conn.FetchUrl(locationHistoryUrl, params)
+	
+	if err != nil { return nil, err }
+
+	fmt.Println(body)
+
+	return nil, NIE{}
 }

@@ -1,16 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/png"
+	"./latitude_api"
 	"./latitude_xml"
 	"./location"
 	"log"
 	"os"
+	"./tokens"
 	"./visualization"
 )
 
-func readAndAppendData(source location.HistorySource, year int, month int, history *location.History) {
+func readAndAppendData(source location.HistorySource, year int64, month int, history *location.History) {
 	localHistory, err := source.GetHistory(year, month)
 	if err != nil { log.Exit(err) }
 	history.AddAll(localHistory)
@@ -43,9 +46,35 @@ func renderImage(img image.Image, filename string) {
 func main() {
 	size := 300
 
-	historySource := latitude_xml.New("/home/mrjones/src/latvis/data")
+	xmlHistorySource := latitude_xml.New("/home/mrjones/src/latvis/data")
 
-	history := readData(historySource)
+
+	connection := latitude_api.NewConnection()
+
+	tokenStore := tokens.NewTokenStorage("tokens.txt")
+	fmt.Println("User to generate map for:")
+	var user string
+	fmt.Scanln(&user)
+
+	accessToken, err := tokenStore.Fetch(user)
+	if err != nil{ log.Exit(err) }
+	if accessToken == nil {
+		fmt.Printf("No saved token found. Generating new one")
+		accessToken, err = connection.NewAccessToken()
+		if err != nil{ log.Exit(err) }
+		err = tokenStore.Store(user, accessToken)
+		if err != nil{ log.Exit(err) }
+	}
+
+	apiHistorySource := connection.Authorize(accessToken);
+
+	useApi := true
+	var history *location.History
+	if useApi {
+		history = readData(apiHistorySource)
+	} else {
+		history = readData(xmlHistorySource)
+	}
 	img := visualization.HeatmapToImage(visualization.LocationHistoryAsHeatmap(history, size));
 	renderImage(img, "vis.png")
 }

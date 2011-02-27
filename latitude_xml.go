@@ -17,7 +17,7 @@ func New(directory string) (xmlFileSet *FileSet) {
 	return &FileSet{directory: directory}
 }
 
-func (files *FileSet) GetHistory(year int, month int) (*location.History, os.Error) {
+func (files *FileSet) GetHistory(year int64, month int) (*location.History, os.Error) {
 	history := &location.History{}
 	filename := fmt.Sprintf("%s/%0.4d-%0.2d.kml", files.directory, year, month)
 	file, err := os.Open(filename, os.O_RDONLY, 0666)

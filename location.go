@@ -41,5 +41,5 @@ func (h *History) At(i int) *Coordinate {
 }
 
 type HistorySource interface {
-	GetHistory(year int, month int) (*History, os.Error)
+	GetHistory(year int64, month int) (*History, os.Error)
 }
