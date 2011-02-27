@@ -41,9 +41,5 @@ func (h *History) At(i int) *Coordinate {
 }
 
 type HistorySource interface {
-	GetHistory() (history *History, err os.Error)
-}
-
-type LatitudeXmlFile struct {
-	filename string
+	GetHistory(year int, month int) (*History, os.Error)
 }

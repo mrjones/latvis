@@ -10,18 +10,22 @@ import (
 	"./visualization"
 )
 
-func readAndAppendData(filename string, history *location.History) {
-	xmlFile := latitude_xml.New(filename)
-	localHistory, err := xmlFile.GetHistory()
+func readAndAppendData(source location.HistorySource, year int, month int, history *location.History) {
+	localHistory, err := source.GetHistory(year, month)
 	if err != nil { log.Exit(err) }
 	history.AddAll(localHistory)
 }
 
-func readData(filenames []string) *location.History {
+func readData(historySource location.HistorySource) *location.History {
 	history := &location.History{}
-	for i := 0 ; i < len(filenames) ; i++ {
-		readAndAppendData(filenames[i], history)
-	}
+	readAndAppendData(historySource, 2010, 7, history)
+	readAndAppendData(historySource, 2010, 8, history)
+	readAndAppendData(historySource, 2010, 9, history)
+	readAndAppendData(historySource, 2010, 10, history)
+	readAndAppendData(historySource, 2010, 11, history)
+	readAndAppendData(historySource, 2010, 12, history)
+	readAndAppendData(historySource, 2011, 1, history)
+	readAndAppendData(historySource, 2011, 2, history)
 
 	return history
 }
@@ -39,18 +43,9 @@ func renderImage(img image.Image, filename string) {
 func main() {
 	size := 300
 
-	datafiles := [...]string{
-		"/home/mrjones/src/latvis/data/2010-07.kml",
-		"/home/mrjones/src/latvis/data/2010-08.kml",
-		"/home/mrjones/src/latvis/data/2010-09.kml",
-		"/home/mrjones/src/latvis/data/2010-10.kml",
-		"/home/mrjones/src/latvis/data/2010-11.kml",
-		"/home/mrjones/src/latvis/data/2010-12.kml",
-		"/home/mrjones/src/latvis/data/jan2011.kml",
-		"/home/mrjones/src/latvis/data/feb2011.kml",
-	}
+	historySource := latitude_xml.New("/home/mrjones/src/latvis/data")
 
-	history := readData(datafiles[:])
+	history := readData(historySource)
 	img := visualization.HeatmapToImage(visualization.LocationHistoryAsHeatmap(history, size));
 	renderImage(img, "vis.png")
 }

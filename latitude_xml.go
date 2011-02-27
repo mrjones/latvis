@@ -1,6 +1,7 @@
 package latitude_xml
 
 import (
+	"fmt"
 	"./location"
 	"os"
 	"strconv"
@@ -8,17 +9,18 @@ import (
 	"xml"
 )
 
-type File struct {
-	filename string
+type FileSet struct {
+	directory string
 }
 
-func New(filename string) (xmlFile *File) {
-	return &File{filename: filename}
+func New(directory string) (xmlFileSet *FileSet) {
+	return &FileSet{directory: directory}
 }
 
-func (xmlFile *File) GetHistory() (*location.History, os.Error) {
+func (files *FileSet) GetHistory(year int, month int) (*location.History, os.Error) {
 	history := &location.History{}
-	file, err := os.Open(xmlFile.filename, os.O_RDONLY, 0666)
+	filename := fmt.Sprintf("%s/%0.4d-%0.2d.kml", files.directory, year, month)
+	file, err := os.Open(filename, os.O_RDONLY, 0666)
 	if err != nil {
 		return nil, err
 	}
