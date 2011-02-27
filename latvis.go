@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image"
 	"image/png"
@@ -76,15 +77,17 @@ func GetApiHistorySource() *latitude_api.AuthorizedConnection {
 }
 
 func main() {
-	useApi := true
+	var imageSize *int = flag.Int("imageSize", 720, "Size of resulting image")
+	var useApi *bool = flag.Bool("useApi", true, "Use the API or local files")
+	flag.Parse()
+
 	var historySource location.HistorySource
-	if useApi {
+	if *useApi {
 		historySource = GetApiHistorySource()
 	} else {
 		historySource = GetLocalHistorySource()
 	}
 	history := readData(historySource)
-	size := 800
-	img := visualization.HeatmapToImage(visualization.LocationHistoryAsHeatmap(history, size));
+	img := visualization.HeatmapToImage(visualization.LocationHistoryAsHeatmap(history, *imageSize));
 	renderImage(img, "vis.png")
 }
