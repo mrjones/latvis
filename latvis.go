@@ -31,6 +31,7 @@ func readData(historySource location.HistorySource) *location.History {
 	readAndAppendData(historySource, 2010, 12, history)
 	readAndAppendData(historySource, 2011, 1, history)
 	readAndAppendData(historySource, 2011, 2, history)
+	readAndAppendData(historySource, 2011, 3, history)
 
 	return history
 }
