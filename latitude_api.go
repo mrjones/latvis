@@ -12,57 +12,38 @@ import (
 	"os"
 )
 
-type Connection struct {
-	consumer *oauth.OAuthConsumer
-}
-
-type AuthorizedConnection struct {
-	accessToken *oauth.AccessToken
-	consumer *oauth.OAuthConsumer
-}
-
-type TokenSource interface {
-  GetToken(userid string) (*oauth.AccessToken, os.Error)
-}
-
-type CachingTokenSource struct {
-  connection *Connection
-  cache *tokens.Storage
-}
-
-type SimpleTokenSource struct {
-  connection *Connection
-}
-
-
-func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
-  return source.connection.NewAccessToken();
-}
-
-func NewCachingTokenSource(connection *Connection, cache *tokens.Storage) *CachingTokenSource {
-  return &CachingTokenSource{connection: connection, cache: cache}
-}
-
-func (source *CachingTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
- 	accessToken, err := source.cache.Fetch(userid)
-	if err != nil{ return nil, err }
-	if accessToken == nil {
-		fmt.Printf("No saved token found. Generating new one")
-		accessToken, err = source.connection.NewAccessToken()
-		if err != nil{ return nil, err }
-		err = source.cache.Store(userid, accessToken)
-		if err != nil{ return nil, err }
-	}
-	return accessToken, nil
-
-}
-
 const (
 	CONSUMER_KEY = "mrjon.es"
 	CONSUMER_SECRET = "UpS7//zXk60DkyDO8ES/xeS3"
 	API_KEY = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
 	OUT_OF_BAND_CALLBACK = "oob"
 )	
+
+//
+// JSON Data Model of Latitude API Responses
+//
+type JsonRoot struct {
+	Data JsonData
+}
+
+type JsonData struct {
+	Kind string
+	Items []JsonItem
+}
+
+type JsonItem struct {
+	Kind string
+	Latitude float
+	Longitude float
+	TimestampMs string
+}
+
+//
+// (Unauthorized) Connection
+//
+type Connection struct {
+	consumer *oauth.OAuthConsumer
+}
 
 func NewConnection() *Connection {
 	return &Connection{consumer: newConsumer()}
@@ -106,6 +87,15 @@ func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedCon
 	return &AuthorizedConnection{accessToken: token, consumer: connection.consumer}
 }
 
+//
+// AuthorizedConnection
+//
+
+type AuthorizedConnection struct {
+	accessToken *oauth.AccessToken
+	consumer *oauth.OAuthConsumer
+}
+
 func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params) (responseBody string, err os.Error) {
 	response, err := connection.consumer.Get(url, params, connection.accessToken)
 
@@ -117,26 +107,6 @@ func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params
 
 	if err != nil { return "", err }
 	return string(responseBodyBytes), nil
-}
-
-type NIE struct { }
-func (nie NIE) String() string { return "NOT IMPLEMENTED" }
-
-
-type JsonRoot struct {
-	Data JsonData
-}
-
-type JsonData struct {
-	Kind string
-	Items []JsonItem
-}
-
-type JsonItem struct {
-	Kind string
-	Latitude float
-	Longitude float
-	TimestampMs string
 }
 
 func (conn *AuthorizedConnection) AppendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) (minTs int64, itemsReturned int, err os.Error) {
@@ -159,7 +129,6 @@ func (conn *AuthorizedConnection) AppendTimestampRange(startMs int64, endMs int6
 	if err != nil { return -1, -1, err }
 
 	for i := 0 ; i < len(jsonObject.Data.Items) ; i++ {
-//		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude }
 		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Longitude, Lng: jsonObject.Data.Items[i].Latitude }
 		if point.Lat > -74.02 && point.Lat < -73.96 && point.Lng > 40.703 && point.Lng < 40.8 {
 			history.Add(point)
@@ -192,4 +161,42 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 	}
 
 	return history, nil
+}
+
+//
+// Various TokenSources
+//
+
+type TokenSource interface {
+  GetToken(userid string) (*oauth.AccessToken, os.Error)
+}
+
+type CachingTokenSource struct {
+  connection *Connection
+  cache *tokens.Storage
+}
+
+type SimpleTokenSource struct {
+  connection *Connection
+}
+
+func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
+  return source.connection.NewAccessToken();
+}
+
+func NewCachingTokenSource(connection *Connection, cache *tokens.Storage) *CachingTokenSource {
+  return &CachingTokenSource{connection: connection, cache: cache}
+}
+
+func (source *CachingTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
+ 	accessToken, err := source.cache.Fetch(userid)
+	if err != nil{ return nil, err }
+	if accessToken == nil {
+		fmt.Printf("No saved token found. Generating new one")
+		accessToken, err = source.connection.NewAccessToken()
+		if err != nil{ return nil, err }
+		err = source.cache.Store(userid, accessToken)
+		if err != nil{ return nil, err }
+	}
+	return accessToken, nil
 }
