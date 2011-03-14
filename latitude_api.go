@@ -8,6 +8,7 @@ import (
 	"./location"
 	"strconv"
 	"time"
+  "./tokens"
 	"os"
 )
 
@@ -18,6 +19,42 @@ type Connection struct {
 type AuthorizedConnection struct {
 	accessToken *oauth.AccessToken
 	consumer *oauth.OAuthConsumer
+}
+
+type TokenSource interface {
+  GetToken(userid string) (*oauth.AccessToken, os.Error)
+}
+
+type CachingTokenSource struct {
+  connection *Connection
+  cache *tokens.Storage
+}
+
+type SimpleTokenSource struct {
+  connection *Connection
+}
+
+
+func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
+  return source.connection.NewAccessToken();
+}
+
+func NewCachingTokenSource(connection *Connection, cache *tokens.Storage) *CachingTokenSource {
+  return &CachingTokenSource{connection: connection, cache: cache}
+}
+
+func (source *CachingTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
+ 	accessToken, err := source.cache.Fetch(userid)
+	if err != nil{ return nil, err }
+	if accessToken == nil {
+		fmt.Printf("No saved token found. Generating new one")
+		accessToken, err = source.connection.NewAccessToken()
+		if err != nil{ return nil, err }
+		err = source.cache.Store(userid, accessToken)
+		if err != nil{ return nil, err }
+	}
+	return accessToken, nil
+
 }
 
 const (
