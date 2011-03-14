@@ -54,10 +54,18 @@ type Connection struct {
 }
 
 func NewConnection() *Connection {
-	return &Connection{consumer: newConsumer()}
+	return &Connection{consumer: NewConsumer(OUT_OF_BAND_CALLBACK)}
 }
 
-func newConsumer() (consumer *oauth.OAuthConsumer) {
+//func NewOnlineConnection(callbackUrl string) *Connection {
+//  return &Connection{consumer: newConsumer(callbackUrl) }
+//}
+
+func NewConnectionForConsumer(consumer *oauth.OAuthConsumer) *Connection {
+	return &Connection{consumer: consumer}  
+}
+
+func NewConsumer(callbackUrl string) (consumer *oauth.OAuthConsumer) {
 	return &oauth.OAuthConsumer{
 	Service:"google",
 	RequestTokenURL:"https://www.google.com/accounts/OAuthGetRequestToken",
@@ -67,11 +75,20 @@ func newConsumer() (consumer *oauth.OAuthConsumer) {
 	AuthorizationURL:"https://www.google.com/latitude/apps/OAuthAuthorizeToken",
 	ConsumerKey:CONSUMER_KEY,
 	ConsumerSecret:CONSUMER_SECRET,
-	CallBackURL:OUT_OF_BAND_CALLBACK,
+	CallBackURL:callbackUrl,
 	AdditionalParams:oauth.Params{
 			&oauth.Pair{ Key:"scope", Value:"https://www.googleapis.com/auth/latitude"},
 		},
 	}
+}
+
+func (connection *Connection) TokenRedirectUrl() (*string, os.Error) {
+	url, _, err := connection.consumer.GetRequestAuthorizationURL()
+	if err != nil{ return nil, err }
+
+	// The latitude API requires additional parameters
+	url = url + "&domain=mrjon.es&location=all&granularity=best"
+  return &url, nil
 }
 
 func (connection *Connection) NewAccessToken() (token *oauth.AccessToken, err os.Error) {
@@ -89,6 +106,10 @@ func (connection *Connection) NewAccessToken() (token *oauth.AccessToken, err os
 	fmt.Scanln(&verificationCode)
 
 	return connection.consumer.GetAccessToken(requestToken.Token, verificationCode), nil
+}
+
+func (connection *Connection) ParseToken(token string, verifier string) *oauth.AccessToken {
+  return connection.consumer.GetAccessToken(token, verifier)
 }
 
 func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedConnection {
