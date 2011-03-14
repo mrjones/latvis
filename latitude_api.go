@@ -19,6 +19,14 @@ const (
 	OUT_OF_BAND_CALLBACK = "oob"
 )	
 
+// Example usage:
+// connection := latitude_api.NewConnection()
+// tokenSource := latitude_api.NewSimpleTokenSource(connection)
+// authorizedConnection := connection.Authorize(tokenSource.GetToken("userid"))
+// authorizedConnection.FetchUrl("url", nil)
+//  or
+// authorizedConnection.GetHistory(2011, 01);
+
 //
 // JSON Data Model of Latitude API Responses
 //
@@ -109,7 +117,7 @@ func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params
 	return string(responseBodyBytes), nil
 }
 
-func (conn *AuthorizedConnection) AppendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) (minTs int64, itemsReturned int, err os.Error) {
+func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) (minTs int64, itemsReturned int, err os.Error) {
 	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
 
 	fmt.Printf("Time Range: %d - %d\n", startMs, endMs)
@@ -153,7 +161,7 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 	keepGoing := true
 
 	for keepGoing {
-		minTs, itemsReturned, err := conn.AppendTimestampRange(startTimestamp, windowEnd, windowSize, history)
+		minTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
 		if err != nil { return nil, err }
 		fmt.Printf("Got %d items\n", itemsReturned)
 		keepGoing = (itemsReturned == windowSize)
@@ -171,13 +179,17 @@ type TokenSource interface {
   GetToken(userid string) (*oauth.AccessToken, os.Error)
 }
 
+type SimpleTokenSource struct {
+  connection *Connection
+}
+
+func NewSimpleTokenSource(connection *Connection) *SimpleTokenSource {
+  return &SimpleTokenSource{connection: connection}
+}
+
 type CachingTokenSource struct {
   connection *Connection
   cache *tokens.Storage
-}
-
-type SimpleTokenSource struct {
-  connection *Connection
 }
 
 func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
