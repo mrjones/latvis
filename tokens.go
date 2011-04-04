@@ -2,27 +2,27 @@ package tokens
 
 import (
 	"io/ioutil"
+  "github.com/mrjones/oauth"
 	"json"
-	oauth "github.com/hokapoka/goauth"
 	"os"
 )
 
 type Storage struct {
 	filename string
 
-	tokens map[string] *oauth.AccessToken
+	tokens map[string] *oauth.AuthorizedToken
 }
 
 func NewTokenStorage(filename string) *Storage {
-	return &Storage{filename: filename, tokens: make(map[string] *oauth.AccessToken)}
+	return &Storage{filename: filename, tokens: make(map[string] *oauth.AuthorizedToken)}
 }
 
-func (storage *Storage) Store(key string, token *oauth.AccessToken) os.Error {
+func (storage *Storage) Store(key string, token *oauth.AuthorizedToken) os.Error {
 	storage.tokens[key] = token
 	return storage.flush()
 } 
 
-func (storage *Storage) Fetch(key string) (*oauth.AccessToken, os.Error) {
+func (storage *Storage) Fetch(key string) (*oauth.AuthorizedToken, os.Error) {
 	storage.read()
 	return storage.tokens[key], nil
 }

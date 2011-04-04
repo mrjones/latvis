@@ -26,7 +26,7 @@ func GetApiHistorySource() *latitude_api.AuthorizedConnection {
 	fmt.Scanln(&user)
 
 	accessToken, err := tokenSource.GetToken(user);
-	if err != nil{ log.Exit(err) }
+	if err != nil{ log.Fatal(err) }
 	return connection.Authorize(accessToken);
 }
 

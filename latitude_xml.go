@@ -37,11 +37,11 @@ func (files *FileSet) GetHistory(year int64, month int) (*location.History, os.E
 		case xml.CharData:
 			if inCoordinates {
 				parts := strings.Split(string([]byte(t)), ",", -1)
-				lat, err := strconv.Atof(parts[0])
+				lat, err := strconv.Atof64(parts[0])
 				if err != nil {
 					return nil, err
 				}
-				lng, err := strconv.Atof(parts[1])
+				lng, err := strconv.Atof64(parts[1])
 				if err != nil {
 					return nil, err
 				}

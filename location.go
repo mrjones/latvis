@@ -5,8 +5,8 @@ import (
 )
 
 type Coordinate struct {
-	Lat float
-	Lng float
+	Lat float64
+	Lng float64
 }
 
 type History []*Coordinate

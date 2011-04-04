@@ -1,7 +1,7 @@
 package latitude_api
 
 import (
-	oauth "github.com/hokapoka/goauth"
+  "github.com/mrjones/oauth"
 	"fmt"
 	"io/ioutil"
 	"json"
@@ -41,8 +41,8 @@ type JsonData struct {
 
 type JsonItem struct {
 	Kind string
-	Latitude float
-	Longitude float
+	Latitude float64
+	Longitude float64
 	TimestampMs string
 }
 
@@ -50,69 +50,62 @@ type JsonItem struct {
 // (Unauthorized) Connection
 //
 type Connection struct {
-	consumer *oauth.OAuthConsumer
+	consumer *oauth.Consumer
 }
 
 func NewConnection() *Connection {
 	return &Connection{consumer: NewConsumer(OUT_OF_BAND_CALLBACK)}
 }
 
-//func NewOnlineConnection(callbackUrl string) *Connection {
-//  return &Connection{consumer: newConsumer(callbackUrl) }
-//}
-
-func NewConnectionForConsumer(consumer *oauth.OAuthConsumer) *Connection {
+func NewConnectionForConsumer(consumer *oauth.Consumer) *Connection {
 	return &Connection{consumer: consumer}  
 }
 
-func NewConsumer(callbackUrl string) (consumer *oauth.OAuthConsumer) {
-	return &oauth.OAuthConsumer{
-	Service:"google",
-	RequestTokenURL:"https://www.google.com/accounts/OAuthGetRequestToken",
-	AccessTokenURL:"https://www.google.com/accounts/OAuthGetAccessToken",
+func NewConsumer(callbackUrl string) (consumer *oauth.Consumer) {
+	return &oauth.Consumer{
+	RequestTokenUrl:"https://www.google.com/accounts/OAuthGetRequestToken",
+	AccessTokenUrl:"https://www.google.com/accounts/OAuthGetAccessToken",
 		// NOTE: The AuthorizeToken URL for latitude is different than for
 		// standard Google applications.
-	AuthorizationURL:"https://www.google.com/latitude/apps/OAuthAuthorizeToken",
+	AuthorizeTokenUrl:"https://www.google.com/latitude/apps/OAuthAuthorizeToken",
 	ConsumerKey:CONSUMER_KEY,
 	ConsumerSecret:CONSUMER_SECRET,
-	CallBackURL:callbackUrl,
-	AdditionalParams:oauth.Params{
-			&oauth.Pair{ Key:"scope", Value:"https://www.googleapis.com/auth/latitude"},
-		},
+	CallbackUrl:callbackUrl,
+	AdditionalParams:map[string]string{"scope": "https://www.googleapis.com/auth/latitude"},
 	}
 }
 
-func (connection *Connection) TokenRedirectUrl() (*string, os.Error) {
-	url, _, err := connection.consumer.GetRequestAuthorizationURL()
+//func (connection *Connection) TokenRedirectUrl() (*oauth.UnauthorizedToken, *string, os.Error) {
+//	token, url, err := connection.consumer.GetRequestTokenAndUrl()
+//	if err != nil{ return nil, err }
+//
+/// The latitude API requires additional parameters
+//	url = url + "&domain=mrjon.es&location=all&granularity=best"
+//  return token, &url, nil
+//}
+
+func (connection *Connection) NewAccessToken() (*oauth.AuthorizedToken, os.Error) {
+	token, url, err := connection.consumer.GetRequestTokenAndUrl()
 	if err != nil{ return nil, err }
 
 	// The latitude API requires additional parameters
-	url = url + "&domain=mrjon.es&location=all&granularity=best"
-  return &url, nil
-}
+	*url = *url + "&domain=mrjon.es&location=all&granularity=best"
 
-func (connection *Connection) NewAccessToken() (token *oauth.AccessToken, err os.Error) {
-	url, requestToken, err := connection.consumer.GetRequestAuthorizationURL()
-	if err != nil{ return nil, err }
-
-	// The latitude API requires additional parameters
-	url = url + "&domain=mrjon.es&location=all&granularity=best"
-
-	fmt.Printf("Go to this URL: '%s'\n", url)
+	fmt.Printf("Go to this URL: '%s'\n", *url)
 	fmt.Printf("Grant access, and then enter the verification code here: ")
 
 	verificationCode := ""
 
 	fmt.Scanln(&verificationCode)
 
-	return connection.consumer.GetAccessToken(requestToken.Token, verificationCode), nil
+	return connection.consumer.AuthorizeToken(token, verificationCode)
 }
 
-func (connection *Connection) ParseToken(token string, verifier string) *oauth.AccessToken {
-  return connection.consumer.GetAccessToken(token, verifier)
-}
+//func (connection *Connection) ParseToken(token string, verifier string) *oauth.AuthorizedToken {
+//  return connection.consumer.AuthorizeToken(token, verifier)
+//}
 
-func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedConnection {
+func (connection *Connection) Authorize(token *oauth.AuthorizedToken) *AuthorizedConnection {
 	return &AuthorizedConnection{accessToken: token, consumer: connection.consumer}
 }
 
@@ -121,14 +114,13 @@ func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedCon
 //
 
 type AuthorizedConnection struct {
-	accessToken *oauth.AccessToken
-	consumer *oauth.OAuthConsumer
+	accessToken *oauth.AuthorizedToken
+	consumer *oauth.Consumer
 }
 
-func (connection *AuthorizedConnection) FetchUrl(url string, params oauth.Params) (responseBody string, err os.Error) {
+func (connection *AuthorizedConnection) FetchUrl(url string, params map[string]string) (responseBody string, err os.Error) {
+  params["key"] = API_KEY
 	response, err := connection.consumer.Get(url, params, connection.accessToken)
-
-	params.Add(&oauth.Pair{Key:"key", Value: API_KEY})
 
 	if err != nil { return "", err }
 	defer response.Body.Close()
@@ -143,11 +135,11 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 
 	fmt.Printf("Time Range: %d - %d\n", startMs, endMs)
 
-	params := oauth.Params{
-		&oauth.Pair{Key:"granularity", Value:"best"},
-		&oauth.Pair{Key:"max-results", Value:strconv.Itoa(windowSize)},
-		&oauth.Pair{Key:"min-time", Value:strconv.Itoa64(startMs)},
-		&oauth.Pair{Key:"max-time", Value:strconv.Itoa64(endMs)},
+	params := map[string]string {
+		"granularity": "best",
+		"max-results": strconv.Itoa(windowSize),
+		"min-time": strconv.Itoa64(startMs),
+		"max-time": strconv.Itoa64(endMs),
 	}
 
 	body, err := conn.FetchUrl(locationHistoryUrl, params)
@@ -197,7 +189,7 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 //
 
 type TokenSource interface {
-  GetToken(userid string) (*oauth.AccessToken, os.Error)
+  GetToken(userid string) (*oauth.AuthorizedToken, os.Error)
 }
 
 type SimpleTokenSource struct {
@@ -213,7 +205,7 @@ type CachingTokenSource struct {
   cache *tokens.Storage
 }
 
-func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
+func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AuthorizedToken, os.Error) {
   return source.connection.NewAccessToken();
 }
 
@@ -221,7 +213,7 @@ func NewCachingTokenSource(connection *Connection, cache *tokens.Storage) *Cachi
   return &CachingTokenSource{connection: connection, cache: cache}
 }
 
-func (source *CachingTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
+func (source *CachingTokenSource) GetToken(userid string) (*oauth.AuthorizedToken, os.Error) {
  	accessToken, err := source.cache.Fetch(userid)
 	if err != nil{ return nil, err }
 	if accessToken == nil {

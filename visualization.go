@@ -8,11 +8,11 @@ import (
 )
 
 type Heatmap struct {
-	Points [][]float
+	Points [][]float64
 }
 
-func scaleHeat(input int) float {
-	return float(math.Sqrt(math.Sqrt(float64(input))))
+func scaleHeat(input int) float64 {
+	return float64(math.Sqrt(math.Sqrt(float64(input))))
 }
 
 func HeatmapToImage(heatmap *Heatmap) image.Image {
@@ -34,9 +34,9 @@ func HeatmapToImage(heatmap *Heatmap) image.Image {
 
 func LocationHistoryAsHeatmap(history *location.History, size int) *Heatmap {
 	heatmap := &Heatmap{}
-	heatmap.Points = make([][]float, size, size)
+	heatmap.Points = make([][]float64, size, size)
 	for i := 0 ; i < size ; i++ {
-		heatmap.Points[i] = make([]float, size, size)
+		heatmap.Points[i] = make([]float64, size, size)
 	}
 
 	if history.Len() < 1 {
@@ -72,8 +72,8 @@ func LocationHistoryAsHeatmap(history *location.History, size int) *Heatmap {
 		counts[i] = make([]int, size, size)
 	}
 
-	xScale := float(size-1) / (maxX - minX)
-	yScale := float(size-1) / (maxY - minY)
+	xScale := float64(size-1) / (maxX - minX)
+	yScale := float64(size-1) / (maxY - minY)
 	scale := xScale
 	if yScale < xScale {
 		scale = yScale
@@ -85,7 +85,7 @@ func LocationHistoryAsHeatmap(history *location.History, size int) *Heatmap {
 		counts[xBucket][yBucket]++
 	}
 
-	maxCount := float(0.0)
+	maxCount := float64(0.0)
 	for x := 0; x < len(counts); x++ {
 		for y := 0; y < len(counts[x]); y++ {
 			if scaleHeat(counts[x][y]) > maxCount {
@@ -99,7 +99,7 @@ func LocationHistoryAsHeatmap(history *location.History, size int) *Heatmap {
 
 	for x := 0; x < len(counts); x++ {
 		for y := 0; y < len(counts[x]); y++ {
-			heatmap.Points[x][y] = scaleHeat(counts[x][y]) / float(maxCount)
+			heatmap.Points[x][y] = scaleHeat(counts[x][y]) / float64(maxCount)
 		}
 	}
 

@@ -24,11 +24,10 @@ func Authorize(response http.ResponseWriter, request *http.Request) {
   url, err := connection.TokenRedirectUrl()
   if err != nil {
     fmt.Fprintf(response, err.String())
+  } else {
+    http.Redirect(response, request, *url, http.StatusFound)
   }
-  http.Redirect(response, request, *url, http.StatusFound)
 }
-
-// http://www.mrjon.es:8080/drawmap?oauth_verifier=g%2FqaHU38qas2FTfZj96uBFUR&oauth_token=4%2F-g8T44h1HEJR8AqYyrsPukfH4jOj
 
 func DrawMap(response http.ResponseWriter, request *http.Request) {
   connection := latitude_api.NewConnectionForConsumer(consumer)
