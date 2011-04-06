@@ -10,19 +10,19 @@ import (
 type Storage struct {
 	filename string
 
-	tokens map[string] *oauth.AuthorizedToken
+	tokens map[string] *oauth.AccessToken
 }
 
 func NewTokenStorage(filename string) *Storage {
-	return &Storage{filename: filename, tokens: make(map[string] *oauth.AuthorizedToken)}
+	return &Storage{filename: filename, tokens: make(map[string] *oauth.AccessToken)}
 }
 
-func (storage *Storage) Store(key string, token *oauth.AuthorizedToken) os.Error {
+func (storage *Storage) Store(key string, token *oauth.AccessToken) os.Error {
 	storage.tokens[key] = token
 	return storage.flush()
 } 
 
-func (storage *Storage) Fetch(key string) (*oauth.AuthorizedToken, os.Error) {
+func (storage *Storage) Fetch(key string) (*oauth.AccessToken, os.Error) {
 	storage.read()
 	return storage.tokens[key], nil
 }

@@ -84,14 +84,14 @@ func NewConsumer(callbackUrl string) (consumer *oauth.Consumer) {
 //  return token, &url, nil
 //}
 
-func (connection *Connection) NewAccessToken() (*oauth.AuthorizedToken, os.Error) {
+func (connection *Connection) NewAccessToken() (*oauth.AccessToken, os.Error) {
 	token, url, err := connection.consumer.GetRequestTokenAndUrl()
 	if err != nil{ return nil, err }
 
 	// The latitude API requires additional parameters
-	*url = *url + "&domain=mrjon.es&location=all&granularity=best"
+	url = url + "&domain=mrjon.es&location=all&granularity=best"
 
-	fmt.Printf("Go to this URL: '%s'\n", *url)
+	fmt.Printf("Go to this URL: '%s'\n", url)
 	fmt.Printf("Grant access, and then enter the verification code here: ")
 
 	verificationCode := ""
@@ -101,11 +101,11 @@ func (connection *Connection) NewAccessToken() (*oauth.AuthorizedToken, os.Error
 	return connection.consumer.AuthorizeToken(token, verificationCode)
 }
 
-//func (connection *Connection) ParseToken(token string, verifier string) *oauth.AuthorizedToken {
+//func (connection *Connection) ParseToken(token string, verifier string) *oauth.AccessToken {
 //  return connection.consumer.AuthorizeToken(token, verifier)
 //}
 
-func (connection *Connection) Authorize(token *oauth.AuthorizedToken) *AuthorizedConnection {
+func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedConnection {
 	return &AuthorizedConnection{accessToken: token, consumer: connection.consumer}
 }
 
@@ -114,7 +114,7 @@ func (connection *Connection) Authorize(token *oauth.AuthorizedToken) *Authorize
 //
 
 type AuthorizedConnection struct {
-	accessToken *oauth.AuthorizedToken
+	accessToken *oauth.AccessToken
 	consumer *oauth.Consumer
 }
 
@@ -189,7 +189,7 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 //
 
 type TokenSource interface {
-  GetToken(userid string) (*oauth.AuthorizedToken, os.Error)
+  GetToken(userid string) (*oauth.AccessToken, os.Error)
 }
 
 type SimpleTokenSource struct {
@@ -205,7 +205,7 @@ type CachingTokenSource struct {
   cache *tokens.Storage
 }
 
-func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AuthorizedToken, os.Error) {
+func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
   return source.connection.NewAccessToken();
 }
 
@@ -213,7 +213,7 @@ func NewCachingTokenSource(connection *Connection, cache *tokens.Storage) *Cachi
   return &CachingTokenSource{connection: connection, cache: cache}
 }
 
-func (source *CachingTokenSource) GetToken(userid string) (*oauth.AuthorizedToken, os.Error) {
+func (source *CachingTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
  	accessToken, err := source.cache.Fetch(userid)
 	if err != nil{ return nil, err }
 	if accessToken == nil {
