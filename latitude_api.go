@@ -62,17 +62,17 @@ func NewConnectionForConsumer(consumer *oauth.Consumer) *Connection {
 }
 
 func NewConsumer(callbackUrl string) (consumer *oauth.Consumer) {
-	return &oauth.Consumer{
-	RequestTokenUrl:"https://www.google.com/accounts/OAuthGetRequestToken",
-	AccessTokenUrl:"https://www.google.com/accounts/OAuthGetAccessToken",
-		// NOTE: The AuthorizeToken URL for latitude is different than for
-		// standard Google applications.
-	AuthorizeTokenUrl:"https://www.google.com/latitude/apps/OAuthAuthorizeToken",
-	ConsumerKey:CONSUMER_KEY,
-	ConsumerSecret:CONSUMER_SECRET,
-	CallbackUrl:callbackUrl,
-	AdditionalParams:map[string]string{"scope": "https://www.googleapis.com/auth/latitude"},
+	sp := oauth.ServiceProvider{
+		RequestTokenUrl: "https://www.google.com/accounts/OAuthGetRequestToken",
+		AccessTokenUrl: "https://www.google.com/accounts/OAuthGetAccessToken",
+			// NOTE: The AuthorizeToken URL for latitude is different than for
+			// standard Google applications.
+		AuthorizeTokenUrl: "https://www.google.com/latitude/apps/OAuthAuthorizeToken",
 	}
+
+	c := oauth.NewConsumer(CONSUMER_KEY, CONSUMER_SECRET, sp, callbackUrl)
+	c.AdditionalParams["scope"] = "https://www.googleapis.com/auth/latitude";
+	return c
 }
 
 //func (connection *Connection) TokenRedirectUrl() (*oauth.UnauthorizedToken, *string, os.Error) {
