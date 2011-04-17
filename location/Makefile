@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=github.com/mrjones/latvis/location
+TARG=latvis
 GOFILES=\
 				location.go \
 
