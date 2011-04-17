@@ -1,4 +1,4 @@
-package latvis_handler
+package server
 
 import (
 	"github.com/mrjones/latvis/latitude"
@@ -15,6 +15,15 @@ var consumer *oauth.Consumer
 
 //todo fix
 var requesttokencache map[string]*oauth.RequestToken
+
+func Serve() {
+	DoStupidSetup()
+  http.HandleFunc("/authorize", Authorize);
+  http.HandleFunc("/drawmap", DrawMap);
+  http.HandleFunc("/latestimage", ServePng);
+  err := http.ListenAndServe(":8081", nil)
+  log.Fatal(err)
+}
 
 func DoStupidSetup() {
   consumer = latitude.NewConsumer("http://www.mrjon.es:8081/drawmap");

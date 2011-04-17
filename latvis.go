@@ -2,17 +2,14 @@ package main
 
 import (
 	"github.com/mrjones/latvis/latitude"
-	"github.com/mrjones/latvis/location"
+  "github.com/mrjones/latvis/location"
+	"github.com/mrjones/latvis/server"
 	"github.com/mrjones/latvis/visualization"
 
 	"flag"
 	"fmt"
 	"log"
 )
-
-//func GetLocalHistorySource() *latitude_xml.FileSet {
-//	return latitude_xml.New("/home/mrjones/src/latvis/data")
-//}
 
 func GetApiHistorySource() *latitude.AuthorizedConnection {
 	connection := latitude.NewConnection()
@@ -31,14 +28,15 @@ func GetApiHistorySource() *latitude.AuthorizedConnection {
 
 func main() {
 	var imageSize *int = flag.Int("imageSize", 720, "Size of resulting image")
+	var runAsServer *bool = flag.Bool("server", true, "Run as server (vs. one off)")
 	flag.Parse()
 
-	var historySource location.HistorySource
-//	if *useApi {
-		historySource = GetApiHistorySource()
-//	} else {
-//		historySource = GetLocalHistorySource()
-//	}
-  vis := visualization.NewVisualizer(*imageSize, &historySource);
-  vis.GenerateImage("./vis.png");
+  if *runAsServer {
+    server.Serve()     
+  } else {
+    var historySource location.HistorySource
+	  historySource = GetApiHistorySource()
+    vis := visualization.NewVisualizer(*imageSize, &historySource);
+    vis.GenerateImage("./vis.png");
+  }
 }

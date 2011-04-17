@@ -6,6 +6,10 @@ cd location
 gomake install
 cd ..
 
+cd server
+gomake install
+cd ..
+
 cd visualization
 gomake install
 cd ..
