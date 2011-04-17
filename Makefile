@@ -13,6 +13,9 @@ DIRS=\
 				visualization\
 				server\
 
+TEST=\
+				location\
+
 clean.dirs: $(addsuffix .clean, $(DIRS))
 install.dirs: $(addsuffix .install, $(DIRS))
 nuke.dirs: $(addsuffix .nuke, $(DIRS))
@@ -36,7 +39,7 @@ install: install.dirs
 
 test:   test.dirs
 
-nuke: nuke.dirs
-				rm -rf "$(GOROOT)"/pkg/*
+#nuke: nuke.dirs
+#				rm -rf "$(GOROOT)"/pkg/*
 
 include $(GOROOT)/src/Make.cmd
