@@ -10,12 +10,29 @@ type Coordinate struct {
 }
 
 type BoundingBox struct {
-	LowerLeft Coordinate
-	UpperRight Coordinate
+	lowerLeft Coordinate
+	upperRight Coordinate
+}
+
+func NewBoundingBox(lowerLeft, upperRight Coordinate) *BoundingBox {
+	return &BoundingBox{lowerLeft: lowerLeft, upperRight: upperRight}
 }
 
 func (b *BoundingBox) Contains(c Coordinate) bool {
-	return false
+	isReversed := b.lowerLeft.Lat > b.upperRight.Lat
+	boxShift := 0.0
+	pointShift := 0.0
+	if isReversed {
+		boxShift = 360.0
+		if c.Lat < 0 {
+			pointShift = 360.0
+		}
+	}
+
+	return c.Lat + pointShift > b.lowerLeft.Lat &&
+		c.Lat + pointShift < b.upperRight.Lat + boxShift &&
+		c.Lng > b.lowerLeft.Lng &&
+		c.Lng < b.upperRight.Lng
 }
 
 type History []*Coordinate
