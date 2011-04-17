@@ -11,27 +11,22 @@ import (
 
 type Visualizer struct {
   imageSize int // Generates a square image, each side is length "imageSize"
-  historySource *location.HistorySource;
+  historySource *location.HistorySource
+	bounds *location.BoundingBox
 }
 
-func NewVisualizer(imageSize int, historySource *location.HistorySource) *Visualizer {
-  return &Visualizer{imageSize: imageSize, historySource: historySource};
+func NewVisualizer(
+		imageSize int, historySource *location.HistorySource, bounds *location.BoundingBox) *Visualizer {
+  return &Visualizer{imageSize: imageSize, historySource: historySource, bounds: bounds};
 }
 
-func (v *Visualizer) GenerateImage(path string) {
-	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: -74.02, Lng: 40.703},
-		location.Coordinate{Lat: -73.96, Lng: 40.8})
-
-	if err != nil {
-		// Propogate?
-		log.Fatal(err)
-	}
-
+func (v *Visualizer) GenerateImage(path string) os.Error {
 	history := readData(*v.historySource)
 	img := HeatmapToImage(
-      LocationHistoryAsHeatmap(history, v.imageSize, bounds));
+      LocationHistoryAsHeatmap(history, v.imageSize, v.bounds));
 	renderImage(img, path)
+
+	return nil
 }
 
 ///////

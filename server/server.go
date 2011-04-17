@@ -46,6 +46,16 @@ func Authorize(response http.ResponseWriter, request *http.Request) {
 }
 
 func DrawMap(response http.ResponseWriter, request *http.Request) {
+	bounds, err := location.NewBoundingBox(
+		location.Coordinate{Lat: -74.02, Lng: 40.703},
+		location.Coordinate{Lat: -73.96, Lng: 40.8})
+
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(err.String()))
+		response.Flush()
+	}
+
   connection := latitude.NewConnectionForConsumer(consumer)
   request.ParseForm()
   if oauthToken, ok := request.Form["oauth_token"]; ok && len(oauthToken) > 0 {
@@ -57,9 +67,15 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 			}
       var authorizedConnection location.HistorySource
       authorizedConnection = connection.Authorize(atoken)
-      vis := visualization.NewVisualizer(512, &authorizedConnection)
-      vis.GenerateImage("vis-web.png")
-      http.Redirect(response, request, "/latestimage", http.StatusFound)
+      vis := visualization.NewVisualizer(512, &authorizedConnection, bounds)
+      err = vis.GenerateImage("vis-web.png")
+			if err != nil {
+				response.WriteHeader(http.StatusInternalServerError)
+				response.Write([]byte(err.String()))
+				response.Flush()
+			} else {
+				http.Redirect(response, request, "/latestimage", http.StatusFound)
+			}
     }
   }
 }

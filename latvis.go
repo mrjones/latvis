@@ -34,9 +34,20 @@ func main() {
   if *runAsServer {
     server.Serve()     
   } else {
+  	bounds, err := location.NewBoundingBox(
+	  	location.Coordinate{Lat: -74.02, Lng: 40.703},
+		  location.Coordinate{Lat: -73.96, Lng: 40.8})
+
+    if err != nil {
+       log.Fatal(err)
+
+    }
     var historySource location.HistorySource
 	  historySource = GetApiHistorySource()
-    vis := visualization.NewVisualizer(*imageSize, &historySource);
-    vis.GenerateImage("./vis.png");
+    vis := visualization.NewVisualizer(*imageSize, &historySource, bounds);
+    err = vis.GenerateImage("./vis.png");
+    if err != nil {
+       log.Fatal(err)
+    }
   }
 }
