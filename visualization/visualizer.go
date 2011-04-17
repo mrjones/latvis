@@ -24,8 +24,8 @@ func (v *Visualizer) GenerateImage(path string) {
 	UpperRight: location.Coordinate{Lat: -73.96, Lng: 40.8},
 	}
 	history := readData(*v.historySource)
-	img := visualization.HeatmapToImage(
-      visualization.LocationHistoryAsHeatmap(history, v.imageSize, bounds));
+	img := HeatmapToImage(
+      LocationHistoryAsHeatmap(history, v.imageSize, bounds));
 	renderImage(img, path)
 }
 
