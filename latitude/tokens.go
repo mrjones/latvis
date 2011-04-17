@@ -1,8 +1,9 @@
-package tokens
+package latitude
 
 import (
-	"io/ioutil"
   "github.com/mrjones/oauth"
+
+	"io/ioutil"
 	"json"
 	"os"
 )

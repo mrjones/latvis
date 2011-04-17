@@ -1,6 +1,7 @@
 package latvis_handler
 
 import (
+	"github.com/mrjones/latvis/latitude"
 	"github.com/mrjones/latvis/location"
 	"github.com/mrjones/latvis/visualization"
 	"github.com/mrjones/oauth"
@@ -8,7 +9,6 @@ import (
   "fmt"
   "http"
 	"log"
-  "./latitude_api"
 )
 
 var consumer *oauth.Consumer
@@ -17,7 +17,7 @@ var consumer *oauth.Consumer
 var requesttokencache map[string]*oauth.RequestToken
 
 func DoStupidSetup() {
-  consumer = latitude_api.NewConsumer("http://www.mrjon.es:8081/drawmap");
+  consumer = latitude.NewConsumer("http://www.mrjon.es:8081/drawmap");
 	requesttokencache = make(map[string]*oauth.RequestToken)
 }
 
@@ -26,7 +26,7 @@ func ServePng(response http.ResponseWriter, request *http.Request) {
 }
 
 func Authorize(response http.ResponseWriter, request *http.Request) {
-  connection := latitude_api.NewConnectionForConsumer(consumer);
+  connection := latitude.NewConnectionForConsumer(consumer);
   token, url, err := connection.TokenRedirectUrl()
 	requesttokencache[token.Token] = token
   if err != nil {
@@ -37,7 +37,7 @@ func Authorize(response http.ResponseWriter, request *http.Request) {
 }
 
 func DrawMap(response http.ResponseWriter, request *http.Request) {
-  connection := latitude_api.NewConnectionForConsumer(consumer)
+  connection := latitude.NewConnectionForConsumer(consumer)
   request.ParseForm()
   if oauthToken, ok := request.Form["oauth_token"]; ok && len(oauthToken) > 0 {
     if oauthVerifier, ok := request.Form["oauth_verifier"]; ok && len(oauthVerifier) > 0 {

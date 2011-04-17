@@ -1,4 +1,4 @@
-package latitude_api
+package latitude
 
 import (
   "github.com/mrjones/oauth"
@@ -9,7 +9,6 @@ import (
 	"json"
 	"strconv"
 	"time"
-  "./tokens"
 	"os"
 )
 
@@ -203,14 +202,14 @@ func NewSimpleTokenSource(connection *Connection) *SimpleTokenSource {
 
 type CachingTokenSource struct {
   connection *Connection
-  cache *tokens.Storage
+  cache *Storage
 }
 
 func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
   return source.connection.NewAccessToken();
 }
 
-func NewCachingTokenSource(connection *Connection, cache *tokens.Storage) *CachingTokenSource {
+func NewCachingTokenSource(connection *Connection, cache *Storage) *CachingTokenSource {
   return &CachingTokenSource{connection: connection, cache: cache}
 }
 

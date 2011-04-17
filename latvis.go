@@ -1,26 +1,24 @@
 package main
 
 import (
+	"github.com/mrjones/latvis/latitude"
 	"github.com/mrjones/latvis/location"
 	"github.com/mrjones/latvis/visualization"
 
 	"flag"
 	"fmt"
-	"./latitude_api"
-	"./latitude_xml"
 	"log"
-	"./tokens"
 )
 
-func GetLocalHistorySource() *latitude_xml.FileSet {
-	return latitude_xml.New("/home/mrjones/src/latvis/data")
-}
+//func GetLocalHistorySource() *latitude_xml.FileSet {
+//	return latitude_xml.New("/home/mrjones/src/latvis/data")
+//}
 
-func GetApiHistorySource() *latitude_api.AuthorizedConnection {
-	connection := latitude_api.NewConnection()
-	tokenStore := tokens.NewTokenStorage("tokens.txt")
+func GetApiHistorySource() *latitude.AuthorizedConnection {
+	connection := latitude.NewConnection()
+	tokenStore := latitude.NewTokenStorage("tokens.txt")
 
-  tokenSource := latitude_api.NewCachingTokenSource(connection, tokenStore);
+  tokenSource := latitude.NewCachingTokenSource(connection, tokenStore);
 
 	fmt.Println("User to generate map for:")
 	var user string
@@ -33,15 +31,14 @@ func GetApiHistorySource() *latitude_api.AuthorizedConnection {
 
 func main() {
 	var imageSize *int = flag.Int("imageSize", 720, "Size of resulting image")
-	var useApi *bool = flag.Bool("useApi", true, "Use the API or local files")
 	flag.Parse()
 
 	var historySource location.HistorySource
-	if *useApi {
+//	if *useApi {
 		historySource = GetApiHistorySource()
-	} else {
-		historySource = GetLocalHistorySource()
-	}
+//	} else {
+//		historySource = GetLocalHistorySource()
+//	}
   vis := visualization.NewVisualizer(*imageSize, &historySource);
   vis.GenerateImage("./vis.png");
 }
