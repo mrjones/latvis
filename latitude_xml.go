@@ -1,8 +1,9 @@
 package latitude_xml
 
 import (
+	"github.com/mrjones/latvis/location"
+
 	"fmt"
-	"./location"
 	"os"
 	"strconv"
 	"strings"

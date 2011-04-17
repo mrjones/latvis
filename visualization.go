@@ -1,9 +1,10 @@
 package visualization
 
 import (
+	"github.com/mrjones/latvis/location"
+
 	"fmt"
 	"image"
-	"./location"
 	"math"
 )
 

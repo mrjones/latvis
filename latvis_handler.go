@@ -1,12 +1,13 @@
 package latvis_handler
 
 import (
+	"github.com/mrjones/latvis/location"
+	"github.com/mrjones/oauth"
+
   "fmt"
   "http"
 	"log"
   "./latitude_api"
-  "./location"
-	oauth "github.com/mrjones/oauth"
   "./visualizer"
 )
 

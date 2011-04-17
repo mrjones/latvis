@@ -1,9 +1,10 @@
 package visualizer
 
 import (
+	"github.com/mrjones/latvis/location"
+
 	"image"
 	"image/png"
-	"./location"
 	"log"
 	"os"
 	"./visualization"
@@ -25,7 +26,7 @@ func (v *Visualizer) GenerateImage(path string) {
 	}
 	history := readData(*v.historySource)
 	img := visualization.HeatmapToImage(
-      visualization.LocationHistoryAsHeatmap(history, v.imageSize));
+      visualization.LocationHistoryAsHeatmap(history, v.imageSize, bounds));
 	renderImage(img, path)
 }
 

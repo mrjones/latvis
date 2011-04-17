@@ -2,10 +2,11 @@ package latitude_api
 
 import (
   "github.com/mrjones/oauth"
+	"github.com/mrjones/latvis/location"
+
 	"fmt"
 	"io/ioutil"
 	"json"
-	"./location"
 	"strconv"
 	"time"
   "./tokens"

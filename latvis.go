@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/mrjones/latvis/location"
+
 	"flag"
 	"fmt"
 	"./latitude_api"
 	"./latitude_xml"
-	"./location"
 	"log"
 	"./tokens"
   "./visualizer"
