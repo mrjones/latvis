@@ -14,8 +14,11 @@ type BoundingBox struct {
 	upperRight Coordinate
 }
 
-func NewBoundingBox(lowerLeft, upperRight Coordinate) *BoundingBox {
-	return &BoundingBox{lowerLeft: lowerLeft, upperRight: upperRight}
+func NewBoundingBox(lowerLeft, upperRight Coordinate) (*BoundingBox, os.Error) {
+	if lowerLeft.Lng > upperRight.Lng {
+		return nil, os.NewError("Longitude of lowerLeft must be less than longitude of upperRight")
+	}
+	return &BoundingBox{lowerLeft: lowerLeft, upperRight: upperRight}, nil
 }
 
 func (b *BoundingBox) Contains(c Coordinate) bool {
