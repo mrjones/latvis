@@ -32,7 +32,7 @@ func HeatmapToImage(heatmap *Heatmap) image.Image {
 	return img
 }
 
-func LocationHistoryAsHeatmap(history *location.History, size int) *Heatmap {
+func LocationHistoryAsHeatmap(history *location.History, size int, bounds *location.BoundingBox) *Heatmap {
 	heatmap := &Heatmap{}
 	heatmap.Points = make([][]float64, size, size)
 	for i := 0 ; i < size ; i++ {

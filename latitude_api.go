@@ -75,14 +75,14 @@ func NewConsumer(callbackUrl string) (consumer *oauth.Consumer) {
 	return c
 }
 
-//func (connection *Connection) TokenRedirectUrl() (*oauth.UnauthorizedToken, *string, os.Error) {
-//	token, url, err := connection.consumer.GetRequestTokenAndUrl()
-//	if err != nil{ return nil, err }
-//
-/// The latitude API requires additional parameters
-//	url = url + "&domain=mrjon.es&location=all&granularity=best"
-//  return token, &url, nil
-//}
+func (connection *Connection) TokenRedirectUrl() (*oauth.RequestToken, string, os.Error) {
+	token, url, err := connection.consumer.GetRequestTokenAndUrl()
+	if err != nil{ return nil, "", err }
+
+	// The latitude API requires additional parameters
+	url = url + "&domain=mrjon.es&location=all&granularity=best"
+  return token, url, nil
+}
 
 func (connection *Connection) NewAccessToken() (*oauth.AccessToken, os.Error) {
 	token, url, err := connection.consumer.GetRequestTokenAndUrl()
@@ -101,9 +101,9 @@ func (connection *Connection) NewAccessToken() (*oauth.AccessToken, os.Error) {
 	return connection.consumer.AuthorizeToken(token, verificationCode)
 }
 
-//func (connection *Connection) ParseToken(token string, verifier string) *oauth.AccessToken {
-//  return connection.consumer.AuthorizeToken(token, verifier)
-//}
+func (connection *Connection) ParseToken(token *oauth.RequestToken, verifier string) (*oauth.AccessToken, os.Error) {
+  return connection.consumer.AuthorizeToken(token, verifier)
+}
 
 func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedConnection {
 	return &AuthorizedConnection{accessToken: token, consumer: connection.consumer}

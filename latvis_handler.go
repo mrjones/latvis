@@ -3,16 +3,21 @@ package latvis_handler
 import (
   "fmt"
   "http"
+	"log"
   "./latitude_api"
   "./location"
-	oauth "github.com/hokapoka/goauth"
+	oauth "github.com/mrjones/oauth"
   "./visualizer"
 )
 
-var consumer *oauth.OAuthConsumer
+var consumer *oauth.Consumer
+
+//todo fix
+var requesttokencache map[string]*oauth.RequestToken
 
 func DoStupidSetup() {
-  consumer = latitude_api.NewConsumer("http://www.mrjon.es:8080/drawmap");
+  consumer = latitude_api.NewConsumer("http://www.mrjon.es:8081/drawmap");
+	requesttokencache = make(map[string]*oauth.RequestToken)
 }
 
 func ServePng(response http.ResponseWriter, request *http.Request) {
@@ -21,11 +26,12 @@ func ServePng(response http.ResponseWriter, request *http.Request) {
 
 func Authorize(response http.ResponseWriter, request *http.Request) {
   connection := latitude_api.NewConnectionForConsumer(consumer);
-  url, err := connection.TokenRedirectUrl()
+  token, url, err := connection.TokenRedirectUrl()
+	requesttokencache[token.Token] = token
   if err != nil {
     fmt.Fprintf(response, err.String())
   } else {
-    http.Redirect(response, request, *url, http.StatusFound)
+    http.Redirect(response, request, url, http.StatusFound)
   }
 }
 
@@ -34,9 +40,13 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
   request.ParseForm()
   if oauthToken, ok := request.Form["oauth_token"]; ok && len(oauthToken) > 0 {
     if oauthVerifier, ok := request.Form["oauth_verifier"]; ok && len(oauthVerifier) > 0 {
-      token := connection.ParseToken(oauthToken[0], oauthVerifier[0])
+			rtoken := requesttokencache[oauthToken[0]]
+      atoken, err := connection.ParseToken(rtoken, oauthVerifier[0])
+			if err != nil {
+				log.Fatal(err)
+			}
       var authorizedConnection location.HistorySource
-      authorizedConnection = connection.Authorize(token)
+      authorizedConnection = connection.Authorize(atoken)
       vis := visualizer.NewVisualizer(512, &authorizedConnection)
       vis.GenerateImage("vis-web.png")
       http.Redirect(response, request, "/latestimage", http.StatusFound)

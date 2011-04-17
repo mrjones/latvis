@@ -9,8 +9,16 @@ type Coordinate struct {
 	Lng float64
 }
 
-type History []*Coordinate
+type BoundingBox struct {
+	LowerLeft Coordinate
+	UpperRight Coordinate
+}
 
+func (b *BoundingBox) Contains(c Coordinate) bool {
+	return false
+}
+
+type History []*Coordinate
 
 func (h *History) Len() int {
 	return len(*h)

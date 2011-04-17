@@ -19,6 +19,10 @@ func NewVisualizer(imageSize int, historySource *location.HistorySource) *Visual
 }
 
 func (v *Visualizer) GenerateImage(path string) {
+	bounds := &location.BoundingBox{
+	LowerLeft: location.Coordinate{Lat: -74.02, Lng: 40.703},
+	UpperRight: location.Coordinate{Lat: -73.96, Lng: 40.8},
+	}
 	history := readData(*v.historySource)
 	img := visualization.HeatmapToImage(
       visualization.LocationHistoryAsHeatmap(history, v.imageSize));
@@ -44,6 +48,7 @@ func readData(historySource location.HistorySource) *location.History {
 	readAndAppendData(historySource, 2011, 1, history)
 	readAndAppendData(historySource, 2011, 2, history)
 	readAndAppendData(historySource, 2011, 3, history)
+	readAndAppendData(historySource, 2011, 4, history)
 
 	return history
 }

@@ -2,6 +2,7 @@ package main
 
 import (
   "http"
+  "log"
   "./latvis_handler"
 )
 
@@ -10,5 +11,6 @@ func main() {
      http.HandleFunc("/authorize", latvis_handler.Authorize);
      http.HandleFunc("/drawmap", latvis_handler.DrawMap);
      http.HandleFunc("/latestimage", latvis_handler.ServePng);
-     http.ListenAndServe(":8080", nil)
+     err := http.ListenAndServe(":8081", nil)
+     log.Fatal(err)
 }
