@@ -21,7 +21,7 @@ func NewBoundingBox(lowerLeft, upperRight Coordinate) (*BoundingBox, os.Error) {
 	return &BoundingBox{lowerLeft: lowerLeft, upperRight: upperRight}, nil
 }
 
-func (b *BoundingBox) Contains(c Coordinate) bool {
+func (b *BoundingBox) Contains(c *Coordinate) bool {
 	isReversed := b.lowerLeft.Lat > b.upperRight.Lat
 	boxShift := 0.0
 	pointShift := 0.0

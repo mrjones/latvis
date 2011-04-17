@@ -19,10 +19,15 @@ func NewVisualizer(imageSize int, historySource *location.HistorySource) *Visual
 }
 
 func (v *Visualizer) GenerateImage(path string) {
-	bounds := &location.BoundingBox{
-	LowerLeft: location.Coordinate{Lat: -74.02, Lng: 40.703},
-	UpperRight: location.Coordinate{Lat: -73.96, Lng: 40.8},
+	bounds, err := location.NewBoundingBox(
+		location.Coordinate{Lat: -74.02, Lng: 40.703},
+		location.Coordinate{Lat: -73.96, Lng: 40.8})
+
+	if err != nil {
+		// Propogate?
+		log.Fatal(err)
 	}
+
 	history := readData(*v.historySource)
 	img := HeatmapToImage(
       LocationHistoryAsHeatmap(history, v.imageSize, bounds));

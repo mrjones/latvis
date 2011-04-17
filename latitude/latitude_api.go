@@ -151,9 +151,7 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 
 	for i := 0 ; i < len(jsonObject.Data.Items) ; i++ {
 		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Longitude, Lng: jsonObject.Data.Items[i].Latitude }
-		if point.Lat > -74.02 && point.Lat < -73.96 && point.Lng > 40.703 && point.Lng < 40.8 {
-			history.Add(point)
-		}
+		history.Add(point)
 		minTs, err = strconv.Atoi64(jsonObject.Data.Items[i].TimestampMs)
 		if err != nil { return -1, -1, err }
 	}

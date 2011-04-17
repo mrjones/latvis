@@ -8,8 +8,8 @@ GOFILES=\
 				latvis.go\
 
 DIRS=\
-				latitude\
 				location\
+				latitude\
 				visualization\
 				server\
 
@@ -39,7 +39,7 @@ install: install.dirs
 
 test:   test.dirs
 
-#nuke: nuke.dirs
-#				rm -rf "$(GOROOT)"/pkg/*
+nuke: nuke.dirs
+				rm -rf "$(GOROOT)"/pkg/*
 
 include $(GOROOT)/src/Make.cmd

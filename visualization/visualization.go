@@ -51,17 +51,19 @@ func LocationHistoryAsHeatmap(history *location.History, size int, bounds *locat
 	minY := history.At(0).Lng
 
 	for i := 0; i < history.Len(); i++ {
-		if history.At(i).Lat < minX {
-			minX = history.At(i).Lat
-		}
-		if history.At(i).Lat > maxX {
-			maxX = history.At(i).Lat
-		}
-		if history.At(i).Lng < minY {
-			minY = history.At(i).Lng
-		}
-		if history.At(i).Lng > maxY {
-			maxY = history.At(i).Lng
+		if bounds.Contains(history.At(i)) {
+			if history.At(i).Lat < minX {
+				minX = history.At(i).Lat
+			}
+			if history.At(i).Lat > maxX {
+				maxX = history.At(i).Lat
+			}
+			if history.At(i).Lng < minY {
+				minY = history.At(i).Lng
+			}
+			if history.At(i).Lng > maxY {
+				maxY = history.At(i).Lng
+			}
 		}
 	}
 
@@ -81,9 +83,11 @@ func LocationHistoryAsHeatmap(history *location.History, size int, bounds *locat
 	}
 
 	for i := 0; i < history.Len(); i++ {
-		xBucket := int((history.At(i).Lat - minX) * scale)
-		yBucket := size - int((history.At(i).Lng - minY)*scale) - 1
-		counts[xBucket][yBucket]++
+		if bounds.Contains(history.At(i)) {
+			xBucket := int((history.At(i).Lat - minX) * scale)
+			yBucket := size - int((history.At(i).Lng - minY)*scale) - 1
+			counts[xBucket][yBucket]++
+		}
 	}
 
 	maxCount := float64(0.0)
