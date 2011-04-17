@@ -2,13 +2,13 @@ package latvis_handler
 
 import (
 	"github.com/mrjones/latvis/location"
+	"github.com/mrjones/latvis/visualization"
 	"github.com/mrjones/oauth"
 
   "fmt"
   "http"
 	"log"
   "./latitude_api"
-  "./visualizer"
 )
 
 var consumer *oauth.Consumer
@@ -48,7 +48,7 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 			}
       var authorizedConnection location.HistorySource
       authorizedConnection = connection.Authorize(atoken)
-      vis := visualizer.NewVisualizer(512, &authorizedConnection)
+      vis := visualization.NewVisualizer(512, &authorizedConnection)
       vis.GenerateImage("vis-web.png")
       http.Redirect(response, request, "/latestimage", http.StatusFound)
     }

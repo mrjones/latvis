@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/mrjones/latvis/location"
+	"github.com/mrjones/latvis/visualization"
 
 	"flag"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"./latitude_xml"
 	"log"
 	"./tokens"
-  "./visualizer"
 )
 
 func GetLocalHistorySource() *latitude_xml.FileSet {
@@ -42,6 +42,6 @@ func main() {
 	} else {
 		historySource = GetLocalHistorySource()
 	}
-  vis := visualizer.NewVisualizer(*imageSize, &historySource);
+  vis := visualization.NewVisualizer(*imageSize, &historySource);
   vis.GenerateImage("./vis.png");
 }
