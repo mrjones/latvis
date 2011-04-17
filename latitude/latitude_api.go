@@ -54,14 +54,14 @@ type Connection struct {
 }
 
 func NewConnection() *Connection {
-	return &Connection{consumer: NewConsumer(OUT_OF_BAND_CALLBACK)}
+	return &Connection{consumer: NewConsumer()}
 }
 
 func NewConnectionForConsumer(consumer *oauth.Consumer) *Connection {
 	return &Connection{consumer: consumer}  
 }
 
-func NewConsumer(callbackUrl string) (consumer *oauth.Consumer) {
+func NewConsumer() (consumer *oauth.Consumer) {
 	sp := oauth.ServiceProvider{
 		RequestTokenUrl: "https://www.google.com/accounts/OAuthGetRequestToken",
 		AccessTokenUrl: "https://www.google.com/accounts/OAuthGetAccessToken",
@@ -70,13 +70,13 @@ func NewConsumer(callbackUrl string) (consumer *oauth.Consumer) {
 		AuthorizeTokenUrl: "https://www.google.com/latitude/apps/OAuthAuthorizeToken",
 	}
 
-	c := oauth.NewConsumer(CONSUMER_KEY, CONSUMER_SECRET, sp, callbackUrl)
+	c := oauth.NewConsumer(CONSUMER_KEY, CONSUMER_SECRET, sp)
 	c.AdditionalParams["scope"] = "https://www.googleapis.com/auth/latitude";
 	return c
 }
 
-func (connection *Connection) TokenRedirectUrl() (*oauth.RequestToken, string, os.Error) {
-	token, url, err := connection.consumer.GetRequestTokenAndUrl()
+func (connection *Connection) TokenRedirectUrl(callback string) (*oauth.RequestToken, string, os.Error) {
+	token, url, err := connection.consumer.GetRequestTokenAndUrl(callback)
 	if err != nil{ return nil, "", err }
 
 	// The latitude API requires additional parameters
@@ -85,7 +85,7 @@ func (connection *Connection) TokenRedirectUrl() (*oauth.RequestToken, string, o
 }
 
 func (connection *Connection) NewAccessToken() (*oauth.AccessToken, os.Error) {
-	token, url, err := connection.consumer.GetRequestTokenAndUrl()
+	token, url, err := connection.consumer.GetRequestTokenAndUrl(OUT_OF_BAND_CALLBACK)
 	if err != nil{ return nil, err }
 
 	// The latitude API requires additional parameters
@@ -150,7 +150,7 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 	if err != nil { return -1, -1, err }
 
 	for i := 0 ; i < len(jsonObject.Data.Items) ; i++ {
-		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Longitude, Lng: jsonObject.Data.Items[i].Latitude }
+		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude }
 		history.Add(point)
 		minTs, err = strconv.Atoi64(jsonObject.Data.Items[i].TimestampMs)
 		if err != nil { return -1, -1, err }

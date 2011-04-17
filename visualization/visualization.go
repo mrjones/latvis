@@ -22,11 +22,11 @@ func HeatmapToImage(heatmap *Heatmap) image.Image {
 
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
-			val := heatmap.Points[j][i]
+			val := heatmap.Points[i][j]
 			if val > 0 {
-				img.Pix[i*img.Stride+j] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
+				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
 			} else {
-				img.Pix[i*img.Stride+j] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
+				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
 			}
 		}
 	}
@@ -44,26 +44,28 @@ func LocationHistoryAsHeatmap(history *location.History, size int, bounds *locat
 		fmt.Println("Problem, Len() == 0")
 	}
 
-	maxX := history.At(0).Lat
-	minX := history.At(0).Lat
+	initialized := false;
+	maxX := 0.0
+	minX := 0.0
 
-	maxY := history.At(0).Lng
-	minY := history.At(0).Lng
+	maxY := 0.0
+	minY := 0.0
 
 	for i := 0; i < history.Len(); i++ {
 		if bounds.Contains(history.At(i)) {
-			if history.At(i).Lat < minX {
-				minX = history.At(i).Lat
+			if !initialized || history.At(i).Lng < minX {
+				minX = history.At(i).Lng
 			}
-			if history.At(i).Lat > maxX {
-				maxX = history.At(i).Lat
+			if !initialized || history.At(i).Lng > maxX {
+				maxX = history.At(i).Lng
 			}
-			if history.At(i).Lng < minY {
-				minY = history.At(i).Lng
+			if !initialized || history.At(i).Lat < minY {
+				minY = history.At(i).Lat
 			}
-			if history.At(i).Lng > maxY {
-				maxY = history.At(i).Lng
+			if !initialized || history.At(i).Lat > maxY {
+				maxY = history.At(i).Lat
 			}
+			initialized = true
 		}
 	}
 
@@ -84,8 +86,8 @@ func LocationHistoryAsHeatmap(history *location.History, size int, bounds *locat
 
 	for i := 0; i < history.Len(); i++ {
 		if bounds.Contains(history.At(i)) {
-			xBucket := int((history.At(i).Lat - minX) * scale)
-			yBucket := size - int((history.At(i).Lng - minY)*scale) - 1
+			xBucket := int((history.At(i).Lng - minX) * scale)
+			yBucket := size - int((history.At(i).Lat - minY)*scale) - 1
 			counts[xBucket][yBucket]++
 		}
 	}
