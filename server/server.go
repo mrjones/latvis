@@ -10,7 +10,9 @@ import (
   "http"
 	"log"
 	"os"
+	"rand"
 	"strconv"
+	"time"
 )
 
 var consumer *oauth.Consumer
@@ -22,7 +24,7 @@ func Serve() {
 	DoStupidSetup()
   http.HandleFunc("/authorize", Authorize);
   http.HandleFunc("/drawmap", DrawMap);
-  http.HandleFunc("/latestimage", ServePng);
+  http.HandleFunc("/img", ServePng);
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
 }
@@ -33,13 +35,56 @@ func DoStupidSetup() {
 }
 
 func ServePng(response http.ResponseWriter, request *http.Request) {
-  http.ServeFile(response, request, "vis-web.png")
+	// TODO(mrjones): clean up this hacky code
+	request.ParseForm();
+	ss := request.Form["s"][0]
+	n1s := request.Form["n1"][0]
+	n2s := request.Form["n2"][0]
+	n3s := request.Form["n3"][0]
+
+	s, e := strconv.Atoi64(ss)
+	if e != nil {
+		log.Fatal(e)
+	}
+	n1, e := strconv.Atoi64(n1s)
+	if e != nil {
+		log.Fatal(e)
+	}
+	n2, e := strconv.Atoi64(n2s)
+	if e != nil {
+		log.Fatal(e)
+	}
+	n3, e := strconv.Atoi64(n3s)
+	if e != nil {
+		log.Fatal(e)
+	}
+
+	imgname := fmt.Sprintf("%d-%d%d%d.png", s, n1, n2, n3);
+  http.ServeFile(response, request, imgname)
+}
+
+func propogateParameter(base string, params map[string][]string, key string) string {
+	if len(params[key]) > 0 {
+		if len(base) > 0 {
+			base = base + "&"
+		}
+		base = base + key + "=" + params[key][0]
+	}
+	return base
 }
 
 func Authorize(response http.ResponseWriter, request *http.Request) {
   connection := latitude.NewConnectionForConsumer(consumer);
 
-  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap")
+	request.ParseForm()
+	latlng := ""
+	latlng = propogateParameter(latlng, request.Form, "lllat")
+	latlng = propogateParameter(latlng, request.Form, "lllng")
+	latlng = propogateParameter(latlng, request.Form, "urlat")
+	latlng = propogateParameter(latlng, request.Form, "urlng")
+
+  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?" + latlng)
+//  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap")
 //  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?lllat=37.416936&lllng=-122.092438&urlat=37.423753&urlng=-122.076130")
 //  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?lllat=40.699902&lllng=-74.020386&urlat=40.719811&urlng=-73.970604")
 	requesttokencache[token.Token] = token
@@ -114,13 +159,22 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
       var authorizedConnection location.HistorySource
       authorizedConnection = connection.Authorize(atoken)
       vis := visualization.NewVisualizer(512, &authorizedConnection, bounds)
-      err = vis.GenerateImage("vis-web.png")
+			s := time.Seconds();
+			n1 := rand.Int63();
+			n2 := rand.Int63();
+			n3 := rand.Int63();
+			imgname := fmt.Sprintf("%d-%d%d%d.png", s, n1, n2,n3);
+			if err != nil {
+				log.Fatal(err)
+			}
+      err = vis.GenerateImage(imgname)
 			if err != nil {
 				response.WriteHeader(http.StatusInternalServerError)
 				response.Write([]byte(err.String()))
 				response.Flush()
 			} else {
-				http.Redirect(response, request, "/latestimage", http.StatusFound)
+ 				url := fmt.Sprintf("/img?s=%d&n1=%d&n2=%d&n3=%d", s, n1, n2, n3)
+				http.Redirect(response, request, url, http.StatusFound)
 			}
     }
   }
