@@ -141,6 +141,25 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 	fmt.Printf("Bounding Box: LL[%f,%f], UR[%f,%f]",
 		lowerLeft.Lat, lowerLeft.Lng, upperRight.Lat, upperRight.Lng)
 
+	start := &time.Time{Year: 2010, Month: 7, Day: 1}
+	if len(request.Form["start"]) > 0 {
+		startTs, err := strconv.Atoi64(request.Form["start"][0])
+		if err != nil {
+			startTs = -1
+		}
+		start = time.SecondsToUTC(startTs)
+	}
+
+	end := &time.Time{Year: 2010, Month: 7, Day: 1}
+	if len(request.Form["end"]) > 0 {
+		endTs, err := strconv.Atoi64(request.Form["end"][0])
+		if err != nil {
+			endTs = -1
+		}
+		end = time.SecondsToUTC(endTs)
+	}
+
+
 	bounds, err := location.NewBoundingBox(*lowerLeft, *upperRight)
 
 	if err != nil {
@@ -160,9 +179,7 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 			}
       var authorizedConnection location.HistorySource
       authorizedConnection = connection.Authorize(atoken)
-			start := time.Time{Year: 2010, Month: 7, Day: 1}
-			end := time.Time{Year: 2011, Month: 6, Day: 1}
-      vis := visualization.NewVisualizer(512, &authorizedConnection, bounds, start, end)
+      vis := visualization.NewVisualizer(512, &authorizedConnection, bounds, *start, *end)
 			s := time.Seconds();
 			n1 := rand.Int63();
 			n2 := rand.Int63();
