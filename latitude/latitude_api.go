@@ -162,8 +162,13 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.History, os.Error) {
 	startTime := time.Time{Year: year, Month: month, Day: 1}
 	endTime := time.Time{Year: year, Month: month + 1, Day: 1}
-	startTimestamp := 1000* startTime.Seconds()
-	endTimestamp := 1000 * endTime.Seconds()
+
+	return conn.FetchRange(startTime, endTime)
+}
+
+func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.History, os.Error) {
+	startTimestamp := 1000* start.Seconds()
+	endTimestamp := 1000 * end.Seconds()
 
 	history := &location.History{}
 

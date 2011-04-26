@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+  "time"
 )
 
 func GetApiHistorySource() *latitude.AuthorizedConnection {
@@ -44,7 +45,9 @@ func main() {
     }
     var historySource location.HistorySource
 	  historySource = GetApiHistorySource()
-    vis := visualization.NewVisualizer(*imageSize, &historySource, bounds);
+    start := time.Time{Year: 2010, Month: 7, Day: 1}
+		end := time.Time{Year: 2011, Month: 6, Day: 1}
+    vis := visualization.NewVisualizer(*imageSize, &historySource, bounds, start, end);
     err = vis.GenerateImage("./vis.png");
     if err != nil {
        log.Fatal(err)

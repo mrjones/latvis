@@ -82,6 +82,8 @@ func Authorize(response http.ResponseWriter, request *http.Request) {
 	latlng = propogateParameter(latlng, request.Form, "lllng")
 	latlng = propogateParameter(latlng, request.Form, "urlat")
 	latlng = propogateParameter(latlng, request.Form, "urlng")
+	latlng = propogateParameter(latlng, request.Form, "start")
+	latlng = propogateParameter(latlng, request.Form, "end")
 
   token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?" + latlng)
 //  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap")
@@ -158,7 +160,9 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 			}
       var authorizedConnection location.HistorySource
       authorizedConnection = connection.Authorize(atoken)
-      vis := visualization.NewVisualizer(512, &authorizedConnection, bounds)
+			start := time.Time{Year: 2010, Month: 7, Day: 1}
+			end := time.Time{Year: 2011, Month: 6, Day: 1}
+      vis := visualization.NewVisualizer(512, &authorizedConnection, bounds, start, end)
 			s := time.Seconds();
 			n1 := rand.Int63();
 			n2 := rand.Int63();
