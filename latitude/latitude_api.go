@@ -170,6 +170,8 @@ func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.Hi
 	startTimestamp := 1000* start.Seconds()
 	endTimestamp := 1000 * end.Seconds()
 
+	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
+
 	history := &location.History{}
 
 	windowEnd := endTimestamp

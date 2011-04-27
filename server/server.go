@@ -159,7 +159,6 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 		end = time.SecondsToUTC(endTs)
 	}
 
-
 	bounds, err := location.NewBoundingBox(*lowerLeft, *upperRight)
 
 	if err != nil {
