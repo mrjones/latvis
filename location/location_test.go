@@ -77,26 +77,48 @@ func TestContainsAround0Latitude(t *testing.T) {
 	assertFalseM(t, b.Contains(&Coordinate{Lat: 2.5, Lng: 1.5}), "West")
 }
 
-func TestContainsAround180Latitude(t *testing.T) {
+func TestContainsAround180Longitude(t *testing.T) {
 	b, err := NewBoundingBox(
-		Coordinate{Lat: 179.0, Lng: 1.0},
-		Coordinate{Lat: -179.0,	Lng: 2.0})
+		Coordinate{Lat: 1.0, Lng: 179.0},
+		Coordinate{Lat: 2.0, Lng: -179.0})
 	
 	assertNil(t, err)
 
-	assertTrueM(t, b.Contains(&Coordinate{Lat: -179.9, Lng: 1.5}), "In Box (E)")
-	assertTrueM(t, b.Contains(&Coordinate{Lat: 179.9, Lng: 1.5}), "In Box (W)")
+	assertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -179.9}), "In Box (E)")
+	assertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 179.9}), "In Box (W)")
 
-	assertFalseM(t, b.Contains(&Coordinate{Lat: 178, Lng: 1.5}), "East")
-	assertFalseM(t, b.Contains(&Coordinate{Lat: -178, Lng: 1.5}), "West")
+	assertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 178}), "East")
+	assertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -178}), "West")
 }
 
 func TestInvalidBox(t *testing.T) {
 	_, err := NewBoundingBox(
-		Coordinate{Lat: 1, Lng: 2.0},
-		Coordinate{Lat: 2, Lng: 1.0})
+		Coordinate{Lat: 2.0, Lng: 1.0},
+		Coordinate{Lat: 1.0, Lng: 2.0})
 	
 	assertNotNil(t, err)
+}
+
+func TestNormalWidth(t *testing.T) {
+	b, err := NewBoundingBox(
+		Coordinate{Lat: 1.0, Lng: 1.0},
+		Coordinate{Lat: 10.0, Lng: 2.0})
+
+	assertNil(t, err)
+	if b.Width() != 1.0 {
+		t.Fatal("Wrong width: Expected 1.0, Actual: %f", b.Width())
+	}
+}
+
+func TestWidthAround180(t *testing.T) {
+	b, err := NewBoundingBox(
+		Coordinate{Lat: 1.0, Lng: 179.0},
+		Coordinate{Lat: 10.0, Lng: -179.0})
+	
+	assertNil(t, err)
+	if b.Width() != 2.0 {
+		t.Fatalf("Wrong width: Expected 2.0, Actual: %f", b.Width())
+	}
 }
 
 func assertTrueM(t *testing.T, cond bool, msg string) {
@@ -121,7 +143,7 @@ func assertFalse(t *testing.T, cond bool) {
 
 func assertNil(t *testing.T, o interface{}) {
 	if o != nil {
-		t.Fatal("o is not Nil")
+		t.Fatalf("o is not Nil: %s", o)
 	}
 }
 

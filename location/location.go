@@ -16,27 +16,37 @@ type BoundingBox struct {
 }
 
 func NewBoundingBox(lowerLeft, upperRight Coordinate) (*BoundingBox, os.Error) {
-	if lowerLeft.Lng > upperRight.Lng {
-		return nil, os.NewError("Longitude of lowerLeft must be less than longitude of upperRight")
+	if lowerLeft.Lat > upperRight.Lat {
+		return nil, os.NewError("Latitude of lowerLeft must be less than longitude of upperRight")
 	}
 	return &BoundingBox{lowerLeft: lowerLeft, upperRight: upperRight}, nil
 }
 
+func (b *BoundingBox) isReversed() bool {
+	return b.lowerLeft.Lng > b.upperRight.Lng
+}
+
 func (b *BoundingBox) Contains(c *Coordinate) bool {
-	isReversed := b.lowerLeft.Lat > b.upperRight.Lat
 	boxShift := 0.0
 	pointShift := 0.0
-	if isReversed {
+	if b.isReversed() {
 		boxShift = 360.0
-		if c.Lat < 0 {
+		if c.Lng < 0 {
 			pointShift = 360.0
 		}
 	}
 
-	return c.Lat + pointShift > b.lowerLeft.Lat &&
-		c.Lat + pointShift < b.upperRight.Lat + boxShift &&
-		c.Lng > b.lowerLeft.Lng &&
-		c.Lng < b.upperRight.Lng
+	return c.Lat > b.lowerLeft.Lat &&
+		c.Lat < b.upperRight.Lat &&
+		c.Lng + pointShift > b.lowerLeft.Lng &&
+		c.Lng + pointShift < b.upperRight.Lng + boxShift
+}
+
+func (b *BoundingBox) Width() float64 {
+	if b.isReversed() {
+		return b.upperRight.Lng - b.lowerLeft.Lng + 360
+	}
+	return b.upperRight.Lng - b.lowerLeft.Lng
 }
 
 type History []*Coordinate
