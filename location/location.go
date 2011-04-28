@@ -42,6 +42,17 @@ func (b *BoundingBox) Contains(c *Coordinate) bool {
 		c.Lng + pointShift < b.upperRight.Lng + boxShift
 }
 
+func (b *BoundingBox) WidthFraction(c *Coordinate) float64 {
+	if b.isReversed() && c.Lng < 0 {
+		return (c.Lng + 360.0 - b.lowerLeft.Lng) / b.Width()
+	}
+	return (c.Lng - b.lowerLeft.Lng) / b.Width()
+}
+
+func (b *BoundingBox) HeightFraction(c *Coordinate) float64 {
+	return (c.Lat - b.lowerLeft.Lat) / b.Height()
+}
+
 func (b *BoundingBox) Width() float64 {
 	if b.isReversed() {
 		return b.upperRight.Lng - b.lowerLeft.Lng + 360

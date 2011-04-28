@@ -108,9 +108,19 @@ func TestNormalWidth(t *testing.T) {
 	if b.Width() != 1.0 {
 		t.Fatal("Wrong width: Expected 1.0, Actual: %f", b.Width())
 	}
-	if b.Height() != 9.0 {
-		t.Fatal("Wrong height: Expected 9.0, Actual: %f", b.Width())
+	wf := b.WidthFraction(&Coordinate{Lat: 1.0, Lng: 1.5}) 
+	if wf != 0.5 {
+		t.Fatal("Wrong width fraction: Expected .5, Actual: %f", wf)
 	}
+	wf = b.WidthFraction(&Coordinate{Lat: 1.0, Lng: 1.25}) 
+	if wf != 0.25 {
+		t.Fatal("Wrong width fraction: Expected .25, Actual: %f", wf)
+	}
+
+	if b.Height() != 9.0 {
+		t.Fatal("Wrong height: Expected 9.0, Actual: %f", b.Height())
+	}
+	
 }
 
 func TestWidthAround180(t *testing.T) {
@@ -121,6 +131,14 @@ func TestWidthAround180(t *testing.T) {
 	assertNil(t, err)
 	if b.Width() != 2.0 {
 		t.Fatalf("Wrong width: Expected 2.0, Actual: %f", b.Width())
+	}
+	wf := b.WidthFraction(&Coordinate{Lat: 1.0, Lng: 179.5}) 
+	if wf != 0.25 {
+		t.Fatalf("Wrong width fraction: Expected .25, Actual: %f", wf)
+	}
+	wf = b.WidthFraction(&Coordinate{Lat: 1.0, Lng: -179.5}) 
+	if wf != 0.75 {
+		t.Fatalf("Wrong width fraction: Expected .75, Actual: %f", wf)
 	}
 }
 
