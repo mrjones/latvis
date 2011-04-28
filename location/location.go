@@ -49,6 +49,10 @@ func (b *BoundingBox) Width() float64 {
 	return b.upperRight.Lng - b.lowerLeft.Lng
 }
 
+func (b *BoundingBox) Height() float64 {
+	return b.upperRight.Lat - b.lowerLeft.Lat
+}
+
 type History []*Coordinate
 
 func (h *History) Len() int {

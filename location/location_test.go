@@ -108,6 +108,9 @@ func TestNormalWidth(t *testing.T) {
 	if b.Width() != 1.0 {
 		t.Fatal("Wrong width: Expected 1.0, Actual: %f", b.Width())
 	}
+	if b.Height() != 9.0 {
+		t.Fatal("Wrong height: Expected 9.0, Actual: %f", b.Width())
+	}
 }
 
 func TestWidthAround180(t *testing.T) {
