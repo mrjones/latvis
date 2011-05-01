@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"os"
 )
 
-type Heatmap struct {
-	Points [][]float64
+type Renderer interface {
+	Render(grid *Grid, imageWidth int, imageHeight int) (image.Image, os.Error)
 }
 
 type Grid struct {
@@ -44,28 +45,12 @@ func (g *Grid) Height() int {
 	return g.height
 }
 
-func scaleHeat(input int) float64 {
-	return float64(math.Sqrt(math.Sqrt(float64(input))))
+func MakeImage(history *location.History, bounds *location.BoundingBox, width int, height int, renderer Renderer) (image.Image, os.Error) {
+	grid := aggregateHistory(history, bounds, width, height)
+	return renderer.Render(grid, width, height)
 }
 
-func HeatmapToImage(heatmap *Heatmap) image.Image {
-	size := len(heatmap.Points)
-	img := image.NewNRGBA(size, size)
-
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			val := heatmap.Points[i][j]
-			if val > 0 {
-				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
-			} else {
-				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
-			}
-		}
-	}
-	return img
-}
-
-func AggregateHistory(history *location.History, bounds *location.BoundingBox, gridWidth int, gridHeight int) *Grid {
+func aggregateHistory(history *location.History, bounds *location.BoundingBox, gridWidth int, gridHeight int) *Grid {
 	grid := NewGrid(gridWidth, gridHeight)
 
 	// For now, we always generate a square output image
@@ -95,34 +80,69 @@ func AggregateHistory(history *location.History, bounds *location.BoundingBox, g
 	return grid
 }
 
-func LocationHistoryAsHeatmap(history *location.History, size int, bounds *location.BoundingBox) *Heatmap {
+/////////////////////////////////////////////
+
+func scaleHeat(input int) float64 {
+	return float64(math.Sqrt(math.Sqrt(float64(input))))
+}
+
+type Heatmap struct {
+	Points [][]float64
+}
+
+type BWRenderer struct {
+}
+
+func (r *BWRenderer) Render(grid *Grid, width int, height int) (image.Image, os.Error) {
+	heatmap := gridAsHeatmap(grid, width, height)
+	return heatmapToImage(heatmap), nil
+}
+
+func heatmapToImage(heatmap *Heatmap) image.Image {
+	size := len(heatmap.Points)
+	img := image.NewNRGBA(size, size)
+
+	for i := 0; i < size; i++ {
+		for j := 0; j < size; j++ {
+			val := heatmap.Points[i][j]
+			if val > 0 {
+				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
+			} else {
+				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
+			}
+		}
+	}
+	return img
+}
+
+func gridAsHeatmap(grid *Grid, width int, height int) *Heatmap {
 	heatmap := &Heatmap{}
-	heatmap.Points = make([][]float64, size, size)
-	for i := 0 ; i < size ; i++ {
-		heatmap.Points[i] = make([]float64, size, size)
+	heatmap.Points = make([][]float64, width)
+	for i := 0 ; i < height ; i++ {
+		heatmap.Points[i] = make([]float64, height)
 	}
 
-	if history.Len() < 1 {
-		fmt.Println("Problem, Len() == 0")
-	}
+//	if history.Len() < 1 {
+//		fmt.Println("Problem, Len() == 0")
+//	}
 
-	rawCounts := AggregateHistory(history, bounds, size, size)
+//	grid := aggregateHistory(history, bounds, width, height)
 
 	maxCount := float64(0.0)
-	for x := 0; x < rawCounts.Width(); x++ {
-		for y := 0; y < rawCounts.Height(); y++ {
-			if scaleHeat(rawCounts.Get(x, y)) > maxCount {
-				maxCount = scaleHeat(rawCounts.Get(x, y))
-				fmt.Printf("rawCounts.Get(%d, %d) = %d\n", x, y, scaleHeat(rawCounts.Get(x, y)))
+	for x := 0; x < grid.Width(); x++ {
+		for y := 0; y < grid.Height(); y++ {
+			if scaleHeat(grid.Get(x, y)) > maxCount {
+				maxCount = scaleHeat(grid.Get(x, y))
+				fmt.Printf("grid.Get(%d, %d) = %d\n", x, y, scaleHeat(grid.Get(x, y)))
 			}
 		}
 	}
 
 	fmt.Printf("max: %d\n", maxCount)
 
-	for x := 0; x < rawCounts.Width() ; x++ {
-		for y := 0; y < rawCounts.Height() ; y++ {
-			heatmap.Points[x][y] = scaleHeat(rawCounts.Get(x, y)) / float64(maxCount)
+	for x := 0; x < grid.Width() ; x++ {
+		for y := 0; y < grid.Height() ; y++ {
+			heatmap.Points[x][y] = scaleHeat(grid.Get(x, y)) / float64(maxCount)
 		}
 	}
 

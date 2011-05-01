@@ -32,8 +32,9 @@ func (v *Visualizer) GenerateImage(path string) os.Error {
 	if err != nil {
 		return err
 	}
-	img := HeatmapToImage(
-      LocationHistoryAsHeatmap(history, v.imageSize, v.bounds));
+
+	renderer := &BWRenderer{}
+	img, err := MakeImage(history, v.bounds, v.imageSize, v.imageSize, renderer)
 	renderImage(img, path)
 
 	return nil

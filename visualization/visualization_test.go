@@ -20,7 +20,7 @@ func TestSimpleAggregateHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual := AggregateHistory(&history, bounds, 5, 5)
+	actual := aggregateHistory(&history, bounds, 5, 5)
 
 	expected := Grid{points: [][]int {
 			{0, 0, 0, 0, 0},
