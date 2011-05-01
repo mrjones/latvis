@@ -10,11 +10,11 @@ GOFILES=\
 DIRS=\
 				location\
 				latitude\
-				visualization\
 				server\
 
 TEST=\
 				location\
+				visualization\
 
 clean.dirs: $(addsuffix .clean, $(DIRS))
 install.dirs: $(addsuffix .install, $(DIRS))
