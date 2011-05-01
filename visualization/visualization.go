@@ -44,50 +44,30 @@ func LocationHistoryAsHeatmap(history *location.History, size int, bounds *locat
 		fmt.Println("Problem, Len() == 0")
 	}
 
-	initialized := false;
-	maxX := 0.0
-	minX := 0.0
-
-	maxY := 0.0
-	minY := 0.0
-
-	for i := 0; i < history.Len(); i++ {
-		if bounds.Contains(history.At(i)) {
-			if !initialized || history.At(i).Lng < minX {
-				minX = history.At(i).Lng
-			}
-			if !initialized || history.At(i).Lng > maxX {
-				maxX = history.At(i).Lng
-			}
-			if !initialized || history.At(i).Lat < minY {
-				minY = history.At(i).Lat
-			}
-			if !initialized || history.At(i).Lat > maxY {
-				maxY = history.At(i).Lat
-			}
-			initialized = true
-		}
-	}
-
-	fmt.Printf("xrange %f %f\n", minX, maxX)
-	fmt.Printf("yrange %f %f\n", minY, maxY)
-
 	counts := make([][]int, size, size)
 	for i := 0 ; i < size ; i++ {
 		counts[i] = make([]int, size, size)
 	}
 
-	xScale := float64(size-1) / (maxX - minX)
-	yScale := float64(size-1) / (maxY - minY)
-	scale := xScale
-	if yScale < xScale {
-		scale = yScale
+	// For now, we always generate a square output image
+	// but the selected box probably isn't exactly square.
+	// As a result we won't want to fill the entirety of one
+	// of the dimensions, or the picture will look stretched.
+	// Figure out which dimension to constrict, and how much
+	// to construct it by.
+	skew := bounds.Width() / bounds.Height();
+	xScale := 1.0
+	yScale := 1.0
+	if (skew >= 1.0) {
+		yScale = 1.0 / skew
+	} else {
+		xScale = skew
 	}
 
 	for i := 0; i < history.Len(); i++ {
 		if bounds.Contains(history.At(i)) {
-			xBucket := int((history.At(i).Lng - minX) * scale)
-			yBucket := size - int((history.At(i).Lat - minY)*scale) - 1
+			xBucket := int(bounds.WidthFraction(history.At(i)) * xScale * float64(size))
+			yBucket := size - int(bounds.HeightFraction(history.At(i)) * yScale * float64(size)) - 1
 			counts[xBucket][yBucket]++
 		}
 	}
