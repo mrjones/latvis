@@ -63,17 +63,18 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion(t *testing.T) {
 	assertGridsEqual(t, expected, actual)
 }
 
-// X X X                
-// 0 0 0 --\  4 wide x =  2 1 0 0 
-// 0 0 0 --/   3 tall  =  0 0 0 0
-// 0 0 0                  0 0 0 0
-// 0 0 0
-// 0 0 0
+// X X X X                
+// 0 0 0 0 --\  4 wide x =  2 2 0 0 
+// 0 0 0 0 --/   3 tall  =  0 0 0 0
+// 0 0 0 0                  0 0 0 0
+// 0 0 0 0
+// 0 0 0 0
 func TestSqueezesTallBoxIntoWideImageNoDistortion2(t *testing.T) {
 	history := location.History{}
 	history.Add(&location.Coordinate{Lat: 5.0, Lng: 0.0})
 	history.Add(&location.Coordinate{Lat: 5.0, Lng: 1.0})
 	history.Add(&location.Coordinate{Lat: 5.0, Lng: 2.0})
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 4.0})
 
 	bounds, err := location.NewBoundingBox(
 		location.Coordinate{Lat: 0.0, Lng: 0.0},
@@ -86,7 +87,7 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion2(t *testing.T) {
 	actual := aggregateHistory(&history, bounds, 4, 3)
 
 	expected := gridLiteral([][]int {
-		{2, 1, 0, 0},
+		{2, 2, 0, 0},
 		{0, 0, 0, 0},
 		{0, 0, 0, 0},
 	})
