@@ -11,10 +11,10 @@ func TestContainsBoundaries(t *testing.T) {
 	
 	assertNil(t, err)
 
-	assertTrueM(t, b.Contains(&Coordinate{Lat: -1, Lng: 0}), "South")
-	assertTrueM(t, b.Contains(&Coordinate{Lat: 1, Lng: 0}), "North")
-	assertTrueM(t, b.Contains(&Coordinate{Lat: 0, Lng: -1}), "East")
-	assertTrueM(t, b.Contains(&Coordinate{Lat: 0, Lng: 1}), "West")
+	assertFalseM(t, b.Contains(&Coordinate{Lat: -1, Lng: 0}), "South")
+	assertFalseM(t, b.Contains(&Coordinate{Lat: 1, Lng: 0}), "North")
+	assertFalseM(t, b.Contains(&Coordinate{Lat: 0, Lng: -1}), "East")
+	assertFalseM(t, b.Contains(&Coordinate{Lat: 0, Lng: 1}), "West")
 }
 
 func TestContainsNE(t *testing.T) {

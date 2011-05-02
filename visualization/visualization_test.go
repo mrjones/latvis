@@ -46,8 +46,8 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion(t *testing.T) {
 	history.Add(&location.Coordinate{Lat: 3.0, Lng: 0.0})
 
 	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: 0.0, Lng: 0.0},
-		location.Coordinate{Lat: 5.0, Lng: 1.0})
+		location.Coordinate{Lat: 0.00001, Lng: -0.00001},
+		location.Coordinate{Lat: 5.00001, Lng: 1.00001})
 
 	if err != nil {
 		t.Fatal(err)
@@ -69,16 +69,16 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion(t *testing.T) {
 // 0 0 0 0                  0 0 0 0
 // 0 0 0 0
 // 0 0 0 0
-func TestSqueezesTallBoxIntoWideImageNoDistortion2(t *testing.T) {
+func TestSqueezesLineWithoutDistortion(t *testing.T) {
 	history := location.History{}
 	history.Add(&location.Coordinate{Lat: 5.0, Lng: 0.0})
 	history.Add(&location.Coordinate{Lat: 5.0, Lng: 1.0})
 	history.Add(&location.Coordinate{Lat: 5.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 4.0})
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 3.0})
 
 	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: 0.0, Lng: 0.0},
-		location.Coordinate{Lat: 5.0, Lng: 2.0})
+		location.Coordinate{Lat: -0.00001, Lng: -0.00001},
+		location.Coordinate{Lat: 5.00001, Lng: 3.00001})
 
 	if err != nil {
 		t.Fatal(err)
@@ -89,6 +89,80 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion2(t *testing.T) {
 	expected := gridLiteral([][]int {
 		{2, 2, 0, 0},
 		{0, 0, 0, 0},
+		{0, 0, 0, 0},
+	})
+	assertGridsEqual(t, expected, actual)
+}
+
+// 0 0 0 0
+// X X X X --\  4 wide x =  2 2 0 0 
+// 0 0 0 0 --/   3 tall  =  0 0 0 0
+// 0 0 0 0                  0 0 0 0
+// 0 0 0 0
+// 0 0 0 0
+func TestSqueezesLineWithoutDistortion2(t *testing.T) {
+	history := location.History{}
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 0.0})
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 1.0})
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 2.0})
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 3.0})
+
+	bounds, err := location.NewBoundingBox(
+		location.Coordinate{Lat: -0.00001, Lng: -0.00001},
+		location.Coordinate{Lat: 5.00001, Lng: 3.00001})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := aggregateHistory(&history, bounds, 4, 3)
+
+	expected := gridLiteral([][]int {
+		{2, 2, 0, 0},
+		{0, 0, 0, 0},
+		{0, 0, 0, 0},
+	})
+	assertGridsEqual(t, expected, actual)
+}
+
+// X X X X                
+// X X X X --\  4 wide x =  4 4 0 0 
+// X X X X --/   3 tall  =  4 4 0 0
+// X X X X                  0 0 0 0
+// 0 0 0 0
+// 0 0 0 0
+func TestSqueezesSquareWithoutDistortion(t *testing.T) {
+	history := location.History{}
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 0.0})
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 1.0})
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 2.0})
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 3.0})
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 0.0})
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 1.0})
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 2.0})
+	history.Add(&location.Coordinate{Lat: 4.0, Lng: 3.0})
+	history.Add(&location.Coordinate{Lat: 3.0, Lng: 0.0})
+	history.Add(&location.Coordinate{Lat: 3.0, Lng: 1.0})
+	history.Add(&location.Coordinate{Lat: 3.0, Lng: 2.0})
+	history.Add(&location.Coordinate{Lat: 3.0, Lng: 3.0})
+	history.Add(&location.Coordinate{Lat: 2.0, Lng: 0.0})
+	history.Add(&location.Coordinate{Lat: 2.0, Lng: 1.0})
+	history.Add(&location.Coordinate{Lat: 2.0, Lng: 2.0})
+	history.Add(&location.Coordinate{Lat: 2.0, Lng: 3.0})
+
+	bounds, err := location.NewBoundingBox(
+		location.Coordinate{Lat: -0.00001, Lng: -0.00001},
+		location.Coordinate{Lat: 5.00001, Lng: 3.00001})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := aggregateHistory(&history, bounds, 4, 3)
+
+	expected := gridLiteral([][]int {
+		{4, 4, 0, 0},
+		{4, 4, 0, 0},
 		{0, 0, 0, 0},
 	})
 	assertGridsEqual(t, expected, actual)
@@ -135,14 +209,18 @@ func assertGridsEqual(t *testing.T, expected *Grid, actual *Grid) {
 			expected.Height(), actual.Height());
 	}
 
+	failed := false;
 	for i := 0 ; i < expected.Width() ; i++ {
 		for j := 0 ; j < expected.Height() ; j++ {
 			if expected.Get(i, j) != actual.Get(i, j) {
-				debug(expected, actual)
+				failed = true
 				t.Errorf("Grid mismatch -- grid[%d][%d]. Expected %d, Actual: %d",
 					i, j, expected.Get(i, j), actual.Get(i, j))
 			}
 		}
+	}
+	if failed {
+		debug(expected, actual)
 	}
 }
 

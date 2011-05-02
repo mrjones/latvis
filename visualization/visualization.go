@@ -73,20 +73,23 @@ func aggregateHistory(history *location.History, bounds *location.BoundingBox, g
 	// of the dimensions, or the picture will look stretched.
 	// Figure out which dimension to constrict, and how much
 	// to construct it by.
-	skew := bounds.Width() / bounds.Height();
+
+	inputSkew := bounds.Width() / bounds.Height();
+	outputSkew := float64(gridWidth) / float64(gridHeight)
 	xScale := 1.0
 	yScale := 1.0
 	// change 1.0 to gridWidth / gridHeight
-	if (skew >= 1.0) {
-		yScale = 1.0 / skew
+	if (inputSkew >= outputSkew) {
+		yScale = outputSkew / inputSkew
 	} else {
-		xScale = skew
+		xScale = inputSkew / outputSkew
 	}
 
 	for i := 0; i < history.Len(); i++ {
 		if bounds.Contains(history.At(i)) {
 			xBucket := int(bounds.WidthFraction(history.At(i)) * xScale * float64(gridWidth))
-			yBucket := gridHeight - int(bounds.HeightFraction(history.At(i)) * yScale * float64(gridHeight - 1)) - 1
+			yBucket := int(bounds.HeightFraction(history.At(i)) * yScale * float64(gridHeight))
+			yBucket = gridHeight - yBucket - 1
 			grid.Inc(xBucket, yBucket)
 		}
 	}

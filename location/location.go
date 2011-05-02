@@ -36,10 +36,10 @@ func (b *BoundingBox) Contains(c *Coordinate) bool {
 		}
 	}
 
-	return c.Lat >= b.lowerLeft.Lat &&
-		c.Lat <= b.upperRight.Lat &&
-		c.Lng + pointShift >= b.lowerLeft.Lng &&
-		c.Lng + pointShift <= b.upperRight.Lng + boxShift
+	return c.Lat > b.lowerLeft.Lat &&
+		c.Lat < b.upperRight.Lat &&
+		c.Lng + pointShift > b.lowerLeft.Lng &&
+		c.Lng + pointShift < b.upperRight.Lng + boxShift
 }
 
 func (b *BoundingBox) WidthFraction(c *Coordinate) float64 {
