@@ -3,15 +3,47 @@ package visualization
 import (
 	"github.com/mrjones/latvis/location"
 
-	"fmt"
 	"image"
-	"log"
 	"math"
 	"os"
 )
 
+// Interface for different styles of renderers to implement.
+//
+// *Subject to change*
+//
+// The input is a "Grid" (see below), representing location history data:
+// The entire selected are is broken down into a coordinate grid, with a
+// discrete number of cells.  The Grid object represents the number of location
+// history events occuring in each cell.
+//
+// TODO(mrjones): The grid is latitude / longitude independent. This is fine for
+// rendering context-independent PNGs, but won't work if we want to show the data
+// overlaid on a map.
+//
+// TODO(mrjones): what about returning a (byte[], mime-type)?
+// that would let us handle images as well as other things like KML files for maps
 type Renderer interface {
 	Render(grid *Grid, imageWidth int, imageHeight int) (image.Image, os.Error)
+}
+
+// Interface for callers to visualize a location history.
+//
+// history: 
+// all the points in the users history
+//
+// bounds:
+// a bounding box for selecting points to display.  points which fall outside
+// the box will be discarded. The grid for rendering will also be constructed
+// relative to this box (meaning white space outside of any points, but inside
+// the bounding box will be preserved in the grid ... and probably by the
+// Renderer as well).
+//
+// width / height:
+// the width and height of the grid (how many cells to divide it into)
+func MakeImage(history *location.History, bounds *location.BoundingBox, width int, height int, renderer Renderer) (image.Image, os.Error) {
+	grid := aggregateHistory(history, bounds, width, height)
+	return renderer.Render(grid, width, height)
 }
 
 type Grid struct {
@@ -31,15 +63,6 @@ func NewGrid(width, height int) *Grid {
 }
 
 func (g *Grid) Get(x, y int) int {
-	if x >= len(g.points) {
-		fmt.Printf("x is too big: %d, official: %d, actual: %d\n", x, g.Width(), len(g.points))
-	}
-	if y >= len(g.points[x]) {
-		fmt.Printf("y is too big: %d\n", y)
-	}
-	if (g.width != len(g.points)) {
-		log.Fatalf("a internally mismatched len %d %d\n", g.width, len(g.points))
-	}
 	return g.points[x][y]
 }
 
@@ -57,11 +80,6 @@ func (g *Grid) Width() int {
 
 func (g *Grid) Height() int {
 	return g.height
-}
-
-func MakeImage(history *location.History, bounds *location.BoundingBox, width int, height int, renderer Renderer) (image.Image, os.Error) {
-	grid := aggregateHistory(history, bounds, width, height)
-	return renderer.Render(grid, width, height)
 }
 
 func aggregateHistory(history *location.History, bounds *location.BoundingBox, gridWidth int, gridHeight int) *Grid {

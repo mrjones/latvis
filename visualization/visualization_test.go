@@ -7,6 +7,23 @@ import (
 	"testing"
 )
 
+func TestSimpleGrid(t *testing.T) {
+	g := NewGrid(1, 1)
+	if 0 != g.Get(0, 0) {
+		t.Fatalf("[0,0] should have been '0', but was: %d\n", g.Get(0, 0))
+	}
+
+	g.Inc(0, 0)
+	if 1 != g.Get(0, 0) {
+		t.Fatalf("[0,0] should have been '1', but was: %d\n", g.Get(0, 0))
+	}
+
+	g.Set(0, 0, 1000)
+	if 1000 != g.Get(0, 0) {
+		t.Fatalf("[0,0] should have been '1000', but was: %d\n", g.Get(0, 0))
+	}
+}
+
 func TestSimpleAggregateHistory(t *testing.T) {
 	history := location.History{}
 	history.Add(&location.Coordinate{Lat: 1.0, Lng: 1.0})
