@@ -4,6 +4,19 @@ import (
 	"testing"
 )
 
+func TestContainsBoundaries(t *testing.T) {
+	b, err := NewBoundingBox(
+		Coordinate{Lat: -1.0, Lng: -1.0},
+		Coordinate{Lat: 1.0, Lng: 1.0})
+	
+	assertNil(t, err)
+
+	assertTrueM(t, b.Contains(&Coordinate{Lat: -1, Lng: 0}), "South")
+	assertTrueM(t, b.Contains(&Coordinate{Lat: 1, Lng: 0}), "North")
+	assertTrueM(t, b.Contains(&Coordinate{Lat: 0, Lng: -1}), "East")
+	assertTrueM(t, b.Contains(&Coordinate{Lat: 0, Lng: 1}), "West")
+}
+
 func TestContainsNE(t *testing.T) {
 	b, err := NewBoundingBox(
 		Coordinate{Lat: 1.0, Lng: 1.0},

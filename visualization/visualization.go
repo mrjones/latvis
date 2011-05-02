@@ -5,6 +5,7 @@ import (
 
 	"fmt"
 	"image"
+	"log"
 	"math"
 	"os"
 )
@@ -20,17 +21,30 @@ type Grid struct {
 }
 
 func NewGrid(width, height int) *Grid {
-	grid := &Grid{points: make([][]int, width)}
+	grid := Grid{points: make([][]int, width, width)}
 	for i, _ := range grid.points {
-		grid.points[i] = make([]int, height)
+		grid.points[i] = make([]int, height, height)
 	}	
 	grid.width = width
 	grid.height = height
-	return grid
+	return &grid
 }
 
 func (g *Grid) Get(x, y int) int {
+	if x >= len(g.points) {
+		fmt.Printf("x is too big: %d, official: %d, actual: %d\n", x, g.Width(), len(g.points))
+	}
+	if y >= len(g.points[x]) {
+		fmt.Printf("y is too big: %d\n", y)
+	}
+	if (g.width != len(g.points)) {
+		log.Fatalf("a internally mismatched len %d %d\n", g.width, len(g.points))
+	}
 	return g.points[x][y]
+}
+
+func (g *Grid) Set(x, y, val int) {
+	g.points[x][y] = val
 }
 
 func (g *Grid) Inc(x, y int) {
@@ -70,9 +84,12 @@ func aggregateHistory(history *location.History, bounds *location.BoundingBox, g
 	}
 
 	for i := 0; i < history.Len(); i++ {
+		fmt.Printf("Considering: Lat:%f, Lng:%f\n", history.At(i).Lat, history.At(i).Lng)
 		if bounds.Contains(history.At(i)) {
+			fmt.Println("Contained")
 			xBucket := int(bounds.WidthFraction(history.At(i)) * xScale * float64(gridWidth))
-			yBucket := gridHeight - int(bounds.HeightFraction(history.At(i)) * yScale * float64(gridHeight)) - 1
+			yBucket := gridHeight - int(bounds.HeightFraction(history.At(i)) * yScale * float64(gridHeight - 1)) - 1
+			fmt.Printf("buckets %d, %d\n", xBucket, yBucket)
 			grid.Inc(xBucket, yBucket)
 		}
 	}
@@ -95,10 +112,10 @@ type BWRenderer struct {
 
 func (r *BWRenderer) Render(grid *Grid, width int, height int) (image.Image, os.Error) {
 	heatmap := gridAsHeatmap(grid, width, height)
-	return heatmapToImage(heatmap), nil
+	return heatmapToBWImage(heatmap), nil
 }
 
-func heatmapToImage(heatmap *Heatmap) image.Image {
+func heatmapToBWImage(heatmap *Heatmap) image.Image {
 	size := len(heatmap.Points)
 	img := image.NewNRGBA(size, size)
 
@@ -122,23 +139,14 @@ func gridAsHeatmap(grid *Grid, width int, height int) *Heatmap {
 		heatmap.Points[i] = make([]float64, height)
 	}
 
-//	if history.Len() < 1 {
-//		fmt.Println("Problem, Len() == 0")
-//	}
-
-//	grid := aggregateHistory(history, bounds, width, height)
-
 	maxCount := float64(0.0)
 	for x := 0; x < grid.Width(); x++ {
 		for y := 0; y < grid.Height(); y++ {
 			if scaleHeat(grid.Get(x, y)) > maxCount {
 				maxCount = scaleHeat(grid.Get(x, y))
-				fmt.Printf("grid.Get(%d, %d) = %d\n", x, y, scaleHeat(grid.Get(x, y)))
 			}
 		}
 	}
-
-	fmt.Printf("max: %d\n", maxCount)
 
 	for x := 0; x < grid.Width() ; x++ {
 		for y := 0; y < grid.Height() ; y++ {
