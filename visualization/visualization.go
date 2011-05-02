@@ -84,12 +84,9 @@ func aggregateHistory(history *location.History, bounds *location.BoundingBox, g
 	}
 
 	for i := 0; i < history.Len(); i++ {
-		fmt.Printf("Considering: Lat:%f, Lng:%f\n", history.At(i).Lat, history.At(i).Lng)
 		if bounds.Contains(history.At(i)) {
-			fmt.Println("Contained")
 			xBucket := int(bounds.WidthFraction(history.At(i)) * xScale * float64(gridWidth))
 			yBucket := gridHeight - int(bounds.HeightFraction(history.At(i)) * yScale * float64(gridHeight - 1)) - 1
-			fmt.Printf("buckets %d, %d\n", xBucket, yBucket)
 			grid.Inc(xBucket, yBucket)
 		}
 	}

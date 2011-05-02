@@ -31,11 +31,6 @@ func TestSimpleAggregateHistory(t *testing.T) {
 			{0, 0, 0, 0, 0},
 	})
 
-	fmt.Println("Expected")
-	printGrid(expected)
-	fmt.Println("Actual")
-	printGrid(actual)
-
 	assertGridsEqual(t, expected, actual)
 }
 
@@ -65,11 +60,44 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion(t *testing.T) {
 		{1, 0, 0, 0},
 		{0, 0, 0, 0},
 	})
+	assertGridsEqual(t, expected, actual)
+}
+
+// X X X                
+// 0 0 0 --\  4 wide x =  2 1 0 0 
+// 0 0 0 --/   3 tall  =  0 0 0 0
+// 0 0 0                  0 0 0 0
+// 0 0 0
+// 0 0 0
+func TestSqueezesTallBoxIntoWideImageNoDistortion2(t *testing.T) {
+	history := location.History{}
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 0.0})
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 1.0})
+	history.Add(&location.Coordinate{Lat: 5.0, Lng: 2.0})
+
+	bounds, err := location.NewBoundingBox(
+		location.Coordinate{Lat: 0.0, Lng: 0.0},
+		location.Coordinate{Lat: 5.0, Lng: 2.0})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actual := aggregateHistory(&history, bounds, 4, 3)
+
+	expected := gridLiteral([][]int {
+		{2, 1, 0, 0},
+		{0, 0, 0, 0},
+		{0, 0, 0, 0},
+	})
+	assertGridsEqual(t, expected, actual)
+}
+
+func debug(expected, actual *Grid) {
 	fmt.Println("Expected")
 	printGrid(expected)
 	fmt.Println("Actual")
 	printGrid(actual)
-	assertGridsEqual(t, expected, actual)
 }
 
 func printGrid(g *Grid) {
@@ -92,21 +120,24 @@ func gridLiteral(literal [][]int) *Grid {
 	return grid;
 }
 
+
 func assertGridsEqual(t *testing.T, expected *Grid, actual *Grid) {
 	if expected.Width() != actual.Width() {
+		debug(expected, actual)
 		t.Fatalf("Grids have different number of columns. Expected: %d, Actual: %d",
 			expected.Width(), actual.Width());
 	}
 
 	if expected.Height() != actual.Height() {
+		debug(expected, actual)
 		t.Fatalf("Grids have different number rows. Expected: %d, Actual: %d",
 			expected.Height(), actual.Height());
 	}
 
 	for i := 0 ; i < expected.Width() ; i++ {
 		for j := 0 ; j < expected.Height() ; j++ {
-			if expected.Get(i, j) !=
-				  actual.Get(i, j) {
+			if expected.Get(i, j) != actual.Get(i, j) {
+				debug(expected, actual)
 				t.Errorf("Grid mismatch -- grid[%d][%d]. Expected %d, Actual: %d",
 					i, j, expected.Get(i, j), actual.Get(i, j))
 			}
