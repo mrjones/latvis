@@ -10,6 +10,7 @@ GOFILES=\
 DIRS=\
 				location\
 				latitude\
+				visualization\
 				server\
 
 TEST=\

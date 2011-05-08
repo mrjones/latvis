@@ -292,15 +292,34 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
       authorizedConnection = connection.Authorize(atoken)
       vis := visualization.NewVisualizer(512, &authorizedConnection, bounds, *start, *end)
 			handle := generateNewHandle()
-			imgname := generateFilename(handle)
-      err = vis.GenerateImage(imgname)
-			if err != nil {
- 				serveError(response, err)
-				return
+
+			useBlobStore := true
+			if useBlobStore {
+				data, err := vis.Bytes()
+				if err != nil {
+ 					serveError(response, err)
+					return
+				}
+
+				store := LocalFSBlobStore{}
+				blob := &Blob{Data: *data}
+				err = store.Store(handle, blob)
+				
+				if err != nil {
+ 					serveError(response, err)
+					return
+				}
 			} else {
- 				url := serializeHandleToUrl(handle)
-				http.Redirect(response, request, url, http.StatusFound)
+				filename := generateFilename(handle)
+				err = vis.GenerateImage(filename)
+				if err != nil {
+ 					serveError(response, err)
+					return
+				}
 			}
+
+ 			url := serializeHandleToUrl(handle)
+			http.Redirect(response, request, url, http.StatusFound)
     }
   }
 }
