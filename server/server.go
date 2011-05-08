@@ -34,33 +34,97 @@ func DoStupidSetup() {
 	requesttokencache = make(map[string]*oauth.RequestToken)
 }
 
+func serveError(response http.ResponseWriter, err os.Error) {
+	serveErrorMessage(response, err.String())
+}
+
+func serveErrorMessage(response http.ResponseWriter, message string) {
+	response.WriteHeader(http.StatusInternalServerError)
+	response.Write([]byte(message))
+	response.Flush()
+}
+
+func atoiOrDie(s string) int64 {
+	i, e := strconv.Atoi64(s)
+	if e != nil {
+		log.Fatal(e)
+	}
+	return i
+}
+
+type ObjectHandle struct {
+	timestamp int64
+	n1, n2, n3 int64
+}
+
+func generateNewHandle() *ObjectHandle {
+	return &ObjectHandle{
+		timestamp: time.Seconds(),
+		n1: rand.Int63(),
+		n2: rand.Int63(),
+		n3: rand.Int63(),
+	}
+}
+
+// TODO(mrjones): generalize
+func serializeHandleToUrl(h *ObjectHandle) string {
+ 	return fmt.Sprintf("/img?s=%d&n1=%d&n2=%d&n3=%d", h.timestamp, h.n1, h.n2, h.n3)
+}
+
+func parseHandle(params map[string][]string) (*ObjectHandle, os.Error) {
+	s, err := extractInt64("s", params)
+	if err != nil {
+		return nil, err
+	}
+	n1, err := extractInt64("n1", params)
+	if err != nil {
+		return nil, err
+	}
+	n2, err := extractInt64("n2", params)
+	if err != nil {
+		return nil, err
+	}
+	n3, err := extractInt64("n3", params)
+	if err != nil {
+		return nil, err
+	}
+	return &ObjectHandle{timestamp: s, n1: n1, n2: n2, n3: n3}, nil
+}
+
+func generateFilename(h *ObjectHandle) string {
+	return fmt.Sprintf("images/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3);
+}
+
+
+func extractInt64(name string, params map[string][]string) (int64, os.Error) {
+	str, err := extractParam(name, params)
+	if err != nil {
+		return -1, err
+	}
+	n, err := strconv.Atoi64(str)
+	if err != nil {
+		return -1, err
+	}
+	return n, err
+}
+
+func extractParam(name string, params map[string][]string) (string, os.Error) {
+	if len(params[name]) > 0 {
+		return params[name][0], nil
+	}
+	return "", os.NewError("Missing parameter: '" + name + "'")
+}
+
+
 func ServePng(response http.ResponseWriter, request *http.Request) {
-	// TODO(mrjones): clean up this hacky code
 	request.ParseForm();
-	ss := request.Form["s"][0]
-	n1s := request.Form["n1"][0]
-	n2s := request.Form["n2"][0]
-	n3s := request.Form["n3"][0]
 
-	s, e := strconv.Atoi64(ss)
-	if e != nil {
-		log.Fatal(e)
-	}
-	n1, e := strconv.Atoi64(n1s)
-	if e != nil {
-		log.Fatal(e)
-	}
-	n2, e := strconv.Atoi64(n2s)
-	if e != nil {
-		log.Fatal(e)
-	}
-	n3, e := strconv.Atoi64(n3s)
-	if e != nil {
-		log.Fatal(e)
+	handle, err := parseHandle(request.Form)
+	if err != nil {
+		serveError(response, err)
 	}
 
-	imgname := fmt.Sprintf("%d-%d%d%d.png", s, n1, n2, n3);
-  http.ServeFile(response, request, imgname)
+  http.ServeFile(response, request, generateFilename(handle))
 }
 
 func propogateParameter(base string, params map[string][]string, key string) string {
@@ -86,18 +150,15 @@ func Authorize(response http.ResponseWriter, request *http.Request) {
 	latlng = propogateParameter(latlng, request.Form, "end")
 
   token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?" + latlng)
-//  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap")
-//  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?lllat=37.416936&lllng=-122.092438&urlat=37.423753&urlng=-122.076130")
-//  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?lllat=40.699902&lllng=-74.020386&urlat=40.719811&urlng=-73.970604")
 	requesttokencache[token.Token] = token
   if err != nil {
-    fmt.Fprintf(response, err.String())
+		serveError(response, err)
   } else {
     http.Redirect(response, request, url, http.StatusFound)
   }
 }
 
-func extractCoordinate(params map[string][]string, latparam string, lngparam string) (bool, *location.Coordinate, os.Error) {
+func extractCoordinateFromUrl(params map[string][]string, latparam string, lngparam string) (bool, *location.Coordinate, os.Error) {
 	if len(params[latparam]) > 0 && len(params[lngparam]) > 0 {
 		lat, laterr := strconv.Atof64(params[latparam][0])
 		lng, lngerr := strconv.Atof64(params[lngparam][0])
@@ -118,24 +179,24 @@ func extractCoordinate(params map[string][]string, latparam string, lngparam str
 func DrawMap(response http.ResponseWriter, request *http.Request) {
   request.ParseForm()
 
-	found, lowerLeft, err := extractCoordinate(request.Form, "lllat", "lllng")
+	found, lowerLeft, err := extractCoordinateFromUrl(request.Form, "lllat", "lllng")
 	if !found {
 		fmt.Println("Lower Left missing: using default")
 		lowerLeft = &location.Coordinate{Lat: 40.703, Lng: -74.02}
 	}
 	if err != nil {
-		// todo don'tcrash
-		log.Fatal(err)
+		serveError(response, err)
+		return
 	}
 
-	found, upperRight, err := extractCoordinate(request.Form, "urlat", "urlng")
+	found, upperRight, err := extractCoordinateFromUrl(request.Form, "urlat", "urlng")
 	if !found {
 		fmt.Println("Upper Right missing: using default")
 		upperRight = &location.Coordinate{Lat: 40.8, Lng: -73.96}
 	}
 	if err != nil {
-		// todo don'tcrash
-		log.Fatal(err)
+		serveError(response, err)
+		return
 	}
 
 	fmt.Printf("Bounding Box: LL[%f,%f], UR[%f,%f]",
@@ -162,10 +223,8 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 	bounds, err := location.NewBoundingBox(*lowerLeft, *upperRight)
 
 	if err != nil {
-		log.Fatal(err)
-//		response.WriteHeader(http.StatusInternalServerError)
-//		response.Write([]byte(err.String()))
-//		response.Flush()
+ 		serveError(response, err)
+		return
 	}
 
   connection := latitude.NewConnectionForConsumer(consumer)
@@ -174,26 +233,20 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
 			rtoken := requesttokencache[oauthToken[0]]
       atoken, err := connection.ParseToken(rtoken, oauthVerifier[0])
 			if err != nil {
-				log.Fatal(err)
+ 				serveError(response, err)
+				return
 			}
       var authorizedConnection location.HistorySource
       authorizedConnection = connection.Authorize(atoken)
       vis := visualization.NewVisualizer(512, &authorizedConnection, bounds, *start, *end)
-			s := time.Seconds();
-			n1 := rand.Int63();
-			n2 := rand.Int63();
-			n3 := rand.Int63();
-			imgname := fmt.Sprintf("%d-%d%d%d.png", s, n1, n2,n3);
-			if err != nil {
-				log.Fatal(err)
-			}
+			handle := generateNewHandle()
+			imgname := generateFilename(handle)
       err = vis.GenerateImage(imgname)
 			if err != nil {
-				response.WriteHeader(http.StatusInternalServerError)
-				response.Write([]byte(err.String()))
-				response.Flush()
+ 				serveError(response, err)
+				return
 			} else {
- 				url := fmt.Sprintf("/img?s=%d&n1=%d&n2=%d&n3=%d", s, n1, n2, n3)
+ 				url := serializeHandleToUrl(handle)
 				http.Redirect(response, request, url, http.StatusFound)
 			}
     }
