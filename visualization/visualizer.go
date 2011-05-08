@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"image"
 	"image/png"
-	"log"
 	"os"
 	"time"
 )
@@ -28,19 +27,6 @@ func NewVisualizer(
   return &Visualizer{imageSize: imageSize, historySource: historySource, bounds: bounds, start: start, end: end};
 }
 
-func (v *Visualizer) GenerateImage(path string) os.Error {
-	history, err := readData(*v.historySource, v.start, v.end)
-	if err != nil {
-		return err
-	}
-
-	renderer := &BWRenderer{}
-	img, err := MakeImage(history, v.bounds, v.imageSize, v.imageSize, renderer)
-	renderImage(img, path)
-
-	return nil
-}
-
 func (v *Visualizer) Bytes() (*[]byte, os.Error) {
 	history, err := readData(*v.historySource, v.start, v.end)
 	if err != nil {
@@ -55,16 +41,6 @@ func (v *Visualizer) Bytes() (*[]byte, os.Error) {
 
 func readData(historySource location.HistorySource, start time.Time, end time.Time) (*location.History, os.Error) {
 	return historySource.FetchRange(start, end)
-}
-
-func renderImage(img image.Image, filename string) {
-	f, err := os.Open(filename, os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err = png.Encode(f, img); err != nil {
-		log.Fatal(err)
-	}
 }
 
 func renderImageToBytes(img image.Image) (*[]byte, os.Error) {

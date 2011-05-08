@@ -25,7 +25,6 @@ func Serve() {
 	DoStupidSetup()
   http.HandleFunc("/authorize", Authorize);
   http.HandleFunc("/drawmap", DrawMap);
-  http.HandleFunc("/img", ServePng);
   http.HandleFunc("/blob", ServeBlob);
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
@@ -167,18 +166,6 @@ func ServeBlob(response http.ResponseWriter, request *http.Request) {
 	response.Write(blob.Data)
 }
 
-// TODO(mrjones): delete
-func ServePng(response http.ResponseWriter, request *http.Request) {
-	request.ParseForm();
-
-	handle, err := parseHandle(request.Form)
-	if err != nil {
-		serveError(response, err)
-	}
-
-  http.ServeFile(response, request, generateFilename(handle))
-}
-
 func propogateParameter(base string, params map[string][]string, key string) string {
 	if len(params[key]) > 0 {
 		if len(base) > 0 {
@@ -293,29 +280,19 @@ func DrawMap(response http.ResponseWriter, request *http.Request) {
       vis := visualization.NewVisualizer(512, &authorizedConnection, bounds, *start, *end)
 			handle := generateNewHandle()
 
-			useBlobStore := true
-			if useBlobStore {
-				data, err := vis.Bytes()
-				if err != nil {
- 					serveError(response, err)
-					return
-				}
+			data, err := vis.Bytes()
+			if err != nil {
+ 				serveError(response, err)
+				return
+			}
 
-				store := LocalFSBlobStore{}
-				blob := &Blob{Data: *data}
-				err = store.Store(handle, blob)
+			store := LocalFSBlobStore{}
+			blob := &Blob{Data: *data}
+			err = store.Store(handle, blob)
 				
-				if err != nil {
- 					serveError(response, err)
-					return
-				}
-			} else {
-				filename := generateFilename(handle)
-				err = vis.GenerateImage(filename)
-				if err != nil {
- 					serveError(response, err)
-					return
-				}
+			if err != nil {
+ 				serveError(response, err)
+				return
 			}
 
  			url := serializeHandleToUrl(handle)

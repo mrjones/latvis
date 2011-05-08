@@ -2,14 +2,11 @@ package main
 
 import (
 	"github.com/mrjones/latvis/latitude"
-  "github.com/mrjones/latvis/location"
 	"github.com/mrjones/latvis/server"
-	"github.com/mrjones/latvis/visualization"
 
 	"flag"
 	"fmt"
 	"log"
-  "time"
 )
 
 func GetApiHistorySource() *latitude.AuthorizedConnection {
@@ -28,29 +25,7 @@ func GetApiHistorySource() *latitude.AuthorizedConnection {
 }
 
 func main() {
-	var imageSize *int = flag.Int("imageSize", 720, "Size of resulting image")
-	var runAsServer *bool = flag.Bool("server", true, "Run as server (vs. one off)")
 	flag.Parse()
 
-  if *runAsServer {
-    server.Serve()     
-  } else {
-  	bounds, err := location.NewBoundingBox(
-	  	location.Coordinate{Lat: -74.02, Lng: 40.703},
-		  location.Coordinate{Lat: -73.96, Lng: 40.8})
-
-    if err != nil {
-       log.Fatal(err)
-
-    }
-    var historySource location.HistorySource
-	  historySource = GetApiHistorySource()
-    start := time.Time{Year: 2010, Month: 7, Day: 1}
-		end := time.Time{Year: 2011, Month: 6, Day: 1}
-    vis := visualization.NewVisualizer(*imageSize, &historySource, bounds, start, end);
-    err = vis.GenerateImage("./vis.png");
-    if err != nil {
-       log.Fatal(err)
-    }
-  }
+  server.Serve()     
 }
