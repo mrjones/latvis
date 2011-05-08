@@ -8,6 +8,7 @@ import (
 
   "fmt"
   "http"
+	"io/ioutil"
 	"log"
 	"os"
 	"rand"
@@ -25,6 +26,7 @@ func Serve() {
   http.HandleFunc("/authorize", Authorize);
   http.HandleFunc("/drawmap", DrawMap);
   http.HandleFunc("/img", ServePng);
+  http.HandleFunc("/blob", ServeBlob);
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
 }
@@ -34,56 +36,51 @@ func DoStupidSetup() {
 	requesttokencache = make(map[string]*oauth.RequestToken)
 }
 
-func serveError(response http.ResponseWriter, err os.Error) {
-	serveErrorMessage(response, err.String())
+// ======================================
+// ============ BLOB STORAGE ============
+// ======================================
+
+type Blob struct {
+	Data []byte
 }
 
-func serveErrorMessage(response http.ResponseWriter, message string) {
-	response.WriteHeader(http.StatusInternalServerError)
-	response.Write([]byte(message))
-	response.Flush()
-}
-
-
-type BlobStore interface {
-	// Stores a blob, identified by the ObjectHandle, to the BlobStore.
-	// Storing a second blob with the same handle will overwrite the first one.
-	Store(handle *ObjectHandle, data []byte) os.Error
-
-	// Fetches the blob with the given handle.
-	// TODO(mrjones): distinguish true error from missing blob?
-	Fetch(handle *ObjectHandle) ([]byte, os.Error)
-}
-
-//type LocalFSBlobStore struct {
-//}
-//
-//func (s *LocalFSBlobStore) Store(handle *ObjectHandle, data byte[]) os.Error {
-//	filename := generateFilename(handle)
-//
-//	f, err := os.Open(filename, os.O_CREATE|os.O_WRONLY, 0666)
-//	if err != nil {
-//		return err
-//	}
-//	err = png.Encode(f, img)
-//	if err != nil {
-//		return err
-//	}
-//
-//	return err
-//}
-//
-//func (s *LocalFSBlobStore) Fetch(handle *ObjectHandle) (date byte[], os.Error) {
-//	
-//}
-
-type ObjectHandle struct {
+type Handle struct {
 	timestamp int64
 	n1, n2, n3 int64
 }
 
-func generateNewHandle() *ObjectHandle {
-	return &ObjectHandle{
+type BlobStore interface {
+	// Stores a blob, identified by the Handle, to the BlobStore.
+	// Storing a second blob with the same handle will overwrite the first one.
+	Store(handle *Handle, blob *Blob) os.Error
+
+	// Fetches the blob with the given handle.
+	// TODO(mrjones): distinguish true error from missing blob?
+	Fetch(handle *Handle) (*Blob, os.Error)
+}
+
+type LocalFSBlobStore struct {
+}
+
+func (s *LocalFSBlobStore) Store(handle *Handle, blob *Blob) os.Error {
+	filename := generateFilename(handle)
+
+	return ioutil.WriteFile(filename, blob.Data, 0600)
+}
+
+func (s *LocalFSBlobStore) Fetch(handle *Handle) (*Blob, os.Error) {
+	filename := generateFilename(handle)
+	data, err := ioutil.ReadFile(filename)
+	blob := &Blob{Data: data}
+	return blob, err
+}
+
+// ======================================
+// ============ BLOB HELPERS ============
+// ======================================
+
+func generateNewHandle() *Handle {
+	return &Handle{
 		timestamp: time.Seconds(),
 		n1: rand.Int63(),
 		n2: rand.Int63(),
@@ -92,11 +89,11 @@ func generateNewHandle() *ObjectHandle {
 }
 
 // TODO(mrjones): generalize
-func serializeHandleToUrl(h *ObjectHandle) string {
- 	return fmt.Sprintf("/img?s=%d&n1=%d&n2=%d&n3=%d", h.timestamp, h.n1, h.n2, h.n3)
+func serializeHandleToUrl(h *Handle) string {
+ 	return fmt.Sprintf("/blob?s=%d&n1=%d&n2=%d&n3=%d", h.timestamp, h.n1, h.n2, h.n3)
 }
 
-func parseHandle(params map[string][]string) (*ObjectHandle, os.Error) {
+func parseHandle(params map[string][]string) (*Handle, os.Error) {
 	s, err := extractInt64("s", params)
 	if err != nil {
 		return nil, err
@@ -113,10 +110,10 @@ func parseHandle(params map[string][]string) (*ObjectHandle, os.Error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ObjectHandle{timestamp: s, n1: n1, n2: n2, n3: n3}, nil
+	return &Handle{timestamp: s, n1: n1, n2: n2, n3: n3}, nil
 }
 
-func generateFilename(h *ObjectHandle) string {
+func generateFilename(h *Handle) string {
 	return fmt.Sprintf("images/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3);
 }
 
@@ -141,6 +138,36 @@ func extractParam(name string, params map[string][]string) (string, os.Error) {
 }
 
 
+// ======================================
+// ============ SERVER STUFF ============
+// ======================================
+
+func serveError(response http.ResponseWriter, err os.Error) {
+	serveErrorMessage(response, err.String())
+}
+
+func serveErrorMessage(response http.ResponseWriter, message string) {
+	response.WriteHeader(http.StatusInternalServerError)
+	response.Write([]byte(message))
+	response.Flush()
+}
+
+func ServeBlob(response http.ResponseWriter, request *http.Request) {
+	request.ParseForm()
+	handle, err := parseHandle(request.Form)
+	if err != nil {
+		serveError(response, err)
+	}
+
+	blobstore := LocalFSBlobStore{}
+
+	blob, err := blobstore.Fetch(handle)
+
+	response.SetHeader("Content-Type", "image/png")
+	response.Write(blob.Data)
+}
+
+// TODO(mrjones): delete
 func ServePng(response http.ResponseWriter, request *http.Request) {
 	request.ParseForm();
 
