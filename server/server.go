@@ -41,6 +41,8 @@ func DoStupidSetup() {
 
 type Blob struct {
 	Data []byte
+
+	// TODO(mrjones): metadata (e.g. Content-Type)
 }
 
 type Handle struct {
@@ -62,16 +64,20 @@ type LocalFSBlobStore struct {
 }
 
 func (s *LocalFSBlobStore) Store(handle *Handle, blob *Blob) os.Error {
-	filename := generateFilename(handle)
+	filename := s.filename(handle)
 
 	return ioutil.WriteFile(filename, blob.Data, 0600)
 }
 
 func (s *LocalFSBlobStore) Fetch(handle *Handle) (*Blob, os.Error) {
-	filename := generateFilename(handle)
+	filename := s.filename(handle)
 	data, err := ioutil.ReadFile(filename)
 	blob := &Blob{Data: data}
 	return blob, err
+}
+
+func (s *LocalFSBlobStore) filename(h *Handle) string {
+	return fmt.Sprintf("images/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3);
 }
 
 // ======================================
@@ -111,11 +117,6 @@ func parseHandle(params map[string][]string) (*Handle, os.Error) {
 	}
 	return &Handle{timestamp: s, n1: n1, n2: n2, n3: n3}, nil
 }
-
-func generateFilename(h *Handle) string {
-	return fmt.Sprintf("images/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3);
-}
-
 
 func extractInt64(name string, params map[string][]string) (int64, os.Error) {
 	str, err := extractParam(name, params)
