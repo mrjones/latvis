@@ -44,13 +44,38 @@ func serveErrorMessage(response http.ResponseWriter, message string) {
 	response.Flush()
 }
 
-func atoiOrDie(s string) int64 {
-	i, e := strconv.Atoi64(s)
-	if e != nil {
-		log.Fatal(e)
-	}
-	return i
+
+type BlobStore interface {
+	// Stores a blob, identified by the ObjectHandle, to the BlobStore.
+	// Storing a second blob with the same handle will overwrite the first one.
+	Store(handle *ObjectHandle, data []byte) os.Error
+
+	// Fetches the blob with the given handle.
+	// TODO(mrjones): distinguish true error from missing blob?
+	Fetch(handle *ObjectHandle) ([]byte, os.Error)
 }
+
+//type LocalFSBlobStore struct {
+//}
+//
+//func (s *LocalFSBlobStore) Store(handle *ObjectHandle, data byte[]) os.Error {
+//	filename := generateFilename(handle)
+//
+//	f, err := os.Open(filename, os.O_CREATE|os.O_WRONLY, 0666)
+//	if err != nil {
+//		return err
+//	}
+//	err = png.Encode(f, img)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return err
+//}
+//
+//func (s *LocalFSBlobStore) Fetch(handle *ObjectHandle) (date byte[], os.Error) {
+//	
+//}
 
 type ObjectHandle struct {
 	timestamp int64
@@ -173,7 +198,7 @@ func extractCoordinateFromUrl(params map[string][]string, latparam string, lngpa
 		}
 	}
 
-	return false, nil, nil
+	return false, nil, os.NewError("should never happen")
 }
 
 func DrawMap(response http.ResponseWriter, request *http.Request) {
