@@ -23,9 +23,9 @@ var requesttokencache map[string]*oauth.RequestToken
 
 func Serve() {
 	DoStupidSetup()
-  http.HandleFunc("/authorize", Authorize);
-  http.HandleFunc("/drawmap", DrawMap);
-  http.HandleFunc("/blob", ServeBlob);
+  http.HandleFunc("/authorize", AuthorizeHandler);
+  http.HandleFunc("/drawmap", DrawMapHandler);
+  http.HandleFunc("/blob", ServeBlobHandler);
 
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
@@ -119,6 +119,10 @@ func parseHandle(params map[string][]string) (*Handle, os.Error) {
 	return &Handle{timestamp: s, n1: n1, n2: n2, n3: n3}, nil
 }
 
+// ======================================
+// ============ URL PARSING =============
+// ======================================
+
 func extractInt64(name string, params map[string][]string) (int64, os.Error) {
 	str, err := extractParam(name, params)
 	if err != nil {
@@ -138,66 +142,6 @@ func extractParam(name string, params map[string][]string) (string, os.Error) {
 	return "", os.NewError("Missing parameter: '" + name + "'")
 }
 
-
-// ======================================
-// ============ SERVER STUFF ============
-// ======================================
-
-func serveError(response http.ResponseWriter, err os.Error) {
-	serveErrorMessage(response, err.String())
-}
-
-func serveErrorMessage(response http.ResponseWriter, message string) {
-	response.WriteHeader(http.StatusInternalServerError)
-	response.Write([]byte(message))
-	response.Flush()
-}
-
-func ServeBlob(response http.ResponseWriter, request *http.Request) {
-	request.ParseForm()
-	handle, err := parseHandle(request.Form)
-	if err != nil {
-		serveError(response, err)
-	}
-
-	blobstore := LocalFSBlobStore{}
-
-	blob, err := blobstore.Fetch(handle)
-
-	response.SetHeader("Content-Type", "image/png")
-	response.Write(blob.Data)
-}
-
-func propogateParameter(base string, params map[string][]string, key string) string {
-	if len(params[key]) > 0 {
-		if len(base) > 0 {
-			base = base + "&"
-		}
-		base = base + key + "=" + params[key][0]
-	}
-	return base
-}
-
-func Authorize(response http.ResponseWriter, request *http.Request) {
-  connection := latitude.NewConnectionForConsumer(consumer);
-
-	request.ParseForm()
-	latlng := ""
-	latlng = propogateParameter(latlng, request.Form, "lllat")
-	latlng = propogateParameter(latlng, request.Form, "lllng")
-	latlng = propogateParameter(latlng, request.Form, "urlat")
-	latlng = propogateParameter(latlng, request.Form, "urlng")
-	latlng = propogateParameter(latlng, request.Form, "start")
-	latlng = propogateParameter(latlng, request.Form, "end")
-
-  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?" + latlng)
-	requesttokencache[token.Token] = token
-  if err != nil {
-		serveError(response, err)
-  } else {
-    http.Redirect(response, request, url, http.StatusFound)
-  }
-}
 
 func extractCoordinateFromUrl(params map[string][]string, latparam string, lngparam string) (*location.Coordinate, os.Error) {
 	if len(params[latparam]) == 0 {
@@ -288,7 +232,67 @@ func parseRenderRequest(params map[string][]string) (*RenderRequest, os.Error) {
 	return &RenderRequest{bounds: bounds, start: start, end:end, oauthToken: oauthToken, oauthVerifier: oauthVerifier}, nil
 }
 
-func DrawMap(response http.ResponseWriter, request *http.Request) {
+func propogateParameter(base string, params map[string][]string, key string) string {
+	if len(params[key]) > 0 {
+		if len(base) > 0 {
+			base = base + "&"
+		}
+		base = base + key + "=" + params[key][0]
+	}
+	return base
+}
+
+// ======================================
+// ============ SERVER STUFF ============
+// ======================================
+
+func serveError(response http.ResponseWriter, err os.Error) {
+	serveErrorMessage(response, err.String())
+}
+
+func serveErrorMessage(response http.ResponseWriter, message string) {
+	response.WriteHeader(http.StatusInternalServerError)
+	response.Write([]byte(message))
+	response.Flush()
+}
+
+func ServeBlobHandler(response http.ResponseWriter, request *http.Request) {
+	request.ParseForm()
+	handle, err := parseHandle(request.Form)
+	if err != nil {
+		serveError(response, err)
+	}
+
+	blobstore := LocalFSBlobStore{}
+
+	blob, err := blobstore.Fetch(handle)
+
+	response.SetHeader("Content-Type", "image/png")
+	response.Write(blob.Data)
+}
+
+func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
+  connection := latitude.NewConnectionForConsumer(consumer);
+
+	request.ParseForm()
+	latlng := ""
+	latlng = propogateParameter(latlng, request.Form, "lllat")
+	latlng = propogateParameter(latlng, request.Form, "lllng")
+	latlng = propogateParameter(latlng, request.Form, "urlat")
+	latlng = propogateParameter(latlng, request.Form, "urlng")
+	latlng = propogateParameter(latlng, request.Form, "start")
+	latlng = propogateParameter(latlng, request.Form, "end")
+
+  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?" + latlng)
+	requesttokencache[token.Token] = token
+  if err != nil {
+		serveError(response, err)
+  } else {
+    http.Redirect(response, request, url, http.StatusFound)
+  }
+}
+
+func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
   request.ParseForm()
 
 	rr, err := parseRenderRequest(request.Form)
