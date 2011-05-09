@@ -26,6 +26,7 @@ func Serve() {
   http.HandleFunc("/authorize", Authorize);
   http.HandleFunc("/drawmap", DrawMap);
   http.HandleFunc("/blob", ServeBlob);
+
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
 }
@@ -198,106 +199,133 @@ func Authorize(response http.ResponseWriter, request *http.Request) {
   }
 }
 
-func extractCoordinateFromUrl(params map[string][]string, latparam string, lngparam string) (bool, *location.Coordinate, os.Error) {
-	if len(params[latparam]) > 0 && len(params[lngparam]) > 0 {
-		lat, laterr := strconv.Atof64(params[latparam][0])
-		lng, lngerr := strconv.Atof64(params[lngparam][0])
-		if lngerr == nil && laterr == nil {			
-			return true, &location.Coordinate{Lat: lat, Lng: lng}, nil
-		} else if laterr != nil {
-			fmt.Println("laterr " + laterr.String())
-			return false, nil, laterr
-		} else if lngerr != nil {
-			fmt.Println("lngerr " + laterr.String())
-			return false, nil, lngerr
-		}
+func extractCoordinateFromUrl(params map[string][]string, latparam string, lngparam string) (*location.Coordinate, os.Error) {
+	if len(params[latparam]) == 0 {
+		return nil, os.NewError("Missing required query paramter: " + latparam)
+	}
+	if len(params[lngparam]) == 0 {
+		return nil, os.NewError("Missing required query paramter: " + lngparam)
 	}
 
-	return false, nil, os.NewError("should never happen")
+	lat, err := strconv.Atof64(params[latparam][0])
+	if err != nil {
+		return nil, err
+	}
+	lng, err := strconv.Atof64(params[lngparam][0])
+	if err != nil {
+		return nil, err
+	}
+	
+	return &location.Coordinate{Lat: lat, Lng: lng}, nil
 }
 
-func DrawMap(response http.ResponseWriter, request *http.Request) {
-  request.ParseForm()
 
-	found, lowerLeft, err := extractCoordinateFromUrl(request.Form, "lllat", "lllng")
-	if !found {
-		fmt.Println("Lower Left missing: using default")
-		lowerLeft = &location.Coordinate{Lat: 40.703, Lng: -74.02}
+func extractTimeFromUrl(params map[string][]string, param string) (*time.Time, os.Error) {
+	if len(params[param]) < 1 {
+		return nil, os.NewError("Missing query param: " + param)
 	}
+	startTs, err := strconv.Atoi64(params[param][0])
 	if err != nil {
-		serveError(response, err)
-		return
+		startTs = -1
+	}
+	return time.SecondsToUTC(startTs), nil
+}
+
+func extractStringFromUrl(params map[string][]string, param string) (string, os.Error) {
+	if len(params[param]) < 1 {
+		return "", os.NewError("Missing query param: " + param)
+	}
+	return params[param][0], nil
+}
+
+type RenderRequest struct {
+	bounds *location.BoundingBox
+	start, end *time.Time
+	oauthToken string
+	oauthVerifier string
+}
+
+func parseRenderRequest(params map[string][]string) (*RenderRequest, os.Error) {
+	// Parse all input parameters from the URL
+	lowerLeft, err := extractCoordinateFromUrl(params, "lllat", "lllng")
+	if err != nil {
+		return nil, err
 	}
 
-	found, upperRight, err := extractCoordinateFromUrl(request.Form, "urlat", "urlng")
-	if !found {
-		fmt.Println("Upper Right missing: using default")
-		upperRight = &location.Coordinate{Lat: 40.8, Lng: -73.96}
-	}
+	upperRight, err := extractCoordinateFromUrl(params, "urlat", "urlng")
 	if err != nil {
-		serveError(response, err)
-		return
+		return nil, err
 	}
 
 	fmt.Printf("Bounding Box: LL[%f,%f], UR[%f,%f]",
 		lowerLeft.Lat, lowerLeft.Lng, upperRight.Lat, upperRight.Lng)
 
-	start := &time.Time{Year: 2010, Month: 7, Day: 1}
-	if len(request.Form["start"]) > 0 {
-		startTs, err := strconv.Atoi64(request.Form["start"][0])
-		if err != nil {
-			startTs = -1
-		}
-		start = time.SecondsToUTC(startTs)
+	start, err := extractTimeFromUrl(params, "start")
+	if err != nil {
+		return nil, err
 	}
 
-	end := &time.Time{Year: 2010, Month: 7, Day: 1}
-	if len(request.Form["end"]) > 0 {
-		endTs, err := strconv.Atoi64(request.Form["end"][0])
-		if err != nil {
-			endTs = -1
-		}
-		end = time.SecondsToUTC(endTs)
+	end, err := extractTimeFromUrl(params, "end")
+	if err != nil {
+		return nil, err
 	}
 
 	bounds, err := location.NewBoundingBox(*lowerLeft, *upperRight)
+	if err != nil {
+		return nil, err
+	}
 
+	oauthToken, err := extractStringFromUrl(params, "oauth_token")
+	if err != nil {
+		return nil, err
+	}
+
+	oauthVerifier, err := extractStringFromUrl(params, "oauth_verifier")
+	if err != nil {
+		return nil, err
+	}
+
+	return &RenderRequest{bounds: bounds, start: start, end:end, oauthToken: oauthToken, oauthVerifier: oauthVerifier}, nil
+}
+
+func DrawMap(response http.ResponseWriter, request *http.Request) {
+  request.ParseForm()
+
+	rr, err := parseRenderRequest(request.Form)
 	if err != nil {
  		serveError(response, err)
 		return
 	}
 
   connection := latitude.NewConnectionForConsumer(consumer)
-  if oauthToken, ok := request.Form["oauth_token"]; ok && len(oauthToken) > 0 {
-    if oauthVerifier, ok := request.Form["oauth_verifier"]; ok && len(oauthVerifier) > 0 {
-			rtoken := requesttokencache[oauthToken[0]]
-      atoken, err := connection.ParseToken(rtoken, oauthVerifier[0])
-			if err != nil {
- 				serveError(response, err)
-				return
-			}
-      var authorizedConnection location.HistorySource
-      authorizedConnection = connection.Authorize(atoken)
-      vis := visualization.NewVisualizer(512, &authorizedConnection, bounds, *start, *end)
-			handle := generateNewHandle()
+	rtoken := requesttokencache[rr.oauthToken]
+  atoken, err := connection.ParseToken(rtoken, rr.oauthVerifier)
+	
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
+  
+	var authorizedConnection location.HistorySource
+  authorizedConnection = connection.Authorize(atoken)
+  vis := visualization.NewVisualizer(512, &authorizedConnection, rr.bounds, *rr.start, *rr.end)
 
-			data, err := vis.Bytes()
-			if err != nil {
- 				serveError(response, err)
-				return
-			}
+	data, err := vis.Bytes()
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
 
-			store := LocalFSBlobStore{}
-			blob := &Blob{Data: *data}
-			err = store.Store(handle, blob)
+	handle := generateNewHandle()
+	store := LocalFSBlobStore{}
+	blob := &Blob{Data: *data}
+	err = store.Store(handle, blob)
 				
-			if err != nil {
- 				serveError(response, err)
-				return
-			}
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
 
- 			url := serializeHandleToUrl(handle)
-			http.Redirect(response, request, url, http.StatusFound)
-    }
-  }
+ 	url := serializeHandleToUrl(handle)
+	http.Redirect(response, request, url, http.StatusFound)
 }
