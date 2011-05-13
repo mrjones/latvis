@@ -17,16 +17,20 @@ import (
 )
 
 var consumer *oauth.Consumer
+var storage HttpBlobStoreProvider
 
 //todo fix
 var requesttokencache map[string]*oauth.RequestToken
 
-func Serve() {
+func Setup(blobStoreProvider HttpBlobStoreProvider) {
 	DoStupidSetup()
+	storage = blobStoreProvider
   http.HandleFunc("/authorize", AuthorizeHandler);
   http.HandleFunc("/drawmap", DrawMapHandler);
   http.HandleFunc("/blob", ServeBlobHandler);
+}
 
+func Serve() {
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
 }
@@ -51,6 +55,15 @@ type Handle struct {
 	n1, n2, n3 int64
 }
 
+func (h *Handle) String() string {
+	return fmt.Sprintf("%d-%d%d%d", h.timestamp, h.n1, h.n2, h.n3)
+}
+
+// nasty hack to support appengine
+type HttpBlobStoreProvider interface {
+	OpenStore(req *http.Request) BlobStore
+}
+
 type BlobStore interface {
 	// Stores a blob, identified by the Handle, to the BlobStore.
 	// Storing a second blob with the same handle will overwrite the first one.
@@ -59,6 +72,13 @@ type BlobStore interface {
 	// Fetches the blob with the given handle.
 	// TODO(mrjones): distinguish true error from missing blob?
 	Fetch(handle *Handle) (*Blob, os.Error)
+}
+
+type LocalFSBlobStoreProvider struct {
+}
+
+func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
+	return &LocalFSBlobStore{}
 }
 
 type LocalFSBlobStore struct {
@@ -253,7 +273,6 @@ func serveError(response http.ResponseWriter, err os.Error) {
 func serveErrorMessage(response http.ResponseWriter, message string) {
 	response.WriteHeader(http.StatusInternalServerError)
 	response.Write([]byte(message))
-	response.Flush()
 }
 
 func ServeBlobHandler(response http.ResponseWriter, request *http.Request) {
@@ -261,13 +280,22 @@ func ServeBlobHandler(response http.ResponseWriter, request *http.Request) {
 	handle, err := parseHandle(request.Form)
 	if err != nil {
 		serveError(response, err)
+		return
 	}
 
-	blobstore := LocalFSBlobStore{}
+	blob, err := storage.OpenStore(request).Fetch(handle)
 
-	blob, err := blobstore.Fetch(handle)
+	if err != nil {
+		serveError(response, err)
+		return
+	}
 
-	response.SetHeader("Content-Type", "image/png")
+	if blob == nil {
+		serveError(response, os.NewError("blob is nil"))
+		return
+	}
+
+	response.Header().Set("Content-Type", "image/png")
 	response.Write(blob.Data)
 }
 
@@ -283,7 +311,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	latlng = propogateParameter(latlng, request.Form, "start")
 	latlng = propogateParameter(latlng, request.Form, "end")
 
-  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8081/drawmap?" + latlng)
+  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8080/drawmap?" + latlng)
 	requesttokencache[token.Token] = token
   if err != nil {
 		serveError(response, err)
@@ -321,9 +349,8 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	handle := generateNewHandle()
-	store := LocalFSBlobStore{}
 	blob := &Blob{Data: *data}
-	err = store.Store(handle, blob)
+	err = storage.OpenStore(request).Store(handle, blob)
 				
 	if err != nil {
  		serveError(response, err)
