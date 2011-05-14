@@ -311,7 +311,15 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	latlng = propogateParameter(latlng, request.Form, "start")
 	latlng = propogateParameter(latlng, request.Form, "end")
 
-  token, url, err := connection.TokenRedirectUrl("http://www.mrjon.es:8080/drawmap?" + latlng)
+	protocol := "http"
+	if (request.TLS != nil) {
+		protocol = "https"
+	}
+	redirectUrl := fmt.Sprintf("%s://%s/drawmap?%s", protocol, request.Host, latlng)
+
+	log.Printf("Redirect URL: '%s'\n", redirectUrl)
+
+  token, url, err := connection.TokenRedirectUrl(redirectUrl)
 	requesttokencache[token.Token] = token
   if err != nil {
 		serveError(response, err)
