@@ -16,18 +16,20 @@ import (
 	"time"
 )
 
-var consumer *oauth.Consumer
+//var consumer *oauth.Consumer
 var storage HttpBlobStoreProvider
+var clientProvider HttpClientProvider
 
 //todo fix
 var requesttokencache map[string]*oauth.RequestToken
 
-func Setup(blobStoreProvider HttpBlobStoreProvider) {
+func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClientProvider) {
 	DoStupidSetup()
 	storage = blobStoreProvider
-  http.HandleFunc("/authorize", AuthorizeHandler);
-  http.HandleFunc("/drawmap", DrawMapHandler);
-  http.HandleFunc("/blob", ServeBlobHandler);
+	clientProvider = httpClientProvider
+  http.HandleFunc("/authorize", AuthorizeHandler)
+  http.HandleFunc("/drawmap", DrawMapHandler)
+  http.HandleFunc("/blob", ServeBlobHandler)
 }
 
 func Serve() {
@@ -36,8 +38,22 @@ func Serve() {
 }
 
 func DoStupidSetup() {
-  consumer = latitude.NewConsumer();
+//  consumer = latitude.NewConsumer();
 	requesttokencache = make(map[string]*oauth.RequestToken)
+}
+
+// Appengine hacks:
+// Using appengine services (datastore, urlfetcher) need an appengine.Context
+// which requires the http.Request at construction time.
+// These interfaces are for isolating the appengine specific code, but are still
+// awkward since they require an http.Request to construct seemingly unrelated
+// objects.
+type HttpBlobStoreProvider interface {
+	OpenStore(req *http.Request) BlobStore
+}
+
+type HttpClientProvider interface {
+	GetClient(req *http.Request) oauth.HttpClient
 }
 
 // ======================================
@@ -59,11 +75,6 @@ func (h *Handle) String() string {
 	return fmt.Sprintf("%d-%d%d%d", h.timestamp, h.n1, h.n2, h.n3)
 }
 
-// nasty hack to support appengine
-type HttpBlobStoreProvider interface {
-	OpenStore(req *http.Request) BlobStore
-}
-
 type BlobStore interface {
 	// Stores a blob, identified by the Handle, to the BlobStore.
 	// Storing a second blob with the same handle will overwrite the first one.
@@ -72,6 +83,13 @@ type BlobStore interface {
 	// Fetches the blob with the given handle.
 	// TODO(mrjones): distinguish true error from missing blob?
 	Fetch(handle *Handle) (*Blob, os.Error)
+}
+
+type StandardHttpClientProvider struct {
+}
+
+func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient{
+	return &http.Client{}
 }
 
 type LocalFSBlobStoreProvider struct {
@@ -300,6 +318,8 @@ func ServeBlobHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
+  consumer := latitude.NewConsumer();
+	consumer.HttpClient = clientProvider.GetClient(request)
   connection := latitude.NewConnectionForConsumer(consumer);
 
 	request.ParseForm()
@@ -320,12 +340,13 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	log.Printf("Redirect URL: '%s'\n", redirectUrl)
 
   token, url, err := connection.TokenRedirectUrl(redirectUrl)
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
+
 	requesttokencache[token.Token] = token
-  if err != nil {
-		serveError(response, err)
-  } else {
-    http.Redirect(response, request, url, http.StatusFound)
-  }
+  http.Redirect(response, request, url, http.StatusFound)
 }
 
 func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
@@ -337,6 +358,8 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+  consumer := latitude.NewConsumer();
+	consumer.HttpClient = clientProvider.GetClient(request)
   connection := latitude.NewConnectionForConsumer(consumer)
 	rtoken := requesttokencache[rr.oauthToken]
   atoken, err := connection.ParseToken(rtoken, rr.oauthVerifier)
