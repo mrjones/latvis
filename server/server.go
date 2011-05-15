@@ -13,6 +13,7 @@ import (
 	"os"
 	"rand"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -29,7 +30,7 @@ func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClien
 	clientProvider = httpClientProvider
   http.HandleFunc("/authorize", AuthorizeHandler)
   http.HandleFunc("/drawmap", DrawMapHandler)
-  http.HandleFunc("/blob", ServeBlobHandler)
+  http.HandleFunc("/render/", RenderHandler)
 }
 
 func Serve() {
@@ -137,49 +138,56 @@ func serializeHandleToUrl(h *Handle) string {
  	return fmt.Sprintf("/blob?s=%d&n1=%d&n2=%d&n3=%d", h.timestamp, h.n1, h.n2, h.n3)
 }
 
-func parseHandle(params map[string][]string) (*Handle, os.Error) {
-	s, err := extractInt64("s", params)
+func serializeHandleToUrl2(h *Handle, suffix string) string {
+ 	return fmt.Sprintf("/render/%d-%d-%d-%d.%s", h.timestamp, h.n1, h.n2, h.n3, suffix)
+}
+
+func parseHandle2(fullpath string) (*Handle, os.Error) {
+	directories := strings.Split(fullpath, "/", -1)
+	if len(directories) != 3 {
+		return nil, os.NewError("Invalid filename [1]: " + fullpath)
+	}
+	if directories[0] != "" {
+		return nil, os.NewError("Invalid filename [2]: " + fullpath)
+	}
+
+	filename := directories[2]
+	fileparts := strings.Split(filename, ".", -1)
+
+	if len(fileparts) != 2 {
+		return nil, os.NewError("Invalid filename [3]: " + fullpath)
+	}
+
+
+	pieces := strings.Split(fileparts[0], "-", -1)
+	if len(pieces) != 4 {
+		return nil, os.NewError("Invalid filename [4]: " + fullpath)
+	}
+
+
+	s, err := strconv.Atoi64(pieces[0])
 	if err != nil {
 		return nil, err
 	}
-	n1, err := extractInt64("n1", params)
+	n1, err := strconv.Atoi64(pieces[1])
 	if err != nil {
 		return nil, err
 	}
-	n2, err := extractInt64("n2", params)
+	n2, err := strconv.Atoi64(pieces[2])
 	if err != nil {
 		return nil, err
 	}
-	n3, err := extractInt64("n3", params)
+	n3, err := strconv.Atoi64(pieces[3])
 	if err != nil {
 		return nil, err
 	}
 	return &Handle{timestamp: s, n1: n1, n2: n2, n3: n3}, nil
 }
 
+
 // ======================================
 // ============ URL PARSING =============
 // ======================================
-
-func extractInt64(name string, params map[string][]string) (int64, os.Error) {
-	str, err := extractParam(name, params)
-	if err != nil {
-		return -1, err
-	}
-	n, err := strconv.Atoi64(str)
-	if err != nil {
-		return -1, err
-	}
-	return n, err
-}
-
-func extractParam(name string, params map[string][]string) (string, os.Error) {
-	if len(params[name]) > 0 {
-		return params[name][0], nil
-	}
-	return "", os.NewError("Missing parameter: '" + name + "'")
-}
-
 
 func extractCoordinateFromUrl(params map[string][]string, latparam string, lngparam string) (*location.Coordinate, os.Error) {
 	if len(params[latparam]) == 0 {
@@ -293,9 +301,8 @@ func serveErrorMessage(response http.ResponseWriter, message string) {
 	response.Write([]byte(message))
 }
 
-func ServeBlobHandler(response http.ResponseWriter, request *http.Request) {
-	request.ParseForm()
-	handle, err := parseHandle(request.Form)
+func RenderHandler(response http.ResponseWriter, request *http.Request) {
+	handle, err := parseHandle2(request.URL.Path)
 	if err != nil {
 		serveError(response, err)
 		return
@@ -388,6 +395,7 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
- 	url := serializeHandleToUrl(handle)
+ 	url := serializeHandleToUrl2(handle, "png")
+// 	url := serializeHandleToUrl(handle)
 	http.Redirect(response, request, url, http.StatusFound)
 }

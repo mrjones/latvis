@@ -113,7 +113,8 @@
 
       function updateLink() {
         if (linkStart != null && linkEnd != null && linkBounds != null) {
-          var link = 'http://latvis.mrjon.es/authorize?' +
+//          var link = 'http://latvis.mrjon.es/authorize?' +
+          var link = 'http://www.mrjon.es:8080/authorize?' +
                        'lllat=' + linkBounds.getSouthWest().lat() +
                        '&lllng=' + linkBounds.getSouthWest().lng() +
                        '&urlat=' + linkBounds.getNorthEast().lat() +
