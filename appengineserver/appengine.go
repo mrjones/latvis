@@ -1,4 +1,4 @@
-package appenginebridge
+package appengineserver
 
 import (
 	"github.com/mrjones/latvis/server"
