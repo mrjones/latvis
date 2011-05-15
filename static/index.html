@@ -1,0 +1,214 @@
+<!DOCTYPE html "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <link rel="stylesheet" media="all" href="/css/style.css"/>
+    <link rel="stylesheet" href="/closure/goog/css/datepicker.css">
+    <link rel="stylesheet" href="/jquery/css/smoothness/jquery-ui-1.8.12.custom.css"/>
+
+    <script type="text/javascript" src="/jquery/js/jquery-1.5.1.min.js"></script>
+    <script type="text/javascript" src="/jquery/js/jquery-ui-1.8.12.custom.min.js"></script>
+
+    <title>latvis - mrjon.es</title>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript" src="/js/keydragzoom.js"></script>
+    <script src="/closure/goog/base.js"></script>
+    <script type="text/javascript">
+      goog.require('goog.date.Date');
+      goog.require('goog.date.Interval');
+      goog.require('goog.i18n.DateTimeFormat');
+
+      var linkBounds = null;
+      var linkStart = null;
+      var linkEnd = null;
+
+      function dateFromOffset(offset) {
+        var tempDate = new goog.date.DateTime();
+        var date = new goog.date.DateTime(
+          tempDate.getYear(), tempDate.getMonth(), tempDate.getDate());
+        date.add(new goog.date.Interval(goog.date.Interval.MONTHS, -23 + offset));
+        date.setDate(1);
+        return date;
+      }
+
+      function formatSliderOffset(offset, end) {
+        var date = dateFromOffset(offset);
+        if (end) {
+          date.add(new goog.date.Interval(goog.date.Interval.DAYS, -1));
+        }
+        var format = new goog.i18n.DateTimeFormat("MMM d, yyyy");
+        return format.format(date);
+      }
+
+      function sliderOffsetToSeconds(offset) {
+        var date = dateFromOffset(offset);
+        return Math.round(date.getTime() / 1000);
+      }
+
+      function initialize() {
+        var myOptions = {
+          zoom: 4,
+          center: new google.maps.LatLng(40.753,-73.977),
+          mapTypeId: google.maps.MapTypeId.ROADMAP
+        }
+        var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+        map.enableKeyDragZoom({
+          boxStyle: {
+            border: "0px solid #000000",
+            backgroundColor: "transparent",
+            opacity: 1.0
+          },
+          veilStyle: {
+            backgroundColor: "black",
+            opacity: 0.35,
+            cursor: "crosshair"
+          }
+        });
+
+        var rectangle = new google.maps.Rectangle();
+
+        var dz = map.getDragZoomObject();
+        google.maps.event.addListener(dz, 'dragend', function(bounds) {
+
+          rectangle.setMap(null);
+          var rectOptions = {
+            strokeColor: "#2c6da0",
+            strokeOpacity: 1.0,
+            strokeWeight: 3,
+            fillColor: "#FFFFFF",
+            fillOpacity: 0,
+            map: map,
+            bounds: bounds,
+          };
+          rectangle.setOptions(rectOptions);
+          linkBounds = bounds;
+          _gat._getTrackerByName()._trackEvent("latvis-ui", "map-select");
+          updateLink();
+        });        
+
+         $(function() {
+           $( "#slider-range" ).slider({
+             range: true,
+             min: 0,
+             max: 24,
+             values: [ 13, 24 ],
+             slide: function( event, ui ) {
+               $("#slider-display").text(formatSliderOffset(ui.values[0], false) + " - " + formatSliderOffset(ui.values[1], true));
+               linkStart = sliderOffsetToSeconds(ui.values[0]);
+               linkEnd = sliderOffsetToSeconds(ui.values[1]);
+               updateLink();
+               _gat._getTrackerByName()._trackEvent("latvis-ui", "date-slider");
+             }
+           });
+         });
+
+        startval = $( "#slider-range" ).slider( "values", 0 );
+        endval = $( "#slider-range" ).slider( "values", 1 );
+
+        $("#slider-display").text(
+          formatSliderOffset(startval, false) + " - " + formatSliderOffset(endval, true));
+        linkStart = sliderOffsetToSeconds(startval);
+        linkEnd = sliderOffsetToSeconds(endval);
+
+      }
+
+      function updateLink() {
+        if (linkStart != null && linkEnd != null && linkBounds != null) {
+          var link = 'http://latvis.mrjon.es/authorize?' +
+                       'lllat=' + linkBounds.getSouthWest().lat() +
+                       '&lllng=' + linkBounds.getSouthWest().lng() +
+                       '&urlat=' + linkBounds.getNorthEast().lat() +
+                       '&urlng=' + linkBounds.getNorthEast().lng() +
+                       '&start=' + linkStart +
+                       '&end=' + linkEnd;
+          document.getElementById('data').innerHTML = 
+            '<a href="' + link + '" class="authorizemap active">Authorize Data Access</a>';
+        }  
+      }
+    </script>
+  </head>
+  <body onload="initialize()" class="latvispage">
+    <div class="contents">
+      <div class="pageheader">
+        <a href="/">
+          <img src="/img/latvis_eeeeee.png" alt="mrjon.es" title="mrjon.es"/>
+        </a>
+      </div>
+      <div class="section">
+        <p>Turn your <a href="http://www.google.com/latitude">Google Latitude</a> history data into pictures with latvis.</p>
+        <p>If you managed to find this page, you probably know this is early-beta software, and probably still has bugs.  If you have bug reports or feedback, I'd love to hear it:</p>
+        <p><a href="mailto:latvis@mrjon.es">latvis@mrjon.es</a></p>
+        <div class="step first">
+          <div class="steptitle">Step 1: Pick the area</div>
+          <div class="stepbody">
+            Hold down <span class="latvis-keyboard">shift</span> while dragging to draw a box around the area to visualize.<p>
+            <div id="map_canvas" style="width: 100%; height: 400px" class="latvis-map"></div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="steptitle">Step 2: Pick the date range</div>
+          <div class="stepbody">
+            <style>
+              #demo-frame > div.demo { padding: 10px !important; };
+            </style>
+            <div class="demo">
+              <div class="latvis-daterange-display">
+                &gt; <span id="slider-display" class="latvis-just-daterange"></span>
+              </div>
+              <div id="slider-range"></div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="steptitle">Step 3: Authorize access to your location data</div>
+          <div class="stepbody">
+            <div class="latviswarning">
+              <div class="em">WARNING</div>
+              If you do this, you are granting me acces to your entire location history!
+            </div>
+            You should probably think twice before you do this:
+            <ul>
+              <li>I might be malicious (I'm not, but how can you be sure?), and use this data for a bad reason.</li>
+              <li>I might be incompetent (I don't think I am, but I might be), and accidentally leak this data to someone who is malicious.</li>
+            </ul>
+            All I can say is:
+            <ul>
+              <li>I don't keep your raw location history after the picture is generated.</li>
+              <li>I don't keep the token granting access to your data after the picture is generated.</li>
+              <li>Currently, I do keep the generated picture <em>indefinitely</em>, but don't store who generated it.</li>
+              <li>I'd like to make the pictures delete/expire after a short period of time soon, but that isn't done yet!</li>
+              <li>I tried (hard) to make sure no one can see the picture unless you give them the link. (But this goes back to the point about incompetence.)</li>
+              <li>The source code is available here: <a href="http://www.github.com/mrjones/latvis/">http://wwww.github.com/mrjones/latvis</a></li>
+            </ul>
+            <div id="data">
+              <div class="authorizemap inactive">
+                You must pick an area on the map before proceeding.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pagefooter">
+        &copy; 
+        <script type="text/javascript">
+          var now = new Date();
+          document.write(now.getYear() + 1900);
+        </script>
+        // <a href="http://www.mrjon.es">www.mrjon.es</a>
+      </div>
+    </div>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-16767111-2']);
+  _gaq.push(['_trackPageview']);
+  _gaq.push(['_trackPageLoadTime']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  </body>
+</html>

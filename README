@@ -1,0 +1,19 @@
+### Running a vanilla/local server ###
+$ gomake
+$ ./localserver/localserver
+Runs it on port 8081 (This should be a flag).
+
+### Setting up symlinks for appengine ###
+I'm not sure the best way to handle packages.  For now I fool it like:
+$ mkdir -p github.com/mrjones/latvis
+$ ln -s /home/mrjones/src/latvis/location/ github.com/mrjones/latvis/location
+$ ln -s /home/mrjones/src/latvis/latitude/ github.com/mrjones/latvis/latitude
+$ ln -s /home/mrjones/src/latvis/visualization/ github.com/mrjones/latvis/visualization
+$ ln -s /home/mrjones/src/latvis/server github.com/mrjones/latvis/server
+$ ln -s /home/mrjones/src/oauth/ github.com/mrjones/oauth
+
+### Running a dev appengine server ###
+$ dev_appserver.py .
+
+### Uploading to the real appengine server ###
+appcfg.py update .

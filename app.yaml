@@ -4,5 +4,33 @@ runtime: go
 api_version: 1
 
 handlers:
+- url: /
+  static_files: static/index.html
+  upload: static/index.html
+
+- url: /favicon.ico
+  static_files: static/favicon.ico
+  upload: static/favicon.ico
+
+- url: /css/(.*)
+  static_files: static/css/\1
+  upload: static/css/(.*)
+
+- url: /img/(.*)
+  static_files: static/img/\1
+  upload: static/img/(.*)
+
+- url: /jquery/(.*)
+  static_files: static/jquery/\1
+  upload: static/jquery/(.*)
+
+- url: /closure/(.*)
+  static_files: static/closure/\1
+  upload: static/closure/(.*)
+
+- url: /js/(.*)
+  static_files: static/js/\1
+  upload: static/js/(.*)
+
 - url: /.*
   script: _go_app
