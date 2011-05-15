@@ -4,14 +4,12 @@ all: clean install
 
 TARG=latvis
 
-GOFILES=\
-				latvis.go\
-
 DIRS=\
 				location\
 				latitude\
 				visualization\
 				server\
+				localserver\
 
 TEST=\
 				location\
@@ -43,4 +41,4 @@ test:   test.dirs
 nuke: nuke.dirs
 				rm -rf "$(GOROOT)"/pkg/*
 
-include $(GOROOT)/src/Make.cmd
+
