@@ -125,6 +125,10 @@ type Heatmap struct {
 	Points [][]float64
 }
 
+//
+// BWRenderer
+//
+
 type BWRenderer struct {
 }
 
@@ -141,14 +145,29 @@ func heatmapToBWImage(heatmap *Heatmap) image.Image {
 		for j := 0; j < size; j++ {
 			val := heatmap.Points[i][j]
 			if val > 0 {
-				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
+//				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
+				img.Set(j, i, image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255})
 			} else {
-				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
+//				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
+				img.Set(j, i, image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255})
 			}
 		}
 	}
 	return img
 }
+
+//
+// BWVectorRenderer
+//
+
+//type BWVectorRenderer struct {
+//}
+//
+//func (r *BWVectorRenderer) Render(grid *Grid, width int, height int) (image.Image, os.Error) {
+//	heatmap := gridAsHeatmap(grid, width, height)
+//	return heatmapToBWVectorImage(heatmap), nil
+//}
+
 
 func gridAsHeatmap(grid *Grid, width int, height int) *Heatmap {
 	heatmap := &Heatmap{}
