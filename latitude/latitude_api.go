@@ -166,7 +166,8 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 	return conn.FetchRange(startTime, endTime)
 }
 
-func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *location.History, c chan int) {
+func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *location.History, c chan int, id int) {
+	fmt.Printf("[%d] Started.\n", id)
 	windowEnd := endTimestamp
 	windowSize := 1000
 	keepGoing := true
@@ -174,7 +175,7 @@ func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp i
 	for keepGoing {
 		minTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
 		if err != nil { panic(err) }
-		fmt.Printf("Got %d items\n", itemsReturned)
+		fmt.Printf("[%d] Got %d items\n", id, itemsReturned)
 		keepGoing = (itemsReturned == windowSize)
 		windowEnd = minTs
 	}
@@ -198,10 +199,11 @@ func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.Hi
 	for i := 0 ; i < parallelism ; i++ {
 		shardStart := startTimestamp + int64(float64(i) * shardMillis)
 		shardEnd := startTimestamp + int64(float64(i + 1) * shardMillis)
-		go conn.fetchMilliRange(shardStart, shardEnd, history, c)
+		go conn.fetchMilliRange(shardStart, shardEnd, history, c, i)
 	}
 
 	for i := 0 ; i < parallelism ; i++ {
+		fmt.Printf("%d goroutines complete.", i)
 		<-c
 	}
 
