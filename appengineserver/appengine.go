@@ -30,6 +30,7 @@ type AppengineBlobStore struct {
 
 func (s *AppengineBlobStore) Store(handle *server.Handle, blob *server.Blob) os.Error {
 	c := appengine.NewContext(s.request)
+	c.Infof("Storing blob with handle: '%s'", handle.String())
 
 	datastore.Put(c, keyFromHandle(handle), blob)
 	return nil
@@ -37,6 +38,7 @@ func (s *AppengineBlobStore) Store(handle *server.Handle, blob *server.Blob) os.
 
 func (s *AppengineBlobStore) Fetch(handle *server.Handle) (*server.Blob, os.Error) {
 	c := appengine.NewContext(s.request)
+	c.Infof("Looking up blob with handle: '%s'", handle.String())
 
 	blob := new(server.Blob)
   if err := datastore.Get(c, keyFromHandle(handle), blob); err != nil {

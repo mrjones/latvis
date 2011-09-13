@@ -146,10 +146,10 @@ func heatmapToBWImage(heatmap *Heatmap) image.Image {
 			val := heatmap.Points[i][j]
 			if val > 0 {
 //				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
-				img.Set(j, i, image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255})
+				img.Set(i, j, image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255})
 			} else {
 //				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
-				img.Set(j, i, image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255})
+				img.Set(i, j, image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255})
 			}
 		}
 	}

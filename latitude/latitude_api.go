@@ -166,24 +166,43 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 	return conn.FetchRange(startTime, endTime)
 }
 
-func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.History, os.Error) {
-	startTimestamp := 1000* start.Seconds()
-	endTimestamp := 1000 * end.Seconds()
-
-	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
-
-	history := &location.History{}
-
+func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *location.History, c chan int) {
 	windowEnd := endTimestamp
 	windowSize := 1000
 	keepGoing := true
 
 	for keepGoing {
 		minTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
-		if err != nil { return nil, err }
+		if err != nil { panic(err) }
 		fmt.Printf("Got %d items\n", itemsReturned)
 		keepGoing = (itemsReturned == windowSize)
 		windowEnd = minTs
+	}
+
+	c <- 1
+}
+
+func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.History, os.Error) {
+	history := &location.History{}
+
+	startTimestamp := 1000* start.Seconds()
+	endTimestamp := 1000 * end.Seconds()
+
+	parallelism := 20
+	shardMillis := float64(endTimestamp - startTimestamp) / float64(parallelism)
+
+	c := make(chan int, parallelism)
+
+	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
+
+	for i := 0 ; i < parallelism ; i++ {
+		shardStart := startTimestamp + int64(float64(i) * shardMillis)
+		shardEnd := startTimestamp + int64(float64(i + 1) * shardMillis)
+		go conn.fetchMilliRange(shardStart, shardEnd, history, c)
+	}
+
+	for i := 0 ; i < parallelism ; i++ {
+		<-c
 	}
 
 	return history, nil
