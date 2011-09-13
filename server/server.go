@@ -31,6 +31,8 @@ func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClien
   http.HandleFunc("/authorize", AuthorizeHandler)
   http.HandleFunc("/drawmap", DrawMapHandler)
   http.HandleFunc("/render/", RenderHandler)
+
+	http.HandleFunc("/display/", ResultPageHandler)
 	http.HandleFunc("/is_ready/", IsReadyHandler)
 }
 
@@ -316,6 +318,18 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 	} else {
 		response.Write([]byte("ok"))
 	}
+}
+
+func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
+	urlParts := strings.Split(request.URL.Path, "/", -1)
+	if len(urlParts) != 3 {
+		serveError(response, os.NewError("Invalid filename [1]: " + request.URL.Path))
+	}
+	if urlParts[0] != "" {
+		serveError(response, os.NewError("Invalid filename [2]: " + request.URL.Path))
+	}
+
+	response.Write([]byte("<html><body><div id='canvas' /><img src='/img/spinner.gif' id='spinner' /><br /><div id='debug'/><script type='text/javascript' src='/js/image-loader.js'></script><script type='text/javascript'>loadImage('" + urlParts[2] + "', 1);</script></body></html>"))
 }
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
