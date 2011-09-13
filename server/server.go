@@ -31,6 +31,7 @@ func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClien
   http.HandleFunc("/authorize", AuthorizeHandler)
   http.HandleFunc("/drawmap", DrawMapHandler)
   http.HandleFunc("/render/", RenderHandler)
+	http.HandleFunc("/is_ready/", IsReadyHandler)
 }
 
 func Serve() {
@@ -299,6 +300,22 @@ func serveError(response http.ResponseWriter, err os.Error) {
 func serveErrorMessage(response http.ResponseWriter, message string) {
 	response.WriteHeader(http.StatusInternalServerError)
 	response.Write([]byte(message))
+}
+
+func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
+	handle, err := parseHandle2(request.URL.Path)
+	if err != nil {
+		response.Write([]byte("error: " + err.String()))
+		return
+	}
+
+	blob, err := storage.OpenStore(request).Fetch(handle)
+
+	if err != nil || blob == nil {
+		response.Write([]byte("fail"))
+	} else {
+		response.Write([]byte("ok"))
+	}
 }
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
