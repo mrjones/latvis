@@ -32,7 +32,7 @@ func (s *AppengineBlobStore) Store(handle *server.Handle, blob *server.Blob) os.
 	c := appengine.NewContext(s.request)
 	c.Infof("Storing blob with handle: '%s'", handle.String())
 
-	datastore.Put(c, keyFromHandle(handle), blob)
+	datastore.Put(c, keyFromHandle(c, handle), blob)
 	return nil
 }
 
@@ -41,7 +41,7 @@ func (s *AppengineBlobStore) Fetch(handle *server.Handle) (*server.Blob, os.Erro
 	c.Infof("Looking up blob with handle: '%s'", handle.String())
 
 	blob := new(server.Blob)
-  if err := datastore.Get(c, keyFromHandle(handle), blob); err != nil {
+  if err := datastore.Get(c, keyFromHandle(c, handle), blob); err != nil {
 		return nil, err
   }
 	return blob, nil
@@ -58,8 +58,8 @@ func (p *AppengineHttpClientProvider) GetClient(req *http.Request) oauth.HttpCli
 }
 
 
-func keyFromHandle(h *server.Handle) *datastore.Key {
-	return datastore.NewKey(LATVIS_OUTPUT_DATATYPE, h.String(), 0, nil)
+func keyFromHandle(c appengine.Context, h *server.Handle) *datastore.Key {
+	return datastore.NewKey(c, LATVIS_OUTPUT_DATATYPE, h.String(), 0, nil)
 }
 
 func init() {

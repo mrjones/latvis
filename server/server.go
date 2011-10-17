@@ -34,6 +34,7 @@ func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClien
 
 	http.HandleFunc("/display/", ResultPageHandler)
 	http.HandleFunc("/is_ready/", IsReadyHandler)
+  http.HandleFunc("/async_render/", AsyncRenderHandler)
 }
 
 func Serve() {
@@ -146,7 +147,7 @@ func serializeHandleToUrl2(h *Handle, suffix string) string {
 }
 
 func parseHandle2(fullpath string) (*Handle, os.Error) {
-	directories := strings.Split(fullpath, "/", -1)
+	directories := strings.Split(fullpath, "/")
 	if len(directories) != 3 {
 		return nil, os.NewError("Invalid filename [1]: " + fullpath)
 	}
@@ -155,14 +156,14 @@ func parseHandle2(fullpath string) (*Handle, os.Error) {
 	}
 
 	filename := directories[2]
-	fileparts := strings.Split(filename, ".", -1)
+	fileparts := strings.Split(filename, ".")
 
 	if len(fileparts) != 2 {
 		return nil, os.NewError("Invalid filename [3]: " + fullpath)
 	}
 
 
-	pieces := strings.Split(fileparts[0], "-", -1)
+	pieces := strings.Split(fileparts[0], "-")
 	if len(pieces) != 4 {
 		return nil, os.NewError("Invalid filename [4]: " + fullpath)
 	}
@@ -321,7 +322,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
-	urlParts := strings.Split(request.URL.Path, "/", -1)
+	urlParts := strings.Split(request.URL.Path, "/")
 	if len(urlParts) != 3 {
 		serveError(response, os.NewError("Invalid filename [1]: " + request.URL.Path))
 	}
@@ -329,7 +330,16 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 		serveError(response, os.NewError("Invalid filename [2]: " + request.URL.Path))
 	}
 
-	response.Write([]byte("<html><body><div id='canvas' /><img src='/img/spinner.gif' id='spinner' /><br /><div id='debug'/><script type='text/javascript' src='/js/image-loader.js'></script><script type='text/javascript'>loadImage('" + urlParts[2] + "', 1);</script></body></html>"))
+	response.Write([]byte("<html><body><div id='canvas' /><img src='/img/spinner.gif' id='spinner' /><br /><div id='debug'/><script type='text/javascript' src='/js/image-loader.js'></script><script type='text/javascript'>loadImage('" + urlParts[2] + "', 5);</script></body></html>"))
+}
+
+func AsyncRenderHandler(response http.ResponseWriter, request *http.Request) {
+	handle, err := parseHandle2(request.URL.Path)
+	if err != nil {
+		serveError(response, err)
+		return
+	}
+	response.Write([]byte(strconv.Itoa64(handle.timestamp)))
 }
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
