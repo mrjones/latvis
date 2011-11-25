@@ -281,6 +281,30 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
   http.Redirect(response, request, url, http.StatusFound)
 }
 
+func Render(renderRequest *RenderRequest, httpRequest *http.Request) (*Handle, os.Error) {
+  consumer := latitude.NewConsumer();
+	consumer.HttpClient = clientProvider.GetClient(httpRequest)
+  connection := latitude.NewConnectionForConsumer(consumer)
+	rtoken := requesttokencache[renderRequest.oauthToken]
+  atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
+
+	if err != nil { return nil, err }
+  
+	var authorizedConnection location.HistorySource
+  authorizedConnection = connection.Authorize(atoken)
+  vis := visualization.NewVisualizer(512, &authorizedConnection, renderRequest.bounds, *renderRequest.start, *renderRequest.end)
+
+	data, err := vis.Bytes()
+	if err != nil { return nil, err }
+
+	handle := generateNewHandle()
+	blob := &Blob{Data: *data}
+	err = storage.OpenStore(httpRequest).Store(handle, blob)
+	if err != nil { return nil, err }
+
+	return handle, nil
+}
+
 func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
   request.ParseForm()
 
@@ -290,31 +314,8 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-  consumer := latitude.NewConsumer();
-	consumer.HttpClient = clientProvider.GetClient(request)
-  connection := latitude.NewConnectionForConsumer(consumer)
-	rtoken := requesttokencache[rr.oauthToken]
-  atoken, err := connection.ParseToken(rtoken, rr.oauthVerifier)
-	
-	if err != nil {
- 		serveError(response, err)
-		return
-	}
-  
-	var authorizedConnection location.HistorySource
-  authorizedConnection = connection.Authorize(atoken)
-  vis := visualization.NewVisualizer(512, &authorizedConnection, rr.bounds, *rr.start, *rr.end)
+	handle, err := Render(rr, request)
 
-	data, err := vis.Bytes()
-	if err != nil {
- 		serveError(response, err)
-		return
-	}
-
-	handle := generateNewHandle()
-	blob := &Blob{Data: *data}
-	err = storage.OpenStore(request).Store(handle, blob)
-				
 	if err != nil {
  		serveError(response, err)
 		return
