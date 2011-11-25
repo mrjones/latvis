@@ -130,6 +130,10 @@ func (connection *AuthorizedConnection) FetchUrl(url string, params map[string]s
 	return string(responseBodyBytes), nil
 }
 
+func wrapError(wrapper string, cause os.Error) os.Error {
+	return os.NewError(wrapper + ": " + cause.String());
+}
+
 func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) (minTs int64, itemsReturned int, err os.Error) {
 	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
 
@@ -143,17 +147,23 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 	}
 
 	body, err := conn.FetchUrl(locationHistoryUrl, params)
-	if err != nil { return -1, -1, err }
+	if err != nil { return -1, -1, wrapError("FetchUrl error / " + locationHistoryUrl, err) }
 
 	var jsonObject JsonRoot
 	err = json.Unmarshal([]byte(body), &jsonObject)
-	if err != nil { return -1, -1, err }
+	if err != nil { return -1, -1, wrapError("JSON Error", err) }
 
 	for i := 0 ; i < len(jsonObject.Data.Items) ; i++ {
 		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude }
 		history.Add(point)
-		minTs, err = strconv.Atoi64(jsonObject.Data.Items[i].TimestampMs)
-		if err != nil { return -1, -1, err }
+		if jsonObject.Data.Items[i].TimestampMs == "" {
+			data, err := json.Marshal(jsonObject.Data.Items[i]);
+			if (err != nil) { fmt.Println("Can't even error properly: " + err.String()); }
+			fmt.Println("Bad history item: " + string(data));
+		} else {
+			minTs, err = strconv.Atoi64(jsonObject.Data.Items[i].TimestampMs)
+			if err != nil { return -1, -1, wrapError("Atoi Error / " + jsonObject.Data.Items[i].TimestampMs, err) }
+		}
 	}
 
 	return minTs, len(jsonObject.Data.Items), nil
@@ -166,8 +176,8 @@ func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.H
 	return conn.FetchRange(startTime, endTime)
 }
 
-func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *location.History, c chan int, id int) {
-	fmt.Printf("[%d] Started.\n", id)
+func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *location.History) {
+//	fmt.Printf("[%d] Started.\n", id)
 	windowEnd := endTimestamp
 	windowSize := 1000
 	keepGoing := true
@@ -175,12 +185,10 @@ func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp i
 	for keepGoing {
 		minTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
 		if err != nil { panic(err) }
-		fmt.Printf("[%d] Got %d items\n", id, itemsReturned)
+		fmt.Printf("Got %d items\n", itemsReturned)
 		keepGoing = (itemsReturned == windowSize)
 		windowEnd = minTs
 	}
-
-	c <- 1
 }
 
 func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.History, os.Error) {
@@ -192,20 +200,21 @@ func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.Hi
 	parallelism := 20
 	shardMillis := float64(endTimestamp - startTimestamp) / float64(parallelism)
 
-	c := make(chan int, parallelism)
+//	c := make(chan int, parallelism)
 
 	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
 
 	for i := 0 ; i < parallelism ; i++ {
 		shardStart := startTimestamp + int64(float64(i) * shardMillis)
 		shardEnd := startTimestamp + int64(float64(i + 1) * shardMillis)
-		go conn.fetchMilliRange(shardStart, shardEnd, history, c, i)
+//		go conn.fetchMilliRange(shardStart, shardEnd, history, c, i)
+		conn.fetchMilliRange(shardStart, shardEnd, history)
 	}
 
-	for i := 0 ; i < parallelism ; i++ {
-		fmt.Printf("%d goroutines complete.", i)
-		<-c
-	}
+//	for i := 0 ; i < parallelism ; i++ {
+//		fmt.Printf("%d goroutines complete.", i)
+//		<-c
+//	}
 
 	return history, nil
 }
