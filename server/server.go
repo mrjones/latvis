@@ -18,95 +18,25 @@ import (
 	"url"
 )
 
-var gConfig *ServerConfig
+var config *ServerConfig
 
-func Setup(config *ServerConfig) {
-	gConfig = config
-
-//	storage = blobStoreProvider
-//	clientProvider = httpClientProvider
-
-	// TODO(mrjones): use persistent (cross-server) storage
-//	secretStoreProvider = &InMemoryOauthSecretStoreProvider{}
+func Setup(serverConfig *ServerConfig) {
+	config = serverConfig
 
   http.HandleFunc("/authorize", AuthorizeHandler)
   http.HandleFunc("/drawmap", DrawMapHandler)
-
   http.HandleFunc("/async_drawmap", AsyncDrawMapHandler)
   http.HandleFunc("/drawmap_worker", DrawMapWorker)
-
   http.HandleFunc("/render/", RenderHandler)
-
 	http.HandleFunc("/display/", ResultPageHandler)
 	http.HandleFunc("/is_ready/", IsReadyHandler)
-  http.HandleFunc("/async_render/", AsyncRenderHandler)
+//  http.HandleFunc("/async_render/", AsyncRenderHandler)
 }
 
 func Serve() {
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
 }
-
-// ======================================
-// ============ URL PARSING =============
-// ======================================
-
-func extractCoordinateFromUrl(
-    params *url.Values,
-    latparam string,
-    lngparam string) (*location.Coordinate, os.Error) {
-	if params.Get(latparam) == "" {
-		return nil, os.NewError("Missing required query paramter: " + latparam)
-	}
-	if params.Get(lngparam) == "" {
-		return nil, os.NewError("Missing required query paramter: " + lngparam)
-	}
-
-	lat, err := strconv.Atof64(params.Get(latparam))
-	if err != nil {
-		return nil, err
-	}
-	lng, err := strconv.Atof64(params.Get(lngparam))
-	if err != nil {
-		return nil, err
-	}
-	
-	return &location.Coordinate{Lat: lat, Lng: lng}, nil
-}
-
-
-func extractTimeFromUrl(params *url.Values, param string) (*time.Time, os.Error) {
-	if params.Get(param) == "" {
-		return nil, os.NewError("Missing query param: " + param)
-	}
-	startTs, err := strconv.Atoi64(params.Get(param))
-	if err != nil {
-		startTs = -1
-	}
-	return time.SecondsToUTC(startTs), nil
-}
-
-func extractStringFromUrl(params *url.Values, param string) (string, os.Error) {
-	if params.Get(param) == "" {
-		return "", os.NewError("Missing query param: " + param)
-	}
-	return params.Get(param), nil
-}
-
-func propogateParameter(base string, params *url.Values, key string) string {
-	if params.Get(key) != "" {
-		if len(base) > 0 {
-			base = base + "&"
-		}
-		// TODO(mrjones): sigh use the right library
-		base = base + key + "=" + url.QueryEscape(params.Get(key))
-	}
-	return base
-}
-
-// ======================================
-// ============ SERVER STUFF ============
-// ======================================
 
 func serveErrorWithLabel(response http.ResponseWriter, message string, err os.Error) {
 	serveErrorMessage(response, message + ":" + err.String())
@@ -130,7 +60,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := gConfig.BlobStorage.OpenStore(request).Fetch(handle)
+	blob, err := config.BlobStorage.OpenStore(request).Fetch(handle)
 
 	if err != nil || blob == nil {
 		response.Write([]byte("fail"))
@@ -148,17 +78,18 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 		serveError(response, os.NewError("Invalid filename [2]: " + request.URL.Path))
 	}
 
+	// TODO(mrjones): move to an HTML template
 	response.Write([]byte("<html><body><div id='canvas' /><img src='/img/spinner.gif' id='spinner' /><br /><div id='debug'/><script type='text/javascript' src='/js/image-loader.js'></script><script type='text/javascript'>loadImage('" + urlParts[2] + "', 5);</script></body></html>"))
 }
 
-func AsyncRenderHandler(response http.ResponseWriter, request *http.Request) {
-	handle, err := parseHandle2(request.URL.Path)
-	if err != nil {
-		serveErrorWithLabel(response, "(Async) parsHandle2 error", err)
-		return
-	}
-	response.Write([]byte(strconv.Itoa64(handle.timestamp)))
-}
+//func AsyncRenderHandler(response http.ResponseWriter, request *http.Request) {
+//	handle, err := parseHandle2(request.URL.Path)
+//	if err != nil {
+//		serveErrorWithLabel(response, "(Async) parsHandle2 error", err)
+//		return
+//	}
+//	response.Write([]byte(strconv.Itoa64(handle.timestamp)))
+//}
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
 	handle, err := parseHandle2(request.URL.Path)
@@ -167,7 +98,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := gConfig.BlobStorage.OpenStore(request).Fetch(handle)
+	blob, err := config.BlobStorage.OpenStore(request).Fetch(handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "RenderHandler/OpenStore error", err)
@@ -185,7 +116,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
   consumer := latitude.NewConsumer();
-	consumer.HttpClient = gConfig.HttpClient.GetClient(request)
+	consumer.HttpClient = config.HttpClient.GetClient(request)
   connection := latitude.NewConnectionForConsumer(consumer);
 
 	request.ParseForm()
@@ -212,7 +143,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	gConfig.SecretStorage.GetStore(request).Store(token.Token, token)
+	config.SecretStorage.GetStore(request).Store(token.Token, token)
   http.Redirect(response, request, url, http.StatusFound)
 }
 
@@ -226,8 +157,8 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	engine := &RenderEngine{
-  	httpClientProvider: gConfig.HttpClient,
-	  secretStorageProvider: gConfig.SecretStorage,
+  	httpClientProvider: config.HttpClient,
+	  secretStorageProvider: config.SecretStorage,
 	}
 
 	handle := generateNewHandle();
@@ -250,8 +181,6 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
  		serveErrorWithLabel(response, "AsyncDrawMapHandler/deserialize", err)
 		return
 	}
-
-	fmt.Printf("AsyncDrawMapHandler: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
 
 	handle := generateNewHandle();
 
@@ -310,4 +239,3 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 
 	c.Infof("Worker complete.") 
 }
-
