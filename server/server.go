@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/mrjones/latvis/latitude"
 	"github.com/mrjones/latvis/location"
-	"github.com/mrjones/latvis/visualization"
 	"github.com/mrjones/oauth"
 
   "fmt"
@@ -162,13 +161,6 @@ func extractStringFromUrl(params map[string][]string, param string) (string, os.
 		return "", os.NewError("Missing query param: " + param)
 	}
 	return params[param][0], nil
-}
-
-type RenderRequest struct {
-	bounds *location.BoundingBox
-	start, end *time.Time
-	oauthToken string
-	oauthVerifier string
 }
 
 func parseRenderRequest(params map[string][]string) (*RenderRequest, os.Error) {
@@ -330,39 +322,6 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
   http.Redirect(response, request, url, http.StatusFound)
 }
 
-func Render(renderRequest *RenderRequest, httpRequest *http.Request) (*Handle, os.Error) {
-  consumer := latitude.NewConsumer();
-	consumer.HttpClient = clientProvider.GetClient(httpRequest)
-  connection := latitude.NewConnectionForConsumer(consumer)
-
-	rtoken := secretStoreProvider.GetStore(httpRequest).Lookup(renderRequest.oauthToken);
-//	rtoken := &oauth.RequestToken{
-//    Token: renderRequest.oauthToken,
-//    Secret: secret,
-//	}
-//	rtoken := requesttokencache[renderRequest.oauthToken]
-	if (rtoken == nil) {
-		return nil, os.NewError("No token stored for: " + renderRequest.oauthToken)
-	}
-  atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
-
-	if err != nil { return nil, err }
-  
-	var authorizedConnection location.HistorySource
-  authorizedConnection = connection.Authorize(atoken)
-  vis := visualization.NewVisualizer(512, &authorizedConnection, renderRequest.bounds, *renderRequest.start, *renderRequest.end)
-
-	data, err := vis.Bytes()
-	if err != nil { return nil, err }
-
-	handle := generateNewHandle()
-	blob := &Blob{Data: *data}
-	err = storage.OpenStore(httpRequest).Store(handle, blob)
-	if err != nil { return nil, err }
-
-	return handle, nil
-}
-
 func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
   request.ParseForm()
 
@@ -372,7 +331,12 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	handle, err := Render(rr, request)
+	engine := &RenderEngine{
+  	httpClientProvider: clientProvider,
+	  secretStorageProvider: secretStoreProvider,
+	}
+
+	handle, err := engine.Render(rr, request)
 
 	if err != nil {
  		serveError(response, err)
