@@ -66,25 +66,37 @@ type HttpOauthSecretStoreProvider interface {
 	GetStore(req *http.Request) OauthSecretStore
 }
 
+// Stores and retrieves OAuth RequestTokens.
+// TODO(mrjones): there's some terminology overloading going on here that needs
+//   straightening out.  In oauth.go a "RequestToken" has two parts: a "token"
+//   and a "secret".  So there's a "Token" inside a "RequestToken" which is
+//   confusing.  This interface would make more sense if that overloading was
+//   broken.
 type OauthSecretStore interface {
 	Store(tokenString string, token *oauth.RequestToken)
 	Lookup(tokenString string) *oauth.RequestToken
 }
 
-//
-
+// See InMemoryOauthSecretStore for information about drawbacks of using this
+// provider.
 type InMemoryOauthSecretStoreProvider struct {
 	storage *InMemoryOauthSecretStore
 }
 
 func (p *InMemoryOauthSecretStoreProvider) GetStore(req *http.Request) OauthSecretStore {
 	if (p.storage == nil) {
-		// todo threads
+		// TODO(mrjones): lock, in case of multiple threads
 		p.storage = NewInMemoryOauthSecretStore()
 	}
 	return p.storage
 }
 
+// Stores and retrieves OAuth RequestTokens using a simple, in-memory map. This
+// is fine for testing, and single-noded deployments, however it will likely
+// fail if there is more than one server handling responses, since the entire
+// protocol involves two calls to the latvis server.  (If one server gets the
+// first call (which saves the token), and another server gets the second call
+// (which looks up the token) the lookup will fail.)
 type InMemoryOauthSecretStore struct {
 	store map[string]*oauth.RequestToken
 }
