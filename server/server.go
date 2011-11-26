@@ -19,18 +19,15 @@ import (
 	"url"
 )
 
-//var consumer *oauth.Consumer
 var storage HttpBlobStoreProvider
 var clientProvider HttpClientProvider
 var secretStoreProvider HttpOauthSecretStoreProvider
 
-//todo fix
-var requesttokencache map[string]*oauth.RequestToken
-
 func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClientProvider) {
-	DoStupidSetup()
 	storage = blobStoreProvider
 	clientProvider = httpClientProvider
+
+	// TODO(mrjones): use persistent (cross-server) storage
 	secretStoreProvider = &InMemoryOauthSecretStoreProvider{}
 
   http.HandleFunc("/authorize", AuthorizeHandler)
@@ -49,11 +46,6 @@ func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClien
 func Serve() {
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
-}
-
-func DoStupidSetup() {
-//  consumer = latitude.NewConsumer();
-	requesttokencache = make(map[string]*oauth.RequestToken)
 }
 
 // Appengine hacks:
@@ -291,7 +283,6 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	requesttokencache[token.Token] = token
 	secretStoreProvider.GetStore(request).Store(token.Token, token)
   http.Redirect(response, request, url, http.StatusFound)
 }
@@ -389,6 +380,5 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	}
 
 	c.Infof("Worker complete.") 
-	// update storage
 }
 
