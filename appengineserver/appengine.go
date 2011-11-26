@@ -63,7 +63,10 @@ func keyFromHandle(c appengine.Context, h *server.Handle) *datastore.Key {
 }
 
 func init() {
-	blobStoreProvider := &AppengineBlobStoreProvider{}
-	httpClientProvider := &AppengineHttpClientProvider{}
-  server.Setup(blobStoreProvider, httpClientProvider)
+	config := &server.ServerConfig{
+	  BlobStorage: &AppengineBlobStoreProvider{},
+  	HttpClient: &AppengineHttpClientProvider{},
+  	SecretStorage: &server.InMemoryOauthSecretStoreProvider{},
+	}
+  server.Setup(config)
 }

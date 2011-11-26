@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/mrjones/latvis/latitude"
 	"github.com/mrjones/latvis/location"
-	"github.com/mrjones/oauth"
 
 	// TODO(mrjones): fix
 	"appengine"
@@ -19,16 +18,16 @@ import (
 	"url"
 )
 
-var storage HttpBlobStoreProvider
-var clientProvider HttpClientProvider
-var secretStoreProvider HttpOauthSecretStoreProvider
+var gConfig *ServerConfig
 
-func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClientProvider) {
-	storage = blobStoreProvider
-	clientProvider = httpClientProvider
+func Setup(config *ServerConfig) {
+	gConfig = config
+
+//	storage = blobStoreProvider
+//	clientProvider = httpClientProvider
 
 	// TODO(mrjones): use persistent (cross-server) storage
-	secretStoreProvider = &InMemoryOauthSecretStoreProvider{}
+//	secretStoreProvider = &InMemoryOauthSecretStoreProvider{}
 
   http.HandleFunc("/authorize", AuthorizeHandler)
   http.HandleFunc("/drawmap", DrawMapHandler)
@@ -48,96 +47,14 @@ func Serve() {
   log.Fatal(err)
 }
 
-// Appengine hacks:
-// Using appengine services (datastore, urlfetcher) need an appengine.Context
-// which requires the http.Request at construction time.
-// These interfaces are for isolating the appengine specific code, but are still
-// awkward since they require an http.Request to construct seemingly unrelated
-// objects.
-type HttpBlobStoreProvider interface {
-	OpenStore(req *http.Request) BlobStore
-}
-
-type HttpClientProvider interface {
-	GetClient(req *http.Request) oauth.HttpClient
-}
-
-type HttpOauthSecretStoreProvider interface {
-	GetStore(req *http.Request) OauthSecretStore
-}
-
-// Stores and retrieves OAuth RequestTokens.
-// TODO(mrjones): there's some terminology overloading going on here that needs
-//   straightening out.  In oauth.go a "RequestToken" has two parts: a "token"
-//   and a "secret".  So there's a "Token" inside a "RequestToken" which is
-//   confusing.  This interface would make more sense if that overloading was
-//   broken.
-type OauthSecretStore interface {
-	Store(tokenString string, token *oauth.RequestToken)
-	Lookup(tokenString string) *oauth.RequestToken
-}
-
-// See InMemoryOauthSecretStore for information about drawbacks of using this
-// provider.
-type InMemoryOauthSecretStoreProvider struct {
-	storage *InMemoryOauthSecretStore
-}
-
-func (p *InMemoryOauthSecretStoreProvider) GetStore(req *http.Request) OauthSecretStore {
-	if (p.storage == nil) {
-		// TODO(mrjones): lock, in case of multiple threads
-		p.storage = NewInMemoryOauthSecretStore()
-	}
-	return p.storage
-}
-
-// Stores and retrieves OAuth RequestTokens using a simple, in-memory map. This
-// is fine for testing, and single-noded deployments, however it will likely
-// fail if there is more than one server handling responses, since the entire
-// protocol involves two calls to the latvis server.  (If one server gets the
-// first call (which saves the token), and another server gets the second call
-// (which looks up the token) the lookup will fail.)
-type InMemoryOauthSecretStore struct {
-	store map[string]*oauth.RequestToken
-}
-
-func NewInMemoryOauthSecretStore() *InMemoryOauthSecretStore {
-	return &InMemoryOauthSecretStore{
-	  store: make(map[string]*oauth.RequestToken),
-	}
-}
-
-func (s *InMemoryOauthSecretStore) Store(tokenString string, token *oauth.RequestToken) {
-	s.store[tokenString] = token
-}
-
-func (s *InMemoryOauthSecretStore) Lookup(tokenString string) *oauth.RequestToken {
-	return s.store[tokenString]
-}
-
-//
-
-type StandardHttpClientProvider struct {
-}
-
-func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient{
-	return &http.Client{}
-}
-
-//
-
-type LocalFSBlobStoreProvider struct {
-}
-
-func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
-	return &LocalFSBlobStore{}
-}
-
 // ======================================
 // ============ URL PARSING =============
 // ======================================
 
-func extractCoordinateFromUrl(params *url.Values, latparam string, lngparam string) (*location.Coordinate, os.Error) {
+func extractCoordinateFromUrl(
+    params *url.Values,
+    latparam string,
+    lngparam string) (*location.Coordinate, os.Error) {
 	if params.Get(latparam) == "" {
 		return nil, os.NewError("Missing required query paramter: " + latparam)
 	}
@@ -213,7 +130,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := storage.OpenStore(request).Fetch(handle)
+	blob, err := gConfig.BlobStorage.OpenStore(request).Fetch(handle)
 
 	if err != nil || blob == nil {
 		response.Write([]byte("fail"))
@@ -250,7 +167,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := storage.OpenStore(request).Fetch(handle)
+	blob, err := gConfig.BlobStorage.OpenStore(request).Fetch(handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "RenderHandler/OpenStore error", err)
@@ -268,7 +185,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
   consumer := latitude.NewConsumer();
-	consumer.HttpClient = clientProvider.GetClient(request)
+	consumer.HttpClient = gConfig.HttpClient.GetClient(request)
   connection := latitude.NewConnectionForConsumer(consumer);
 
 	request.ParseForm()
@@ -295,7 +212,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	secretStoreProvider.GetStore(request).Store(token.Token, token)
+	gConfig.SecretStorage.GetStore(request).Store(token.Token, token)
   http.Redirect(response, request, url, http.StatusFound)
 }
 
@@ -309,8 +226,8 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	engine := &RenderEngine{
-  	httpClientProvider: clientProvider,
-	  secretStorageProvider: secretStoreProvider,
+  	httpClientProvider: gConfig.HttpClient,
+	  secretStorageProvider: gConfig.SecretStorage,
 	}
 
 	handle := generateNewHandle();
