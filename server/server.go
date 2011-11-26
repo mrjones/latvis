@@ -57,7 +57,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := config.BlobStorage.OpenStore(request).Fetch(handle)
+	blob, err := config.blobStorage.OpenStore(request).Fetch(handle)
 
 	if err != nil || blob == nil {
 		response.Write([]byte("fail"))
@@ -95,7 +95,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := config.BlobStorage.OpenStore(request).Fetch(handle)
+	blob, err := config.blobStorage.OpenStore(request).Fetch(handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "RenderHandler/OpenStore error", err)
@@ -113,7 +113,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
   consumer := latitude.NewConsumer();
-	consumer.HttpClient = config.HttpClient.GetClient(request)
+	consumer.HttpClient = config.httpClient.GetClient(request)
   connection := latitude.NewConnectionForConsumer(consumer);
 
 	request.ParseForm()
@@ -140,7 +140,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	config.SecretStorage.GetStore(request).Store(token.Token, token)
+	config.secretStorage.GetStore(request).Store(token.Token, token)
   http.Redirect(response, request, url, http.StatusFound)
 }
 
@@ -154,9 +154,9 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	engine := &RenderEngine{
-  	blobStorage: config.BlobStorage,
-  	httpClientProvider: config.HttpClient,
-	  secretStorageProvider: config.SecretStorage,
+  	blobStorage: config.blobStorage,
+  	httpClientProvider: config.httpClient,
+	  secretStorageProvider: config.secretStorage,
 	}
 
 	handle := generateNewHandle();
@@ -215,9 +215,9 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
 
 	engine := &RenderEngine{
-  	blobStorage: config.BlobStorage,
-  	httpClientProvider: config.HttpClient,
-	  secretStorageProvider: config.SecretStorage,
+  	blobStorage: config.blobStorage,
+  	httpClientProvider: config.httpClient,
+	  secretStorageProvider: config.secretStorage,
 	}
 
 	// parse from URL
