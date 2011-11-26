@@ -318,7 +318,7 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
- 	url := serializeHandleToUrl2(handle, "png", "")
+ 	url := serializeHandleToUrl2(handle, "png", "render")
 	http.Redirect(response, request, url, http.StatusFound)
 }
 
@@ -347,11 +347,15 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
- 	url := serializeHandleToUrl2(handle, "png", "async_")
+ 	url := serializeHandleToUrl2(handle, "png", "display")
+// 	url := serializeHandleToUrl2(handle, "png", "render")
 	http.Redirect(response, request, url, http.StatusFound)
 }
 
 func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
+	c := appengine.NewContext(request)
+	c.Infof("Worker started...") 
+
 	fmt.Println("DrawMapWorker...")
   request.ParseForm()
 
@@ -375,13 +379,16 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	c.Infof("Rendering...") 
 	err = engine.Render(rr, request, handle)
+	c.Infof("Rendering complete.") 
 
 	if err != nil {
  		serveErrorWithLabel(response, "engine.Render error", err)
 		return
 	}
 
+	c.Infof("Worker complete.") 
 	// update storage
 }
 
