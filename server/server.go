@@ -5,6 +5,10 @@ import (
 	"github.com/mrjones/latvis/location"
 	"github.com/mrjones/oauth"
 
+	// TODO(mrjones): fix
+	"appengine"
+	"appengine/taskqueue"
+
   "fmt"
   "http"
 	"log"
@@ -12,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"url"
 )
 
 //var consumer *oauth.Consumer
@@ -30,6 +35,10 @@ func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClien
 
   http.HandleFunc("/authorize", AuthorizeHandler)
   http.HandleFunc("/drawmap", DrawMapHandler)
+
+  http.HandleFunc("/async_drawmap", AsyncDrawMapHandler)
+  http.HandleFunc("/drawmap_worker", DrawMapWorker)
+
   http.HandleFunc("/render/", RenderHandler)
 
 	http.HandleFunc("/display/", ResultPageHandler)
@@ -124,19 +133,19 @@ func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 // ============ URL PARSING =============
 // ======================================
 
-func extractCoordinateFromUrl(params map[string][]string, latparam string, lngparam string) (*location.Coordinate, os.Error) {
-	if len(params[latparam]) == 0 {
+func extractCoordinateFromUrl(params *url.Values, latparam string, lngparam string) (*location.Coordinate, os.Error) {
+	if params.Get(latparam) == "" {
 		return nil, os.NewError("Missing required query paramter: " + latparam)
 	}
-	if len(params[lngparam]) == 0 {
+	if params.Get(lngparam) == "" {
 		return nil, os.NewError("Missing required query paramter: " + lngparam)
 	}
 
-	lat, err := strconv.Atof64(params[latparam][0])
+	lat, err := strconv.Atof64(params.Get(latparam))
 	if err != nil {
 		return nil, err
 	}
-	lng, err := strconv.Atof64(params[lngparam][0])
+	lng, err := strconv.Atof64(params.Get(lngparam))
 	if err != nil {
 		return nil, err
 	}
@@ -145,73 +154,30 @@ func extractCoordinateFromUrl(params map[string][]string, latparam string, lngpa
 }
 
 
-func extractTimeFromUrl(params map[string][]string, param string) (*time.Time, os.Error) {
-	if len(params[param]) < 1 {
+func extractTimeFromUrl(params *url.Values, param string) (*time.Time, os.Error) {
+	if params.Get(param) == "" {
 		return nil, os.NewError("Missing query param: " + param)
 	}
-	startTs, err := strconv.Atoi64(params[param][0])
+	startTs, err := strconv.Atoi64(params.Get(param))
 	if err != nil {
 		startTs = -1
 	}
 	return time.SecondsToUTC(startTs), nil
 }
 
-func extractStringFromUrl(params map[string][]string, param string) (string, os.Error) {
-	if len(params[param]) < 1 {
+func extractStringFromUrl(params *url.Values, param string) (string, os.Error) {
+	if params.Get(param) == "" {
 		return "", os.NewError("Missing query param: " + param)
 	}
-	return params[param][0], nil
+	return params.Get(param), nil
 }
 
-func parseRenderRequest(params map[string][]string) (*RenderRequest, os.Error) {
-	// Parse all input parameters from the URL
-	lowerLeft, err := extractCoordinateFromUrl(params, "lllat", "lllng")
-	if err != nil {
-		return nil, err
-	}
-
-	upperRight, err := extractCoordinateFromUrl(params, "urlat", "urlng")
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("Bounding Box: LL[%f,%f], UR[%f,%f]",
-		lowerLeft.Lat, lowerLeft.Lng, upperRight.Lat, upperRight.Lng)
-
-	start, err := extractTimeFromUrl(params, "start")
-	if err != nil {
-		return nil, err
-	}
-
-	end, err := extractTimeFromUrl(params, "end")
-	if err != nil {
-		return nil, err
-	}
-
-	bounds, err := location.NewBoundingBox(*lowerLeft, *upperRight)
-	if err != nil {
-		return nil, err
-	}
-
-	oauthToken, err := extractStringFromUrl(params, "oauth_token")
-	if err != nil {
-		return nil, err
-	}
-
-	oauthVerifier, err := extractStringFromUrl(params, "oauth_verifier")
-	if err != nil {
-		return nil, err
-	}
-
-	return &RenderRequest{bounds: bounds, start: start, end:end, oauthToken: oauthToken, oauthVerifier: oauthVerifier}, nil
-}
-
-func propogateParameter(base string, params map[string][]string, key string) string {
-	if len(params[key]) > 0 {
+func propogateParameter(base string, params *url.Values, key string) string {
+	if params.Get(key) != "" {
 		if len(base) > 0 {
 			base = base + "&"
 		}
-		base = base + key + "=" + params[key][0]
+		base = base + key + "=" + params.Get(key)
 	}
 	return base
 }
@@ -296,17 +262,18 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 
 	request.ParseForm()
 	latlng := ""
-	latlng = propogateParameter(latlng, request.Form, "lllat")
-	latlng = propogateParameter(latlng, request.Form, "lllng")
-	latlng = propogateParameter(latlng, request.Form, "urlat")
-	latlng = propogateParameter(latlng, request.Form, "urlng")
-	latlng = propogateParameter(latlng, request.Form, "start")
-	latlng = propogateParameter(latlng, request.Form, "end")
+	latlng = propogateParameter(latlng, &request.Form, "lllat")
+	latlng = propogateParameter(latlng, &request.Form, "lllng")
+	latlng = propogateParameter(latlng, &request.Form, "urlat")
+	latlng = propogateParameter(latlng, &request.Form, "urlng")
+	latlng = propogateParameter(latlng, &request.Form, "start")
+	latlng = propogateParameter(latlng, &request.Form, "end")
 
 	protocol := "http"
 	if (request.TLS != nil) {
 		protocol = "https"
 	}
+//	redirectUrl := fmt.Sprintf("%s://%s/async_drawmap?%s", protocol, request.Host, latlng)
 	redirectUrl := fmt.Sprintf("%s://%s/drawmap?%s", protocol, request.Host, latlng)
 
 	log.Printf("Redirect URL: '%s'\n", redirectUrl)
@@ -325,7 +292,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
   request.ParseForm()
 
-	rr, err := parseRenderRequest(request.Form)
+	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
  		serveError(response, err)
 		return
@@ -336,14 +303,73 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	  secretStorageProvider: secretStoreProvider,
 	}
 
-	handle, err := engine.Render(rr, request)
+	handle := generateNewHandle();
+	err = engine.Render(rr, request, handle)
 
 	if err != nil {
  		serveError(response, err)
 		return
 	}
 
- 	url := serializeHandleToUrl2(handle, "png")
-// 	url := serializeHandleToUrl(handle)
+ 	url := serializeHandleToUrl2(handle, "png", "")
 	http.Redirect(response, request, url, http.StatusFound)
 }
+
+func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
+  request.ParseForm()
+
+	rr, err := deserializeRenderRequest(&request.Form)
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
+
+	handle := generateNewHandle();
+
+	c := appengine.NewContext(request)
+
+	var params url.Values
+	serializeRenderRequest(rr, &params)
+	serializeHandleToParams(handle, &params)
+
+	t := taskqueue.NewPOSTTask("/drawmap_worker", params)
+  if _, err := taskqueue.Add(c, t, ""); err != nil {
+		http.Error(response, err.String(), http.StatusInternalServerError)
+		return
+	}
+
+ 	url := serializeHandleToUrl2(handle, "png", "async_")
+	http.Redirect(response, request, url, http.StatusFound)
+}
+
+func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
+  request.ParseForm()
+
+	rr, err := deserializeRenderRequest(&request.Form)
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
+
+	engine := &RenderEngine{
+  	httpClientProvider: clientProvider,
+	  secretStorageProvider: secretStoreProvider,
+	}
+
+	// parse from URL
+	handle, err := parseHandleFromParams(&request.Form);
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
+
+	err = engine.Render(rr, request, handle)
+
+	if err != nil {
+ 		serveError(response, err)
+		return
+	}
+
+	// update storage
+}
+

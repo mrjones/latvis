@@ -22,6 +22,14 @@ func NewBoundingBox(lowerLeft, upperRight Coordinate) (*BoundingBox, os.Error) {
 	return &BoundingBox{lowerLeft: lowerLeft, upperRight: upperRight}, nil
 }
 
+func (b *BoundingBox) LowerLeft() Coordinate {
+	return b.lowerLeft
+}
+
+func (b *BoundingBox) UpperRight() Coordinate {
+	return b.upperRight
+}
+
 func (b *BoundingBox) isReversed() bool {
 	return b.lowerLeft.Lng > b.upperRight.Lng
 }

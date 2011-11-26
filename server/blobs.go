@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"url"
 )
 
 type Blob struct {
@@ -53,8 +54,31 @@ func serializeHandleToUrl(h *Handle) string {
  	return fmt.Sprintf("/blob?s=%d&n1=%d&n2=%d&n3=%d", h.timestamp, h.n1, h.n2, h.n3)
 }
 
-func serializeHandleToUrl2(h *Handle, suffix string) string {
- 	return fmt.Sprintf("/render/%d-%d-%d-%d.%s", h.timestamp, h.n1, h.n2, h.n3, suffix)
+func serializeHandleToUrl2(h *Handle, suffix string, prefix string) string {
+ 	return fmt.Sprintf("/%srender/%d-%d-%d-%d.%s", prefix, h.timestamp, h.n1, h.n2, h.n3, suffix)
+}
+
+func serializeHandleToParams(h *Handle, p *url.Values) {
+	p.Add("hStamp", string(h.timestamp))
+	p.Add("h1", string(h.n1))
+	p.Add("h2", string(h.n2))
+	p.Add("h2", string(h.n3))
+}
+
+func parseHandleFromParams(p *url.Values) (*Handle, os.Error) {
+	timestamp, err := strconv.Atoi64(p.Get("hStamp"))
+	if err != nil { return nil, err }
+
+	n1, err := strconv.Atoi64(p.Get("h1"))
+	if err != nil { return nil, err }
+
+	n2, err := strconv.Atoi64(p.Get("h2"))
+	if err != nil { return nil, err }
+
+	n3, err := strconv.Atoi64(p.Get("h3"))
+	if err != nil { return nil, err }
+
+	return &Handle{timestamp: timestamp, n1:n1, n2:n2, n3:n3}, nil
 }
 
 func parseHandle2(fullpath string) (*Handle, os.Error) {
