@@ -59,24 +59,24 @@ func serializeHandleToUrl2(h *Handle, suffix string, prefix string) string {
 }
 
 func serializeHandleToParams(h *Handle, p *url.Values) {
-	p.Add("hStamp", string(h.timestamp))
-	p.Add("h1", string(h.n1))
-	p.Add("h2", string(h.n2))
-	p.Add("h2", string(h.n3))
+	p.Add("hStamp", strconv.Itoa64(h.timestamp))
+	p.Add("h1", strconv.Itoa64(h.n1))
+	p.Add("h2", strconv.Itoa64(h.n2))
+	p.Add("h3", strconv.Itoa64(h.n3))
 }
 
 func parseHandleFromParams(p *url.Values) (*Handle, os.Error) {
 	timestamp, err := strconv.Atoi64(p.Get("hStamp"))
-	if err != nil { return nil, err }
+	if err != nil { return nil, os.NewError("[hStamp=" + p.Get("hStamp") + "]" + err.String()) }
 
 	n1, err := strconv.Atoi64(p.Get("h1"))
-	if err != nil { return nil, err }
+	if err != nil { return nil, os.NewError("[n1=" + p.Get("n1") + "]" + err.String()) }
 
 	n2, err := strconv.Atoi64(p.Get("h2"))
-	if err != nil { return nil, err }
+	if err != nil { return nil, os.NewError("[n2=" + p.Get("n2") + "]" + err.String()) }
 
 	n3, err := strconv.Atoi64(p.Get("h3"))
-	if err != nil { return nil, err }
+	if err != nil { return nil, os.NewError("[n3=" + p.Get("n3") + "]" + err.String()) }
 
 	return &Handle{timestamp: timestamp, n1:n1, n2:n2, n3:n3}, nil
 }

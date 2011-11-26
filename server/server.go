@@ -187,11 +187,17 @@ func propogateParameter(base string, params *url.Values, key string) string {
 // ============ SERVER STUFF ============
 // ======================================
 
+func serveErrorWithLabel(response http.ResponseWriter, message string, err os.Error) {
+	serveErrorMessage(response, message + ":" + err.String())
+}
+
 func serveError(response http.ResponseWriter, err os.Error) {
 	serveErrorMessage(response, err.String())
 }
 
 func serveErrorMessage(response http.ResponseWriter, message string) {
+	fmt.Println("ERROR: " + message)
+
 	response.WriteHeader(http.StatusInternalServerError)
 	response.Write([]byte(message))
 }
@@ -227,7 +233,7 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 func AsyncRenderHandler(response http.ResponseWriter, request *http.Request) {
 	handle, err := parseHandle2(request.URL.Path)
 	if err != nil {
-		serveError(response, err)
+		serveErrorWithLabel(response, "(Async) parsHandle2 error", err)
 		return
 	}
 	response.Write([]byte(strconv.Itoa64(handle.timestamp)))
@@ -236,14 +242,14 @@ func AsyncRenderHandler(response http.ResponseWriter, request *http.Request) {
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
 	handle, err := parseHandle2(request.URL.Path)
 	if err != nil {
-		serveError(response, err)
+		serveErrorWithLabel(response, "(Sync) parseHandle2 error", err)
 		return
 	}
 
 	blob, err := storage.OpenStore(request).Fetch(handle)
 
 	if err != nil {
-		serveError(response, err)
+		serveErrorWithLabel(response, "RenderHandler/OpenStore error", err)
 		return
 	}
 
@@ -274,14 +280,14 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	if (request.TLS != nil) {
 		protocol = "https"
 	}
-//	redirectUrl := fmt.Sprintf("%s://%s/async_drawmap?%s", protocol, request.Host, latlng)
-	redirectUrl := fmt.Sprintf("%s://%s/drawmap?%s", protocol, request.Host, latlng)
+	redirectUrl := fmt.Sprintf("%s://%s/async_drawmap?%s", protocol, request.Host, latlng)
+//	redirectUrl := fmt.Sprintf("%s://%s/drawmap?%s", protocol, request.Host, latlng)
 
 	log.Printf("Redirect URL: '%s'\n", redirectUrl)
 
   token, url, err := connection.TokenRedirectUrl(redirectUrl)
 	if err != nil {
- 		serveError(response, err)
+ 		serveErrorWithLabel(response, "TokenRedirectUrl error", err)
 		return
 	}
 
@@ -295,7 +301,7 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
- 		serveError(response, err)
+ 		serveErrorWithLabel(response, "DrawMapHandler/deserializeRenderRequest error", err)
 		return
 	}
 
@@ -308,7 +314,7 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	err = engine.Render(rr, request, handle)
 
 	if err != nil {
- 		serveError(response, err)
+ 		serveErrorWithLabel(response, "DrawMapHandler/engine.Render", err)
 		return
 	}
 
@@ -321,15 +327,17 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
- 		serveError(response, err)
+ 		serveErrorWithLabel(response, "AsyncDrawMapHandler/deserialize", err)
 		return
 	}
+
+	fmt.Printf("AsyncDrawMapHandler: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
 
 	handle := generateNewHandle();
 
 	c := appengine.NewContext(request)
 
-	var params url.Values
+	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
 	serializeHandleToParams(handle, &params)
 
@@ -344,13 +352,16 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
+	fmt.Println("DrawMapWorker...")
   request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
- 		serveError(response, err)
+ 		serveErrorWithLabel(response, "deserializeRenderRequest() error", err)
 		return
 	}
+
+	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
 
 	engine := &RenderEngine{
   	httpClientProvider: clientProvider,
@@ -360,14 +371,14 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	// parse from URL
 	handle, err := parseHandleFromParams(&request.Form);
 	if err != nil {
- 		serveError(response, err)
+ 		serveErrorWithLabel(response, "parseHandleFromParams error", err)
 		return
 	}
 
 	err = engine.Render(rr, request, handle)
 
 	if err != nil {
- 		serveError(response, err)
+ 		serveErrorWithLabel(response, "engine.Render error", err)
 		return
 	}
 
