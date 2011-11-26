@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/mrjones/latvis/latitude"
-	"github.com/mrjones/latvis/location"
 
 	// TODO(mrjones): fix
 	"appengine"
@@ -12,9 +11,7 @@ import (
   "http"
 	"log"
 	"os"
-	"strconv"
 	"strings"
-	"time"
 	"url"
 )
 
@@ -157,6 +154,7 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	engine := &RenderEngine{
+  	blobStorage: config.BlobStorage,
   	httpClientProvider: config.HttpClient,
 	  secretStorageProvider: config.SecretStorage,
 	}
@@ -217,8 +215,9 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
 
 	engine := &RenderEngine{
-  	httpClientProvider: clientProvider,
-	  secretStorageProvider: secretStoreProvider,
+  	blobStorage: config.BlobStorage,
+  	httpClientProvider: config.HttpClient,
+	  secretStorageProvider: config.SecretStorage,
 	}
 
 	// parse from URL
