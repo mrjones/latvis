@@ -18,6 +18,7 @@ import (
 //var consumer *oauth.Consumer
 var storage HttpBlobStoreProvider
 var clientProvider HttpClientProvider
+var secretStoreProvider HttpOauthSecretStoreProvider
 
 //todo fix
 var requesttokencache map[string]*oauth.RequestToken
@@ -26,6 +27,8 @@ func Setup(blobStoreProvider HttpBlobStoreProvider, httpClientProvider HttpClien
 	DoStupidSetup()
 	storage = blobStoreProvider
 	clientProvider = httpClientProvider
+	secretStoreProvider = &InMemoryOauthSecretStoreProvider{}
+
   http.HandleFunc("/authorize", AuthorizeHandler)
   http.HandleFunc("/drawmap", DrawMapHandler)
   http.HandleFunc("/render/", RenderHandler)
@@ -59,12 +62,57 @@ type HttpClientProvider interface {
 	GetClient(req *http.Request) oauth.HttpClient
 }
 
+type HttpOauthSecretStoreProvider interface {
+	GetStore(req *http.Request) OauthSecretStore
+}
+
+type OauthSecretStore interface {
+	Store(tokenString string, token *oauth.RequestToken)
+	Lookup(tokenString string) *oauth.RequestToken
+}
+
+//
+
+type InMemoryOauthSecretStoreProvider struct {
+	storage *InMemoryOauthSecretStore
+}
+
+func (p *InMemoryOauthSecretStoreProvider) GetStore(req *http.Request) OauthSecretStore {
+	if (p.storage == nil) {
+		// todo threads
+		p.storage = NewInMemoryOauthSecretStore()
+	}
+	return p.storage
+}
+
+type InMemoryOauthSecretStore struct {
+	store map[string]*oauth.RequestToken
+}
+
+func NewInMemoryOauthSecretStore() *InMemoryOauthSecretStore {
+	return &InMemoryOauthSecretStore{
+	  store: make(map[string]*oauth.RequestToken),
+	}
+}
+
+func (s *InMemoryOauthSecretStore) Store(tokenString string, token *oauth.RequestToken) {
+	s.store[tokenString] = token
+}
+
+func (s *InMemoryOauthSecretStore) Lookup(tokenString string) *oauth.RequestToken {
+	return s.store[tokenString]
+}
+
+//
+
 type StandardHttpClientProvider struct {
 }
 
 func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient{
 	return &http.Client{}
 }
+
+//
 
 type LocalFSBlobStoreProvider struct {
 }
@@ -278,6 +326,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	requesttokencache[token.Token] = token
+	secretStoreProvider.GetStore(request).Store(token.Token, token)
   http.Redirect(response, request, url, http.StatusFound)
 }
 
@@ -285,7 +334,16 @@ func Render(renderRequest *RenderRequest, httpRequest *http.Request) (*Handle, o
   consumer := latitude.NewConsumer();
 	consumer.HttpClient = clientProvider.GetClient(httpRequest)
   connection := latitude.NewConnectionForConsumer(consumer)
-	rtoken := requesttokencache[renderRequest.oauthToken]
+
+	rtoken := secretStoreProvider.GetStore(httpRequest).Lookup(renderRequest.oauthToken);
+//	rtoken := &oauth.RequestToken{
+//    Token: renderRequest.oauthToken,
+//    Secret: secret,
+//	}
+//	rtoken := requesttokencache[renderRequest.oauthToken]
+	if (rtoken == nil) {
+		return nil, os.NewError("No token stored for: " + renderRequest.oauthToken)
+	}
   atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
 
 	if err != nil { return nil, err }
