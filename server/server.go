@@ -3,10 +3,6 @@ package server
 import (
 	"github.com/mrjones/latvis/latitude"
 
-	// TODO(mrjones): fix
-	"appengine"
-//	"appengine/taskqueue"
-
   "fmt"
   "http"
 	"log"
@@ -182,19 +178,11 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	handle := generateNewHandle();
 
-//	c := appengine.NewContext(request)
-
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
 	serializeHandleToParams(handle, &params)
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
-
-//	t := taskqueue.NewPOSTTask("/drawmap_worker", params)
-//  if _, err := taskqueue.Add(c, t, ""); err != nil {
-//		http.Error(response, err.String(), http.StatusInternalServerError)
-//		return
-//	}
 
  	url := serializeHandleToUrl2(handle, "png", "display")
 // 	url := serializeHandleToUrl2(handle, "png", "render")
@@ -202,9 +190,6 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
-	c := appengine.NewContext(request)
-	c.Infof("Worker started...") 
-
 	fmt.Println("DrawMapWorker...")
   request.ParseForm()
 
@@ -229,14 +214,10 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	c.Infof("Rendering...") 
 	err = engine.Render(rr, request, handle)
-	c.Infof("Rendering complete.") 
 
 	if err != nil {
  		serveErrorWithLabel(response, "engine.Render error", err)
 		return
 	}
-
-	c.Infof("Worker complete.") 
 }
