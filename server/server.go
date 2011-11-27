@@ -5,7 +5,7 @@ import (
 
 	// TODO(mrjones): fix
 	"appengine"
-	"appengine/taskqueue"
+//	"appengine/taskqueue"
 
   "fmt"
   "http"
@@ -182,17 +182,19 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	handle := generateNewHandle();
 
-	c := appengine.NewContext(request)
+//	c := appengine.NewContext(request)
 
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
 	serializeHandleToParams(handle, &params)
 
-	t := taskqueue.NewPOSTTask("/drawmap_worker", params)
-  if _, err := taskqueue.Add(c, t, ""); err != nil {
-		http.Error(response, err.String(), http.StatusInternalServerError)
-		return
-	}
+	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
+
+//	t := taskqueue.NewPOSTTask("/drawmap_worker", params)
+//  if _, err := taskqueue.Add(c, t, ""); err != nil {
+//		http.Error(response, err.String(), http.StatusInternalServerError)
+//		return
+//	}
 
  	url := serializeHandleToUrl2(handle, "png", "display")
 // 	url := serializeHandleToUrl2(handle, "png", "render")

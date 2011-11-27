@@ -6,15 +6,41 @@ import (
 
 	"appengine"
 	"appengine/datastore"
+	"appengine/taskqueue"
 	"appengine/urlfetch"
 
 	"http"
 	"os"
+	"url"
 )
 
 const (
 	LATVIS_OUTPUT_DATATYPE = "latvis-output"
 )
+
+type AppengineUrlTaskQueueProvider struct {
+}
+
+func (p *AppengineUrlTaskQueueProvider) GetQueue(req *http.Request) server.UrlTaskQueue {
+	return NewAppengineUrlTaskQueue(req)
+}
+
+type AppengineUrlTaskQueue struct {
+	request *http.Request
+}
+
+func NewAppengineUrlTaskQueue(request *http.Request) server.UrlTaskQueue {
+	return &AppengineUrlTaskQueue{request: request}
+}
+
+func (q *AppengineUrlTaskQueue) Enqueue(url string, params *url.Values) os.Error {
+	c := appengine.NewContext(q.request)
+
+	t := taskqueue.NewPOSTTask(url, *params)
+	_, err := taskqueue.Add(c, t, "")
+	return err
+}
+
 
 /// Blob Sorage ////
 type AppengineBlobStoreProvider struct {
@@ -66,6 +92,7 @@ func init() {
 	config := server.NewConfig(
 	  &AppengineBlobStoreProvider{},
   	&AppengineHttpClientProvider{},
-  	&server.InMemoryOauthSecretStoreProvider{})
+  	&server.InMemoryOauthSecretStoreProvider{},
+		&AppengineUrlTaskQueueProvider{})
   server.Setup(config)
 }
