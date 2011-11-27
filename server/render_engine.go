@@ -6,7 +6,7 @@ import (
 	"github.com/mrjones/latvis/visualization"
 
 	"fmt"
-  "http"
+	"http"
 	"os"
 	"strconv"
 	"time"
@@ -15,16 +15,18 @@ import (
 
 // All the information necessary to specify a visualization.
 type RenderRequest struct {
-	bounds *location.BoundingBox
-	start, end *time.Time
-	oauthToken string
+	bounds        *location.BoundingBox
+	start, end    *time.Time
+	oauthToken    string
 	oauthVerifier string
 }
 
 // Serializes a RenderRequest to a url.Values so that it can be
 // communicated to another URL endpoint.
 func serializeRenderRequest(r *RenderRequest, m *url.Values) {
-	if m == nil { panic("nil map"); }
+	if m == nil {
+		panic("nil map")
+	}
 
 	m.Add("start", strconv.Itoa64(r.start.Seconds()))
 	m.Add("end", strconv.Itoa64(r.end.Seconds()))
@@ -81,22 +83,21 @@ func deserializeRenderRequest(params *url.Values) (*RenderRequest, os.Error) {
 	}
 
 	return &RenderRequest{
-	  bounds: bounds,
-	  start: start,
-	  end:end,
-	  oauthToken: oauthToken,
-	  oauthVerifier: oauthVerifier,
-  }, nil
+		bounds:        bounds,
+		start:         start,
+		end:           end,
+		oauthToken:    oauthToken,
+		oauthVerifier: oauthVerifier,
+	}, nil
 }
 
 // ======================================
 // ============ URL PARSING =============
 // ======================================
 
-func extractCoordinateFromUrl(
-    params *url.Values,
-    latparam string,
-    lngparam string) (*location.Coordinate, os.Error) {
+func extractCoordinateFromUrl(params *url.Values,
+	latparam string,
+	lngparam string) (*location.Coordinate, os.Error) {
 	if params.Get(latparam) == "" {
 		return nil, os.NewError("Missing required query paramter: " + latparam)
 	}
@@ -112,10 +113,9 @@ func extractCoordinateFromUrl(
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &location.Coordinate{Lat: lat, Lng: lng}, nil
 }
-
 
 func extractTimeFromUrl(params *url.Values, param string) (*time.Time, os.Error) {
 	if params.Get(param) == "" {
@@ -148,43 +148,48 @@ func propogateParameter(base string, params *url.Values, key string) string {
 
 // Capable of executing RenderRequests.
 type RenderEngine struct {
-	blobStorage HttpBlobStoreProvider
-	httpClientProvider HttpClientProvider
+	blobStorage           HttpBlobStoreProvider
+	httpClientProvider    HttpClientProvider
 	secretStorageProvider HttpOauthSecretStoreProvider
 }
 
-func (r *RenderEngine) Render(
-	  renderRequest *RenderRequest,
-	  httpRequest *http.Request,
-	  handle *Handle) (os.Error) {
-  consumer := latitude.NewConsumer();
+func (r *RenderEngine) Render(renderRequest *RenderRequest,
+	httpRequest *http.Request,
+	handle *Handle) os.Error {
+	consumer := latitude.NewConsumer()
 	consumer.HttpClient = r.httpClientProvider.GetClient(httpRequest)
-  connection := latitude.NewConnectionForConsumer(consumer)
+	connection := latitude.NewConnectionForConsumer(consumer)
 
 	rtoken := r.secretStorageProvider.GetStore(httpRequest).Lookup(
-		renderRequest.oauthToken);
-	if (rtoken == nil) {
+		renderRequest.oauthToken)
+	if rtoken == nil {
 		return os.NewError("No token stored for: " + renderRequest.oauthToken)
 	}
-  atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
+	atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
 
-	if err != nil { return err }
-  
+	if err != nil {
+		return err
+	}
+
 	var authorizedConnection location.HistorySource
-  authorizedConnection = connection.Authorize(atoken)
-  vis := visualization.NewVisualizer(
+	authorizedConnection = connection.Authorize(atoken)
+	vis := visualization.NewVisualizer(
 		512,
 		&authorizedConnection,
 		renderRequest.bounds,
-		*renderRequest.start, 
+		*renderRequest.start,
 		*renderRequest.end)
 
 	data, err := vis.Bytes()
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	blob := &Blob{Data: *data}
 	err = r.blobStorage.OpenStore(httpRequest).Store(handle, blob)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

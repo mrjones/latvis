@@ -15,7 +15,7 @@ package server
 import (
 	"github.com/mrjones/oauth"
 
-  "http"
+	"http"
 	"os"
 	"url"
 )
@@ -25,25 +25,24 @@ import (
 // Primarily designed to separate framework-specific components (like storage)
 // from the main application logic.
 type ServerConfig struct {
-	blobStorage HttpBlobStoreProvider
-	httpClient HttpClientProvider
+	blobStorage   HttpBlobStoreProvider
+	httpClient    HttpClientProvider
 	secretStorage HttpOauthSecretStoreProvider
-	taskQueue HttpUrlTaskQueueProvider
+	taskQueue     HttpUrlTaskQueueProvider
 }
 
 // Use this instead of &ServerConfig{...} directly to get compile-timer
 // errors when new dependencies are introduced.
-func NewConfig(
-    blobStorage HttpBlobStoreProvider,
-    httpClient HttpClientProvider,
-    secretStorage HttpOauthSecretStoreProvider,
-	  taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
-  return &ServerConfig{
-    blobStorage: blobStorage,
-    httpClient: httpClient,
-    secretStorage: secretStorage,
-  	taskQueue: taskQueue,
-  }
+func NewConfig(blobStorage HttpBlobStoreProvider,
+	httpClient HttpClientProvider,
+	secretStorage HttpOauthSecretStoreProvider,
+	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
+	return &ServerConfig{
+		blobStorage:   blobStorage,
+		httpClient:    httpClient,
+		secretStorage: secretStorage,
+		taskQueue:     taskQueue,
+	}
 }
 
 // PROVIDERS
@@ -109,24 +108,24 @@ type UrlTaskQueue interface {
 //
 // This hasn't been implemented yet, but the idea is that it would just call
 // the URL over HTTP direcly, and block waiting for a response.
-type SyncUrlTaskQueueProvider struct { }
+type SyncUrlTaskQueueProvider struct{}
 
-func (p *SyncUrlTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue{
+func (p *SyncUrlTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
 	panic("You need to implement me")
 }
 
 type SyncUrlTaskQueue struct {
-	baseUrl string
+	baseUrl    string
 	httpClient oauth.HttpClient
 }
 
 func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) os.Error {
-//	u := url.Parse(baseUrl + url + params.Encode())
+	//	u := url.Parse(baseUrl + url + params.Encode())
 
-//	var req http.Request
-//	req.Method = "GET"
-//	req.header = http.Header{}
-//	req.URL = u
+	//	var req http.Request
+	//	req.Method = "GET"
+	//	req.header = http.Header{}
+	//	req.URL = u
 	panic("Not Implemented")
 }
 
@@ -143,7 +142,7 @@ type InMemoryOauthSecretStoreProvider struct {
 }
 
 func (p *InMemoryOauthSecretStoreProvider) GetStore(req *http.Request) OauthSecretStore {
-	if (p.storage == nil) {
+	if p.storage == nil {
 		// TODO(mrjones): lock, in case of multiple threads
 		p.storage = NewInMemoryOauthSecretStore()
 	}
@@ -156,7 +155,7 @@ type InMemoryOauthSecretStore struct {
 
 func NewInMemoryOauthSecretStore() *InMemoryOauthSecretStore {
 	return &InMemoryOauthSecretStore{
-	  store: make(map[string]*oauth.RequestToken),
+		store: make(map[string]*oauth.RequestToken),
 	}
 }
 
@@ -173,16 +172,16 @@ func (s *InMemoryOauthSecretStore) Lookup(tokenString string) *oauth.RequestToke
 // This implementation actually does make sense in most contexts. Appengine,
 // however, is sandboxed and you can't use http.Client directly.  So for most
 // non-sandboxed applications, this implementation should be sufficient.
-type StandardHttpClientProvider struct { }
+type StandardHttpClientProvider struct{}
 
-func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient{
+func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient {
 	return &http.Client{}
 }
 
 // LocalFsBlobStore
 //
 // Defers all the work to LocalFsBlobStore in blobs.go
-type LocalFSBlobStoreProvider struct { }
+type LocalFSBlobStoreProvider struct{}
 
 func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 	return &LocalFSBlobStore{}
