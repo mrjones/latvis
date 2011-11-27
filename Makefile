@@ -5,6 +5,7 @@ all: clean install
 TARG=latvis
 
 DIRS=\
+				testutil\
 				location\
 				latitude\
 				visualization\
