@@ -3,7 +3,7 @@ package location
 import (
 	"testing"
 
-	"github.com/mrjones/gotestutil"
+	"github.com/mrjones/gt"
 )
 
 func TestContainsBoundaries(t *testing.T) {
@@ -11,12 +11,12 @@ func TestContainsBoundaries(t *testing.T) {
 		Coordinate{Lat: -1.0, Lng: -1.0},
 		Coordinate{Lat: 1.0, Lng: 1.0})
 	
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1, Lng: 0}), "South")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1, Lng: 0}), "North")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0, Lng: -1}), "East")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0, Lng: 1}), "West")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1, Lng: 0}), "South")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1, Lng: 0}), "North")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0, Lng: -1}), "East")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0, Lng: 1}), "West")
 }
 
 func TestContainsNE(t *testing.T) {
@@ -24,14 +24,14 @@ func TestContainsNE(t *testing.T) {
 		Coordinate{Lat: 1.0, Lng: 1.0},
 		Coordinate{Lat: 2.0, Lng: 2.0})
 	
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 
-	gotestutil.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 1.5}), "In Box")
+	gt.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 1.5}), "In Box")
 
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0.5, Lng: 1.5}), "East")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 2.5, Lng: 1.5}), "West")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 0.5}), "South")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 2.5}), "North")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0.5, Lng: 1.5}), "East")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 2.5, Lng: 1.5}), "West")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 0.5}), "South")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 2.5}), "North")
 }
 
 func TestContainsNW(t *testing.T) {
@@ -39,14 +39,14 @@ func TestContainsNW(t *testing.T) {
 		Coordinate{Lat: -2.0, Lng: 1.0},
 		Coordinate{Lat: -1.0,	Lng: 2.0})
 	
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 
-	gotestutil.AssertTrueM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 1.5}), "In Box")
+	gt.AssertTrueM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 1.5}), "In Box")
 
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -2.5, Lng: 1.5}), "East")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -0.5, Lng: 1.5}), "West")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 0.5}), "South")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 2.5}), "North")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -2.5, Lng: 1.5}), "East")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -0.5, Lng: 1.5}), "West")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 0.5}), "South")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 2.5}), "North")
 }
 
 func TestContainsSW(t *testing.T) {
@@ -54,14 +54,14 @@ func TestContainsSW(t *testing.T) {
 		Coordinate{Lat: -2.0, Lng: -2.0},
 		Coordinate{Lat: -1, Lng: -1.0})
 
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 	
-	gotestutil.AssertTrueM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: -1.5}), "In Box")
+	gt.AssertTrueM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: -1.5}), "In Box")
 
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -2.5, Lng: -1.5}), "East")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -0.5, Lng: -1.5}), "West")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: -2.5}), "South")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: -0.5}), "North")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -2.5, Lng: -1.5}), "East")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -0.5, Lng: -1.5}), "West")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: -2.5}), "South")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: -0.5}), "North")
 }
 
 func TestContainsSE(t *testing.T) {
@@ -69,14 +69,14 @@ func TestContainsSE(t *testing.T) {
 		Coordinate{Lat: 1.0, Lng: -2.0},
 		Coordinate{Lat: 2.0, Lng: -1.0})
 	
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 
-	gotestutil.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -1.5}), "In Box")
+	gt.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -1.5}), "In Box")
 
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0.5, Lng: -1.5}), "East")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 2.5, Lng: -1.5}), "West")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -2.5}), "South")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -0.5}), "North")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 0.5, Lng: -1.5}), "East")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 2.5, Lng: -1.5}), "West")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -2.5}), "South")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -0.5}), "North")
 }
 
 func TestContainsAround0Latitude(t *testing.T) {
@@ -84,12 +84,12 @@ func TestContainsAround0Latitude(t *testing.T) {
 		Coordinate{Lat: -1.0, Lng: 1.0},
 		Coordinate{Lat: 1.0, Lng: 2.0})
 	
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 
-	gotestutil.AssertTrueM(t, b.Contains(&Coordinate{Lat: 0, Lng: 1.5}), "In Box")
+	gt.AssertTrueM(t, b.Contains(&Coordinate{Lat: 0, Lng: 1.5}), "In Box")
 
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 1.5}), "East")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 2.5, Lng: 1.5}), "West")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: -1.5, Lng: 1.5}), "East")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 2.5, Lng: 1.5}), "West")
 }
 
 func TestContainsAround180Longitude(t *testing.T) {
@@ -97,13 +97,13 @@ func TestContainsAround180Longitude(t *testing.T) {
 		Coordinate{Lat: 1.0, Lng: 179.0},
 		Coordinate{Lat: 2.0, Lng: -179.0})
 	
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 
-	gotestutil.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -179.9}), "In Box (E)")
-	gotestutil.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 179.9}), "In Box (W)")
+	gt.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -179.9}), "In Box (E)")
+	gt.AssertTrueM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 179.9}), "In Box (W)")
 
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 178}), "East")
-	gotestutil.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -178}), "West")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: 178}), "East")
+	gt.AssertFalseM(t, b.Contains(&Coordinate{Lat: 1.5, Lng: -178}), "West")
 }
 
 func TestInvalidBox(t *testing.T) {
@@ -111,7 +111,7 @@ func TestInvalidBox(t *testing.T) {
 		Coordinate{Lat: 2.0, Lng: 1.0},
 		Coordinate{Lat: 1.0, Lng: 2.0})
 	
-	gotestutil.AssertNotNil(t, err)
+	gt.AssertNotNil(t, err)
 }
 
 func TestNormalWidth(t *testing.T) {
@@ -119,7 +119,7 @@ func TestNormalWidth(t *testing.T) {
 		Coordinate{Lat: 1.0, Lng: 1.0},
 		Coordinate{Lat: 10.0, Lng: 2.0})
 
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 	if b.Width() != 1.0 {
 		t.Fatal("Wrong width: Expected 1.0, Actual: %f", b.Width())
 	}
@@ -143,7 +143,7 @@ func TestWidthAround180(t *testing.T) {
 		Coordinate{Lat: 1.0, Lng: 179.0},
 		Coordinate{Lat: 10.0, Lng: -179.0})
 	
-	gotestutil.AssertNil(t, err)
+	gt.AssertNil(t, err)
 	if b.Width() != 2.0 {
 		t.Fatalf("Wrong width: Expected 2.0, Actual: %f", b.Width())
 	}
