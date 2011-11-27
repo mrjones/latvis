@@ -1,9 +1,9 @@
 package location
 
 import (
-	"testing"
-
 	"github.com/mrjones/gt"
+
+	"testing"
 )
 
 func TestContainsBoundaries(t *testing.T) {

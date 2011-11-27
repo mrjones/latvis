@@ -1,6 +1,8 @@
 package server
 
 import (
+	"github.com/mrjones/gt"
+
 	"testing"
 )
 
@@ -12,7 +14,5 @@ func TestHandleString(t *testing.T) {
 		n3: 3,
 	}
 
-	if "0-123" != h.String() {
-		t.Fatalf("Unexpted result: " + h.String())
-	}
+	gt.AssertEqualM(t, "0-123", h.String(), "Unexpected handle");
 }
