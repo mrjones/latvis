@@ -32,7 +32,7 @@ func TestHandleUrlString(t *testing.T) {
 		"Unexpected serialization")
 }
 
-func TestHandleToParams(t *testing.T) {
+func TestSuccessfulSerializeAndDeserialize(t *testing.T) {
 	h := simpleHandle()
 
 	var p = make(url.Values)
