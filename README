@@ -1,3 +1,7 @@
+### Dependencies ###
+goinstall -u github.com/mrjones/oauth
+goinstall -u github.com/mrjones/gt
+
 ### Running a vanilla/local server ###
 $ gomake
 $ ./localserver/localserver
