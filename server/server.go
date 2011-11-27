@@ -16,34 +16,42 @@ var config *ServerConfig
 func Setup(serverConfig *ServerConfig) {
 	config = serverConfig
 
+	// Starts the process, redirecting to Google for OAuth credentials
   http.HandleFunc("/authorize", AuthorizeHandler)
+
+	// Fetches data and draws a map (synchronously), once the process
+	// is complete, it redirects to a page to display the image.
+	//
+	// NOTE: This endpoint seems like it should be obsolete, and replaced
+	//   by "async_drawmap", however, I'm keeping it around for now since
+	//   this function is a lot easier to implement on a non-appengine
+	//   stack. (I.e. you don't need to supply an implementation of
+  //   UrlTaskQueue.)
   http.HandleFunc("/drawmap", DrawMapHandler)
+
+	// Asynchronously kicks off a worker to fetch data and generate
+	// an image, and then immediately redirects to a page which displays
+	// a spinner and polls, waiting for the image to be complete.
   http.HandleFunc("/async_drawmap", AsyncDrawMapHandler)
+
+	// Worker task which fetches the requested data, and renders an image.
+  // Writes the result to storage, but doesn't return any data.
   http.HandleFunc("/drawmap_worker", DrawMapWorker)
+
+	// Displays the requested image (as an image/png)
   http.HandleFunc("/render/", RenderHandler)
+
+	// Polls, waiting for the requested image to be ready, and once it is
+	// displays that image. (This returns text/html).
 	http.HandleFunc("/display/", ResultPageHandler)
+
+	// Checks if the requested image is ready or not.
 	http.HandleFunc("/is_ready/", IsReadyHandler)
-//  http.HandleFunc("/async_render/", AsyncRenderHandler)
 }
 
 func Serve() {
   err := http.ListenAndServe(":8081", nil)
   log.Fatal(err)
-}
-
-func serveErrorWithLabel(response http.ResponseWriter, message string, err os.Error) {
-	serveErrorMessage(response, message + ":" + err.String())
-}
-
-func serveError(response http.ResponseWriter, err os.Error) {
-	serveErrorMessage(response, err.String())
-}
-
-func serveErrorMessage(response http.ResponseWriter, message string) {
-	fmt.Println("ERROR: " + message)
-
-	response.WriteHeader(http.StatusInternalServerError)
-	response.Write([]byte(message))
 }
 
 func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
@@ -74,15 +82,6 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 	// TODO(mrjones): move to an HTML template
 	response.Write([]byte("<html><body><div id='canvas' /><img src='/img/spinner.gif' id='spinner' /><br /><div id='debug'/><script type='text/javascript' src='/js/image-loader.js'></script><script type='text/javascript'>loadImage('" + urlParts[2] + "', 5);</script></body></html>"))
 }
-
-//func AsyncRenderHandler(response http.ResponseWriter, request *http.Request) {
-//	handle, err := parseHandle2(request.URL.Path)
-//	if err != nil {
-//		serveErrorWithLabel(response, "(Async) parsHandle2 error", err)
-//		return
-//	}
-//	response.Write([]byte(strconv.Itoa64(handle.timestamp)))
-//}
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
 	handle, err := parseHandle2(request.URL.Path)
@@ -220,4 +219,19 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
  		serveErrorWithLabel(response, "engine.Render error", err)
 		return
 	}
+}
+
+func serveErrorWithLabel(response http.ResponseWriter, message string, err os.Error) {
+	serveErrorMessage(response, message + ":" + err.String())
+}
+
+func serveError(response http.ResponseWriter, err os.Error) {
+	serveErrorMessage(response, err.String())
+}
+
+func serveErrorMessage(response http.ResponseWriter, message string) {
+	fmt.Println("ERROR: " + message)
+
+	response.WriteHeader(http.StatusInternalServerError)
+	response.Write([]byte(message))
 }
