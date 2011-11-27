@@ -13,7 +13,9 @@ DIRS=\
 
 TEST=\
 				location\
+				server\
 				visualization\
+
 
 clean.dirs: $(addsuffix .clean, $(DIRS))
 install.dirs: $(addsuffix .install, $(DIRS))
