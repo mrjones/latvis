@@ -42,5 +42,40 @@ func TestSuccessfulSerializeAndDeserialize(t *testing.T) {
 
 	gt.AssertNil(t, err)
 	gt.AssertEqualM(t, h, h2, "Should be equal")
-		
+}
+
+func necessaryParams() *url.Values {
+	h := simpleHandle()
+
+	var p = make(url.Values)
+
+	serializeHandleToParams(h, &p)
+
+	return &p
+}
+
+func TestDeserializeFromParamsWithMissingParams(t *testing.T) {
+	p := necessaryParams()
+
+	_, err := parseHandleFromParams(p)
+	gt.AssertNil(t, err)
+
+	p.Del("hStamp");
+	_, err = parseHandleFromParams(p)
+	gt.AssertNotNil(t, err)
+
+	p = necessaryParams()
+	p.Del("h1")
+	_, err = parseHandleFromParams(p)
+	gt.AssertNotNil(t, err)
+
+	p = necessaryParams()
+	p.Del("h2")
+	_, err = parseHandleFromParams(p)
+	gt.AssertNotNil(t, err)
+
+	p = necessaryParams()
+	p.Del("h3")
+	_, err = parseHandleFromParams(p)
+	gt.AssertNotNil(t, err)
 }

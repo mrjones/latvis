@@ -49,15 +49,6 @@ func generateNewHandle() *Handle {
 	}
 }
 
-// TODO(mrjones): generalize
-func serializeHandleToUrl(h *Handle) string {
-	return fmt.Sprintf("/blob?s=%d&n1=%d&n2=%d&n3=%d", h.timestamp, h.n1, h.n2, h.n3)
-}
-
-func serializeHandleToUrl2(h *Handle, suffix string, page string) string {
-	return fmt.Sprintf("/%s/%d-%d-%d-%d.%s", page, h.timestamp, h.n1, h.n2, h.n3, suffix)
-}
-
 func serializeHandleToParams(h *Handle, p *url.Values) {
 	p.Add("hStamp", strconv.Itoa64(h.timestamp))
 	p.Add("h1", strconv.Itoa64(h.n1))
@@ -89,7 +80,11 @@ func parseHandleFromParams(p *url.Values) (*Handle, os.Error) {
 	return &Handle{timestamp: timestamp, n1: n1, n2: n2, n3: n3}, nil
 }
 
-func parseHandle2(fullpath string) (*Handle, os.Error) {
+func serializeHandleToUrl(h *Handle, suffix string, page string) string {
+	return fmt.Sprintf("/%s/%d-%d-%d-%d.%s", page, h.timestamp, h.n1, h.n2, h.n3, suffix)
+}
+
+func parseHandleFromUrl(fullpath string) (*Handle, os.Error) {
 	directories := strings.Split(fullpath, "/")
 	if len(directories) != 3 {
 		return nil, os.NewError("Invalid filename [1]: " + fullpath)

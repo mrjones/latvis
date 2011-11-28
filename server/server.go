@@ -55,7 +55,7 @@ func Serve() {
 }
 
 func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
-	handle, err := parseHandle2(request.URL.Path)
+	handle, err := parseHandleFromUrl(request.URL.Path)
 	if err != nil {
 		response.Write([]byte("error: " + err.String()))
 		return
@@ -84,9 +84,9 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
-	handle, err := parseHandle2(request.URL.Path)
+	handle, err := parseHandleFromUrl(request.URL.Path)
 	if err != nil {
-		serveErrorWithLabel(response, "(Sync) parseHandle2 error", err)
+		serveErrorWithLabel(response, "(Sync) parseHandleFromUrl error", err)
 		return
 	}
 
@@ -162,7 +162,7 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	url := serializeHandleToUrl2(handle, "png", "render")
+	url := serializeHandleToUrl(handle, "png", "render")
 	http.Redirect(response, request, url, http.StatusFound)
 }
 
@@ -183,7 +183,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
-	url := serializeHandleToUrl2(handle, "png", "display")
+	url := serializeHandleToUrl(handle, "png", "display")
 	// 	url := serializeHandleToUrl2(handle, "png", "render")
 	http.Redirect(response, request, url, http.StatusFound)
 }
