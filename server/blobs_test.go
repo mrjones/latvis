@@ -28,11 +28,11 @@ func TestHandleUrlString(t *testing.T) {
 
 	gt.AssertEqualM(t, 
 		"/page/0-1-2-3.xyz",
-		serializeHandleToUrl2(h, "xyz", "page"),
+		serializeHandleToUrl(h, "xyz", "page"),
 		"Unexpected serialization")
 }
 
-func TestSuccessfulSerializeAndDeserialize(t *testing.T) {
+func TestSuccessfulParamsSerializeAndDeserialize(t *testing.T) {
 	h := simpleHandle()
 
 	var p = make(url.Values)
@@ -54,7 +54,7 @@ func necessaryParams() *url.Values {
 	return &p
 }
 
-func TestDeserializeFromParamsWithMissingParams(t *testing.T) {
+func TestParamsDeserializeWithMissingParams(t *testing.T) {
 	p := necessaryParams()
 
 	_, err := parseHandleFromParams(p)
@@ -78,4 +78,14 @@ func TestDeserializeFromParamsWithMissingParams(t *testing.T) {
 	p.Del("h3")
 	_, err = parseHandleFromParams(p)
 	gt.AssertNotNil(t, err)
+}
+
+func TestSuccessfulUrlSerializesAndDeserialize(t *testing.T) {
+	h := simpleHandle();
+
+	url := serializeHandleToUrl(h, "suffix", "page")
+	h2, err := parseHandleFromUrl(url)
+
+	gt.AssertNil(t, err)
+	gt.AssertEqualM(t, h, h2, "Expected serialize/deserialize to return the same result.")
 }
