@@ -36,14 +36,16 @@ func Setup(serverConfig *ServerConfig) {
 	// Writes the result to storage, but doesn't return any data.
 	http.HandleFunc("/drawmap_worker", DrawMapWorker)
 
-	// Displays the requested image (as an image/png)
+	// Displays the requested image (as a raw image/png)
 	http.HandleFunc("/render/", RenderHandler)
 
 	// Polls, waiting for the requested image to be ready, and once it is
-	// displays that image. (This returns text/html).
+	// displays that image. (This returns text/html, with an embedded <img>
+	// referenceing a "/render/" endpoint.)
 	http.HandleFunc("/display/", ResultPageHandler)
 
-	// Checks if the requested image is ready or not.
+	// Checks if the requested image is ready or not (used for polling on
+	// the "display" page.
 	http.HandleFunc("/is_ready/", IsReadyHandler)
 }
 

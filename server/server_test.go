@@ -7,6 +7,7 @@ import (
 	"http"
 	"os"
 	"testing"
+	"url"
 )
 
 func TestObjectReady(t *testing.T) {
@@ -46,7 +47,7 @@ func TestAuthorization(t *testing.T) {
 	Setup(cfg)
 
 	authUrl := "http://myhost.com/authorize?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
-		"start=5&end=6"
+		"&start=5&end=6"
 
 	req, err := http.NewRequest("GET", authUrl, nil)
 	gt.AssertNil(t, err)
@@ -61,6 +62,54 @@ func TestAuthorization(t *testing.T) {
 	gt.AssertEqualM(t, "http://redirect.com", res.Headers.Get("Location"),
 		"Should redirect to specified URL")
 }
+
+func TestAsyncTaskCreation(t *testing.T) {
+	q := &FakeTaskQueue{}
+	cfg := &ServerConfig{taskQueue: &FakeTaskQueueProvider{target: q}}
+	Setup(cfg)
+
+	u := "http://myhost.com/async_drawmap/?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
+		"&start=5&end=6&oauth_token=tok&oauth_verifier=ver"
+	req, err := http.NewRequest("GET", u, nil)
+	gt.AssertNil(t, err)
+	res := NewFakeResponse()
+
+	AsyncDrawMapHandler(res, req);
+
+	gt.AssertEqualM(t, http.StatusFound, res.StatusCode, "Should redirect")
+	// TODO(mrjones): verify URL better.
+//	gt.AssertEqualM(t, "/display/100-1-2-3.png", res.Headers.Get("Location"),
+//		"Should redirect to specified URL")
+
+	gt.AssertEqualM(t, "/drawmap_worker", q.lastUrl, "Should enqueue a drawmap worker")
+	gt.AssertEqualM(t, "1.0000000000000000", q.lastParams.Get("lllat"), "token")
+	gt.AssertEqualM(t, "2.0000000000000000", q.lastParams.Get("lllng"), "token")
+	gt.AssertEqualM(t, "3.0000000000000000", q.lastParams.Get("urlat"), "token")
+	gt.AssertEqualM(t, "4.0000000000000000", q.lastParams.Get("urlng"), "token")
+	gt.AssertEqualM(t, "5", q.lastParams.Get("start"), "token")
+	gt.AssertEqualM(t, "6", q.lastParams.Get("end"), "token")
+	gt.AssertEqualM(t, "tok", q.lastParams.Get("oauth_token"), "token")
+	gt.AssertEqualM(t, "ver", q.lastParams.Get("oauth_verifier"), "token")
+}
+
+// FakeTaskQueue
+type FakeTaskQueueProvider struct {
+	target *FakeTaskQueue
+}
+func (f *FakeTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
+	return f.target
+}
+
+type FakeTaskQueue struct {
+	lastUrl string
+	lastParams *url.Values
+}
+func (q *FakeTaskQueue) Enqueue(url string, params *url.Values) os.Error {
+	q.lastUrl = url
+	q.lastParams = params
+	return nil;
+}
+
 
 // FakeLatitudeConnection
 type FakeLatitudeConnector struct {}
