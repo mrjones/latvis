@@ -6,20 +6,28 @@ import (
 
 	"http"
 	"os"
+	"rand"
+	"strconv"
 	"testing"
 	"url"
 )
 
-func TestObjectReady(t *testing.T) {
-	blobStore := NewLocalFSBlobStore("testdir")
-	err := os.Mkdir("testdir", 0755)
+func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
+	dir := randomDirectoryName();
+	err := os.Mkdir(dir, 0755)
 	gt.AssertNil(t, err)
-	defer os.RemoveAll("testdir")
+
+	blobStore := NewLocalFSBlobStore(dir)
+	return dir, blobStore
+}
+
+func TestObjectReady(t *testing.T) {	
+	dir, blobStore := setUpFakeBlobStore(t)
+	defer os.RemoveAll(dir)
 
 	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
-	
 	Setup(cfg)
-	
+
 	req, err := http.NewRequest("GET", "http://myhost.com/is_ready/100-1-2-3.png", nil)
 	gt.AssertNil(t, err)
 
@@ -36,6 +44,23 @@ func TestObjectReady(t *testing.T) {
 	IsReadyHandler(res2, req);
 	gt.AssertEqualM(t, http.StatusOK, res2.StatusCode, "Request should have succeeded")
 	gt.AssertEqualM(t, "ok", res2.Body, "Should have found the object this time.")
+}
+
+func TestObjectReadyMalformedUrl(t *testing.T) {
+	dir, blobStore := setUpFakeBlobStore(t)
+	defer os.RemoveAll(dir)
+
+	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
+	Setup(cfg)
+	
+	req, err := http.NewRequest("GET", "http://myhost.com/is_ready/100-1-2-3", nil)
+	gt.AssertNil(t, err)
+	res := NewFakeResponse()
+	IsReadyHandler(res, req);
+
+	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
+	// TODO(mrjones): check error message
+	// TODO(mrjones): check all different kinds of malformed urls
 }
 
 func TestAuthorization(t *testing.T) {
@@ -90,6 +115,10 @@ func TestAsyncTaskCreation(t *testing.T) {
 	gt.AssertEqualM(t, "6", q.lastParams.Get("end"), "token")
 	gt.AssertEqualM(t, "tok", q.lastParams.Get("oauth_token"), "token")
 	gt.AssertEqualM(t, "ver", q.lastParams.Get("oauth_verifier"), "token")
+}
+
+func randomDirectoryName() string {
+	return "test-dir-" + strconv.Itoa(rand.Int())
 }
 
 // FakeTaskQueue

@@ -57,7 +57,7 @@ func Serve() {
 func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 	handle, err := parseHandleFromUrl(request.URL.Path)
 	if err != nil {
-		response.Write([]byte("error: " + err.String()))
+		serveErrorWithLabel(response, "error parsing blob handle", err)
 		return
 	}
 
