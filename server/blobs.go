@@ -129,22 +129,30 @@ func parseHandleFromUrl(fullpath string) (*Handle, os.Error) {
 // ======================================
 
 type LocalFSBlobStore struct {
+	location string
+}
 
+func NewLocalFSBlobStore(location string) *LocalFSBlobStore {
+	return &LocalFSBlobStore{location: location}
 }
 
 func (s *LocalFSBlobStore) Store(handle *Handle, blob *Blob) os.Error {
+	fmt.Println("Storing handle: " + handle.String())
 	filename := s.filename(handle)
+	fmt.Println("FN: " + filename)
 
 	return ioutil.WriteFile(filename, blob.Data, 0600)
 }
 
 func (s *LocalFSBlobStore) Fetch(handle *Handle) (*Blob, os.Error) {
+	fmt.Println("Looking up handle: " + handle.String())
 	filename := s.filename(handle)
+	fmt.Println("FN: " + filename)
 	data, err := ioutil.ReadFile(filename)
 	blob := &Blob{Data: data}
 	return blob, err
 }
 
 func (s *LocalFSBlobStore) filename(h *Handle) string {
-	return fmt.Sprintf("images/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3)
+	return fmt.Sprintf(s.location + "/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3)
 }

@@ -181,8 +181,10 @@ func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClie
 // LocalFsBlobStore
 //
 // Defers all the work to LocalFsBlobStore in blobs.go
-type LocalFSBlobStoreProvider struct{}
+type LocalFSBlobStoreProvider struct{
+	Location string
+}
 
 func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
-	return &LocalFSBlobStore{}
+	return NewLocalFSBlobStore(p.Location)
 }

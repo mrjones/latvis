@@ -10,9 +10,9 @@ import (
 func simpleHandle() *Handle {
 	return &Handle{
 		timestamp: 0,
-		n1: 1,
-		n2: 2,
-		n3: 3,
+		n1:        1,
+		n2:        2,
+		n3:        3,
 	}
 
 }
@@ -20,13 +20,13 @@ func simpleHandle() *Handle {
 func TestHandleDebugString(t *testing.T) {
 	h := simpleHandle()
 
-	gt.AssertEqualM(t, "0-123", h.String(), "Unexpected handle");
+	gt.AssertEqualM(t, "0-123", h.String(), "Unexpected handle")
 }
 
 func TestHandleUrlString(t *testing.T) {
 	h := simpleHandle()
 
-	gt.AssertEqualM(t, 
+	gt.AssertEqualM(t,
 		"/page/0-1-2-3.xyz",
 		serializeHandleToUrl(h, "xyz", "page"),
 		"Unexpected serialization")
@@ -36,7 +36,7 @@ func TestSuccessfulParamsSerializeAndDeserialize(t *testing.T) {
 	h := simpleHandle()
 
 	var p = make(url.Values)
-	
+
 	serializeHandleToParams(h, &p)
 	h2, err := parseHandleFromParams(&p)
 
@@ -56,7 +56,7 @@ func necessaryParams() *url.Values {
 
 func TestParamsDeserializeWithMissingParams(t *testing.T) {
 	p := necessaryParams()
-
+ 
 	_, err := parseHandleFromParams(p)
 	gt.AssertNil(t, err)
 

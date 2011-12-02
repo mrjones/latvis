@@ -125,7 +125,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 		protocol = "https"
 	}
 	redirectUrl := fmt.Sprintf("%s://%s/async_drawmap?%s", protocol, request.Host, latlng)
-	//	redirectUrl := fmt.Sprintf("%s://%s/drawmap?%s", protocol, request.Host, latlng)
+	//redirectUrl := fmt.Sprintf("%s://%s/drawmap?%s", protocol, request.Host, latlng)
 
 	log.Printf("Redirect URL: '%s'\n", redirectUrl)
 
@@ -149,9 +149,9 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	engine := &RenderEngine{
-		blobStorage:           config.blobStorage,
-		httpClientProvider:    config.httpClient,
-		secretStorageProvider: config.secretStorage,
+	blobStorage:           config.blobStorage,
+	httpClientProvider:    config.httpClient,
+	secretStorageProvider: config.secretStorage,
 	}
 
 	handle := generateNewHandle()
@@ -184,7 +184,6 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
 	url := serializeHandleToUrl(handle, "png", "display")
-	// 	url := serializeHandleToUrl2(handle, "png", "render")
 	http.Redirect(response, request, url, http.StatusFound)
 }
 
@@ -201,9 +200,9 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
 
 	engine := &RenderEngine{
-		blobStorage:           config.blobStorage,
-		httpClientProvider:    config.httpClient,
-		secretStorageProvider: config.secretStorage,
+	blobStorage:           config.blobStorage,
+	httpClientProvider:    config.httpClient,
+	secretStorageProvider: config.secretStorage,
 	}
 
 	// parse from URL
