@@ -31,20 +31,29 @@ type ServerConfig struct {
 	secretStorage HttpOauthSecretStoreProvider
 	taskQueue     HttpUrlTaskQueueProvider
 	latitude      HttpLatitudeConnectionProvider
+
+	renderEngine *RenderEngine
 }
 
 // Use this instead of &ServerConfig{...} directly to get compile-timer
 // errors when new dependencies are introduced.
 func NewConfig(blobStorage HttpBlobStoreProvider,
-	httpClient HttpClientProvider,
-	secretStorage HttpOauthSecretStoreProvider,
-	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
+		httpClient HttpClientProvider,
+		secretStorage HttpOauthSecretStoreProvider,
+		taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
 	return &ServerConfig{
 		blobStorage:   blobStorage,
 		httpClient:    httpClient,
 		secretStorage: secretStorage,
 		taskQueue:     taskQueue,
-	latitude:     &StandardLatitudeConnector{httpClient: httpClient},
+		latitude: &StandardLatitudeConnector{
+			httpClient: httpClient,
+		},
+		renderEngine: &RenderEngine{
+			blobStorage:          blobStorage,
+			httpClientProvider:   httpClient,
+			secretStorageProvider: secretStorage,
+		},
 	}
 }
 
@@ -77,9 +86,6 @@ type HttpUrlTaskQueueProvider interface {
 
 type LatitudeConnection interface {
 	TokenRedirectUrl(callback string) (*oauth.RequestToken, string, os.Error)
-//	NewAccessToken() (*oauth.AccessToken, os.Error)
-//	ParseToken(token *oauth.RequestToken, verifier string) (*oauth.AccessToken, os.Error)
-//	Authorize(token *oauth.AccessToken) *AuthorizedConnection
 }
 
 type HttpLatitudeConnectionProvider interface {
@@ -193,14 +199,14 @@ func (s *InMemoryOauthSecretStore) Lookup(tokenString string) *oauth.RequestToke
 type StandardHttpClientProvider struct{}
 
 func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient {
-return nil
-//	return &http.Client{}
+	return nil
+	//	return &http.Client{}
 }
 
 // LocalFsBlobStore
 //
 // Defers all the work to LocalFsBlobStore in blobs.go
-type LocalFSBlobStoreProvider struct{
+type LocalFSBlobStoreProvider struct {
 	Location string
 }
 

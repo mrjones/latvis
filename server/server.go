@@ -107,10 +107,6 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	connection := config.latitude.NewConnection(request)
 
-//	consumer := latitude.NewConsumer()
-//	consumer.HttpClient = config.httpClient.GetClient(request)
-//	connection := latitude.NewConnectionForConsumer(consumer)
-
 	request.ParseForm()
 	latlng := ""
 	latlng = propogateParameter(latlng, &request.Form, "lllat")
@@ -148,14 +144,8 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	engine := &RenderEngine{
-	blobStorage:           config.blobStorage,
-	httpClientProvider:    config.httpClient,
-	secretStorageProvider: config.secretStorage,
-	}
-
 	handle := generateNewHandle()
-	err = engine.Render(rr, request, handle)
+	err = config.renderEngine.Render(rr, request, handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "DrawMapHandler/engine.Render", err)
@@ -199,12 +189,6 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
 
-	engine := &RenderEngine{
-	blobStorage:           config.blobStorage,
-	httpClientProvider:    config.httpClient,
-	secretStorageProvider: config.secretStorage,
-	}
-
 	// parse from URL
 	handle, err := parseHandleFromParams(&request.Form)
 	if err != nil {
@@ -212,7 +196,7 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = engine.Render(rr, request, handle)
+	err = config.renderEngine.Render(rr, request, handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)
