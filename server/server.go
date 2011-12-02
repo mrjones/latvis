@@ -1,8 +1,6 @@
 package server
 
 import (
-	"github.com/mrjones/latvis/latitude"
-
 	"fmt"
 	"http"
 	"log"
@@ -107,9 +105,11 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
-	consumer := latitude.NewConsumer()
-	consumer.HttpClient = config.httpClient.GetClient(request)
-	connection := latitude.NewConnectionForConsumer(consumer)
+	connection := config.latitude.NewConnection(request)
+
+//	consumer := latitude.NewConsumer()
+//	consumer.HttpClient = config.httpClient.GetClient(request)
+//	connection := latitude.NewConnectionForConsumer(consumer)
 
 	request.ParseForm()
 	latlng := ""

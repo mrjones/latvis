@@ -13,6 +13,7 @@
 package server
 
 import (
+	"github.com/mrjones/latvis/latitude"
 	"github.com/mrjones/oauth"
 
 	"http"
@@ -29,6 +30,7 @@ type ServerConfig struct {
 	httpClient    HttpClientProvider
 	secretStorage HttpOauthSecretStoreProvider
 	taskQueue     HttpUrlTaskQueueProvider
+	latitude      HttpLatitudeConnectionProvider
 }
 
 // Use this instead of &ServerConfig{...} directly to get compile-timer
@@ -42,6 +44,7 @@ func NewConfig(blobStorage HttpBlobStoreProvider,
 		httpClient:    httpClient,
 		secretStorage: secretStorage,
 		taskQueue:     taskQueue,
+	latitude:     &StandardLatitudeConnector{httpClient: httpClient},
 	}
 }
 
@@ -72,6 +75,17 @@ type HttpUrlTaskQueueProvider interface {
 	GetQueue(req *http.Request) UrlTaskQueue
 }
 
+type LatitudeConnection interface {
+	TokenRedirectUrl(callback string) (*oauth.RequestToken, string, os.Error)
+//	NewAccessToken() (*oauth.AccessToken, os.Error)
+//	ParseToken(token *oauth.RequestToken, verifier string) (*oauth.AccessToken, os.Error)
+//	Authorize(token *oauth.AccessToken) *AuthorizedConnection
+}
+
+type HttpLatitudeConnectionProvider interface {
+	NewConnection(req *http.Request) LatitudeConnection
+}
+
 // OAuthSecretStore
 //
 // Stores and retrieves OAuth RequestTokens.
@@ -96,6 +110,10 @@ type OauthSecretStore interface {
 // be the first choice.  Anyway, for now we'll live with it.
 type UrlTaskQueue interface {
 	Enqueue(url string, params *url.Values) os.Error
+}
+
+type OauthConsumerProvider interface {
+	NewConsumer() *oauth.Consumer
 }
 
 // DEFAULT IMPLEMENTATIONS
@@ -175,7 +193,8 @@ func (s *InMemoryOauthSecretStore) Lookup(tokenString string) *oauth.RequestToke
 type StandardHttpClientProvider struct{}
 
 func (s *StandardHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient {
-	return &http.Client{}
+return nil
+//	return &http.Client{}
 }
 
 // LocalFsBlobStore
@@ -187,4 +206,15 @@ type LocalFSBlobStoreProvider struct{
 
 func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 	return NewLocalFSBlobStore(p.Location)
+}
+
+// StandardLatitudeConnectionProvider
+type StandardLatitudeConnector struct {
+	httpClient HttpClientProvider
+}
+
+func (p *StandardLatitudeConnector) NewConnection(req *http.Request) LatitudeConnection {
+	consumer := latitude.NewConsumer()
+	consumer.HttpClient = p.httpClient.GetClient(req)
+	return latitude.NewConnectionForConsumer(consumer)
 }
