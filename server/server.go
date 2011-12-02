@@ -25,7 +25,7 @@ func Setup(serverConfig *ServerConfig) {
 	//   this function is a lot easier to implement on a non-appengine
 	//   stack. (I.e. you don't need to supply an implementation of
 	//   UrlTaskQueue.)
-	http.HandleFunc("/drawmap", DrawMapHandler)
+	http.HandleFunc("/drawmap", SynchronousDrawMapHandler)
 
 	// Asynchronously kicks off a worker to fetch data and generate
 	// an image, and then immediately redirects to a page which displays
@@ -135,12 +135,12 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	http.Redirect(response, request, url, http.StatusFound)
 }
 
-func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
+func SynchronousDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
-		serveErrorWithLabel(response, "DrawMapHandler/deserializeRenderRequest error", err)
+		serveErrorWithLabel(response, "SynchronousDrawMapHandler/deserializeRenderRequest error", err)
 		return
 	}
 
@@ -148,7 +148,7 @@ func DrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	err = config.renderEngine.Render(rr, request, handle)
 
 	if err != nil {
-		serveErrorWithLabel(response, "DrawMapHandler/engine.Render", err)
+		serveErrorWithLabel(response, "SynchronousDrawMapHandler/engine.Render", err)
 		return
 	}
 

@@ -137,17 +137,13 @@ func NewLocalFSBlobStore(location string) *LocalFSBlobStore {
 }
 
 func (s *LocalFSBlobStore) Store(handle *Handle, blob *Blob) os.Error {
-	fmt.Println("Storing handle: " + handle.String())
 	filename := s.filename(handle)
-	fmt.Println("FN: " + filename)
 
 	return ioutil.WriteFile(filename, blob.Data, 0600)
 }
 
 func (s *LocalFSBlobStore) Fetch(handle *Handle) (*Blob, os.Error) {
-	fmt.Println("Looking up handle: " + handle.String())
 	filename := s.filename(handle)
-	fmt.Println("FN: " + filename)
 	data, err := ioutil.ReadFile(filename)
 	blob := &Blob{Data: data}
 	return blob, err
