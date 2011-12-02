@@ -55,6 +55,7 @@ func TestAuthorization(t *testing.T) {
 	AuthorizeHandler(res, req)
 
 	gt.AssertEqualM(t, http.StatusFound, res.StatusCode, "Should redirect")
+	gt.AssertEqualM(t, "http://redirect.com", res.Headers.Get("Location"), "Should redirect to specified URL")
 }
 
 // FakeLatitudeConnection
@@ -65,7 +66,7 @@ func (f *FakeLatitudeConnector) NewConnection(r *http.Request) LatitudeConnectio
 
 type FakeLatitudeConnection struct {}
 func (f *FakeLatitudeConnection) TokenRedirectUrl(callback string) (*oauth.RequestToken,string, os.Error) {
-	return &oauth.RequestToken{Token:"TOKEN", Secret:"SECRET"}, "REDIRECT_URL", nil
+	return &oauth.RequestToken{Token:"TOKEN", Secret:"SECRET"}, "http://redirect.com", nil
 }
 
 //
