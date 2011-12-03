@@ -62,11 +62,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
 	Setup(cfg)
 	
-	req, err := http.NewRequest("GET", "http://myhost.com/is_ready/100-1-2-3", nil)
-	gt.AssertNil(t, err)
-	res := NewFakeResponse()
-	IsReadyHandler(res, req);
-
+	res := execute(t, "http://myhost.com/is_ready/100-1-2-3", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
 	// TODO(mrjones): check error message
 	// TODO(mrjones): check all different kinds of malformed urls
@@ -83,11 +79,7 @@ func TestAuthorization(t *testing.T) {
 	authUrl := "http://myhost.com/authorize?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
 		"&start=5&end=6"
 
-	req, err := http.NewRequest("GET", authUrl, nil)
-	gt.AssertNil(t, err)
-	res := NewFakeResponse()
-
-	AuthorizeHandler(res, req)
+	res := execute(t, authUrl, AuthorizeHandler, cfg)
 
 	// TODO(mrjones): check that the requested redirect (back to our server)
 	// is passed in correctly.
@@ -104,11 +96,8 @@ func TestAsyncTaskCreation(t *testing.T) {
 
 	u := "http://myhost.com/async_drawmap/?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
 		"&start=5&end=6&oauth_token=tok&oauth_verifier=ver"
-	req, err := http.NewRequest("GET", u, nil)
-	gt.AssertNil(t, err)
-	res := NewFakeResponse()
 
-	AsyncDrawMapHandler(res, req);
+	res := execute(t, u, AsyncDrawMapHandler, cfg)
 
 	gt.AssertEqualM(t, http.StatusFound, res.StatusCode, "Should redirect")
 	// TODO(mrjones): verify URL better.
