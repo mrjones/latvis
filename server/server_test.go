@@ -139,8 +139,6 @@ func TestAsyncWorker(t *testing.T) {
 
 	res := execute(t, u, DrawMapWorker, cfg)
 
-	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
-
 	gt.AssertEqualM(t, 1.0, mockEngine.lastRenderRequest.bounds.LowerLeft().Lat, "")
 	gt.AssertEqualM(t, 2.0, mockEngine.lastRenderRequest.bounds.LowerLeft().Lng, "")
 	gt.AssertEqualM(t, 3.0, mockEngine.lastRenderRequest.bounds.UpperRight().Lat, "")
@@ -156,6 +154,8 @@ func TestAsyncWorker(t *testing.T) {
 	gt.AssertEqualM(t, int64(1), mockEngine.lastHandle.n1, "")
 	gt.AssertEqualM(t, int64(2), mockEngine.lastHandle.n2, "")
 	gt.AssertEqualM(t, int64(3), mockEngine.lastHandle.n3, "")
+
+	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
 }
 
 func randomDirectoryName() string {
