@@ -62,10 +62,27 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
 	Setup(cfg)
 	
+	// TODO(mrjones): check error messages
+
+  // No ".png" extension
 	res := execute(t, "http://myhost.com/is_ready/100-1-2-3", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
-	// TODO(mrjones): check error message
-	// TODO(mrjones): check all different kinds of malformed urls
+
+  // No "is_ready" path
+	res = execute(t, "http://myhost.com/100-1-2-3.png", IsReadyHandler, cfg)
+	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
+
+  // Extraneous path
+	res = execute(t, "http://myhost.com/random/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
+	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
+
+  // Not enough parts in the handle
+	res = execute(t, "http://myhost.com/is_ready/100-1-2.png", IsReadyHandler, cfg)
+	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
+
+  // Non-numeric parts in the handle
+	res = execute(t, "http://myhost.com/is_ready/a-1-2-3.png", IsReadyHandler, cfg)
+	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
 }
 
 func TestAuthorization(t *testing.T) {
@@ -136,7 +153,6 @@ func (q *FakeTaskQueue) Enqueue(url string, params *url.Values) os.Error {
 	q.lastParams = params
 	return nil;
 }
-
 
 // FakeLatitudeConnection
 type FakeLatitudeConnector struct {}
