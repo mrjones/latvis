@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"template"
 	"url"
 )
 
@@ -70,6 +71,10 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
+type ResultPageInfo struct {
+	filename string
+}
+
 func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 	urlParts := strings.Split(request.URL.Path, "/")
 	if len(urlParts) != 3 {
@@ -79,8 +84,12 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 		serveError(response, os.NewError("Invalid filename [2]: "+request.URL.Path))
 	}
 
-	// TODO(mrjones): move to an HTML template
-	response.Write([]byte("<html><body><div id='canvas' /><img src='/img/spinner.gif' id='spinner' /><br /><div id='debug'/><script type='text/javascript' src='/js/image-loader.js'></script><script type='text/javascript'>loadImage('" + urlParts[2] + "', 5);</script></body></html>"))
+	t, err := template.ParseFile("display_page.template")
+	if err != nil {
+		serveErrorWithLabel(response, "Template parsing error", err)
+		return
+	}
+	t.Execute(response, &ResultPageInfo{filename: urlParts[2]})
 }
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {

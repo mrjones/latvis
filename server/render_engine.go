@@ -162,6 +162,7 @@ type RenderEngine struct {
 func (r *RenderEngine) Render(renderRequest *RenderRequest,
 httpRequest *http.Request,
 handle *Handle) os.Error {
+
 	consumer := latitude.NewConsumer()
 	consumer.HttpClient = r.httpClientProvider.GetClient(httpRequest)
 	connection := latitude.NewConnectionForConsumer(consumer)
