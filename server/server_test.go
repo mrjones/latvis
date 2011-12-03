@@ -21,27 +21,36 @@ func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
 	return dir, blobStore
 }
 
+func execute(t *testing.T,
+	url string,
+	handler func(http.ResponseWriter, *http.Request),
+	cfg *ServerConfig) *FakeResponse {
+	Setup(cfg)
+
+	req, err := http.NewRequest("GET", url, nil)
+	gt.AssertNil(t, err)
+
+	res := NewFakeResponse()
+	handler(res, req);
+
+	return res
+}
+
 func TestObjectReady(t *testing.T) {	
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
 
 	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
-	Setup(cfg)
 
-	req, err := http.NewRequest("GET", "http://myhost.com/is_ready/100-1-2-3.png", nil)
-	gt.AssertNil(t, err)
-
-	res1 := NewFakeResponse()
-	IsReadyHandler(res1, req);
+	res1 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusOK, res1.StatusCode, "Request should have succeeded")
 	gt.AssertEqualM(t, "fail", res1.Body, "Should not have found the object")
 
 	h := &Handle{n1:1, n2:2, n3:3, timestamp: 100}
-	err = cfg.blobStorage.OpenStore(req).Store(h, &Blob{})
+	err := cfg.blobStorage.OpenStore(nil).Store(h, &Blob{})
 	gt.AssertNil(t, err)
 
-	res2 := NewFakeResponse()
-	IsReadyHandler(res2, req);
+	res2 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusOK, res2.StatusCode, "Request should have succeeded")
 	gt.AssertEqualM(t, "ok", res2.Body, "Should have found the object this time.")
 }
