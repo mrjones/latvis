@@ -13,30 +13,6 @@ import (
 	"url"
 )
 
-func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
-	dir := randomDirectoryName();
-	err := os.Mkdir(dir, 0755)
-	gt.AssertNil(t, err)
-
-	blobStore := NewLocalFSBlobStore(dir)
-	return dir, blobStore
-}
-
-func execute(t *testing.T,
-	url string,
-	handler func(http.ResponseWriter, *http.Request),
-	cfg *ServerConfig) *FakeResponse {
-	Setup(cfg)
-
-	req, err := http.NewRequest("GET", url, nil)
-	gt.AssertNil(t, err)
-
-	res := NewFakeResponse()
-	handler(res, req);
-
-	return res
-}
-
 func TestObjectReady(t *testing.T) {	
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
@@ -106,8 +82,8 @@ func TestAuthorization(t *testing.T) {
 }
 
 func TestAsyncTaskCreation(t *testing.T) {
-	q := &FakeTaskQueue{}
-	cfg := &ServerConfig{taskQueue: &FakeTaskQueueProvider{target: q}}
+	q := &MockTaskQueue{}
+	cfg := &ServerConfig{taskQueue: &MockTaskQueueProvider{target: q}}
 
 	u := "http://myhost.com/async_drawmap/?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
 		"&start=5&end=6&oauth_token=tok&oauth_verifier=ver"
@@ -158,6 +134,30 @@ func TestAsyncWorker(t *testing.T) {
 	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
 }
 
+func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
+	dir := randomDirectoryName();
+	err := os.Mkdir(dir, 0755)
+	gt.AssertNil(t, err)
+
+	blobStore := NewLocalFSBlobStore(dir)
+	return dir, blobStore
+}
+
+func execute(t *testing.T,
+	url string,
+	handler func(http.ResponseWriter, *http.Request),
+	cfg *ServerConfig) *FakeResponse {
+	Setup(cfg)
+
+	req, err := http.NewRequest("GET", url, nil)
+	gt.AssertNil(t, err)
+
+	res := NewFakeResponse()
+	handler(res, req);
+
+	return res
+}
+
 func randomDirectoryName() string {
 	return "test-dir-" + strconv.Itoa(rand.Int())
 }
@@ -176,19 +176,19 @@ func (m *MockRenderEngine) Render(
 	return nil
 }
 
-// FakeTaskQueue
-type FakeTaskQueueProvider struct {
-	target *FakeTaskQueue
+// MockTaskQueue
+type MockTaskQueueProvider struct {
+	target *MockTaskQueue
 }
-func (f *FakeTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
+func (f *MockTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
 	return f.target
 }
 
-type FakeTaskQueue struct {
+type MockTaskQueue struct {
 	lastUrl string
 	lastParams *url.Values
 }
-func (q *FakeTaskQueue) Enqueue(url string, params *url.Values) os.Error {
+func (q *MockTaskQueue) Enqueue(url string, params *url.Values) os.Error {
 	q.lastUrl = url
 	q.lastParams = params
 	return nil;
