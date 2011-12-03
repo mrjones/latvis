@@ -8,6 +8,7 @@ import (
 	"os"
 	"rand"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 	"url"
@@ -134,6 +135,17 @@ func TestAsyncWorker(t *testing.T) {
 	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
 }
 
+func TestDisplayPage(t *testing.T) {
+	cfg := &ServerConfig{}
+
+	u := "http://myhost.com/display/100-1-2-3.png"
+	res := execute(t, u, ResultPageHandler, cfg)
+
+	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
+	gt.AssertTrueM(t, strings.Contains(res.Body, "loadImage('100-1-2-3.png'"),
+		"Missing expected loadImage call in [" + res.Body + "]")
+}
+
 func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
 	dir := randomDirectoryName()
 	err := os.Mkdir(dir, 0755)
@@ -238,6 +250,6 @@ func (r *FakeResponse) Write(body []byte) (int, os.Error) {
 	if r.StatusCode == -1 {
 		r.StatusCode = 200
 	}
-	r.Body = string(body)
+	r.Body = r.Body + string(body)
 	return len(body), nil
 }

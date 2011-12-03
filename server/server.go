@@ -72,7 +72,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 type ResultPageInfo struct {
-	filename string
+	Filename string
 }
 
 var resultPageSource = `
@@ -83,7 +83,7 @@ var resultPageSource = `
   <br />
   <div id='debug' />
   <script type='text/javascript' src='/js/image-loader.js'></script>
-  <script type='text/javascript'>loadImage('{filename}', 5);</script>
+  <script type='text/javascript'>loadImage('{{.Filename}}', 5);</script>
  </body>
 </html>`
 
@@ -101,7 +101,7 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 		serveErrorWithLabel(response, "Template parsing error", err)
 		return
 	}
-	t.Execute(response, &ResultPageInfo{filename: urlParts[2]})
+	t.Execute(response, &ResultPageInfo{Filename: urlParts[2]})
 }
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
