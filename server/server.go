@@ -75,6 +75,18 @@ type ResultPageInfo struct {
 	filename string
 }
 
+var resultPageSource = `
+<html>
+ <body>
+  <div id='canvas' />
+  <img src='/img/spinner.gif' id='spinner' />
+  <br />
+  <div id='debug' />
+  <script type='text/javascript' src='/js/image-loader.js'></script>
+  <script type='text/javascript'>loadImage('{filename}', 5);</script>
+ </body>
+</html>`
+
 func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 	urlParts := strings.Split(request.URL.Path, "/")
 	if len(urlParts) != 3 {
@@ -84,7 +96,7 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 		serveError(response, os.NewError("Invalid filename [2]: "+request.URL.Path))
 	}
 
-	t, err := template.ParseFile("display_page.template")
+	t, err := template.New("Result Page").Parse(resultPageSource)
 	if err != nil {
 		serveErrorWithLabel(response, "Template parsing error", err)
 		return
