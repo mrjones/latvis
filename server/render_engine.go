@@ -96,8 +96,8 @@ func deserializeRenderRequest(params *url.Values) (*RenderRequest, os.Error) {
 // ======================================
 
 func extractCoordinateFromUrl(params *url.Values,
-	latparam string,
-	lngparam string) (*location.Coordinate, os.Error) {
+latparam string,
+lngparam string) (*location.Coordinate, os.Error) {
 	if params.Get(latparam) == "" {
 		return nil, os.NewError("Missing required query paramter: " + latparam)
 	}
@@ -149,8 +149,8 @@ func propogateParameter(base string, params *url.Values, key string) string {
 // Capable of executing RenderRequests.
 type RenderEngineInterface interface {
 	Render(renderRequest *RenderRequest,
-		httpRequest *http.Request,
-		handle *Handle) os.Error
+	httpRequest *http.Request,
+	handle *Handle) os.Error
 }
 
 type RenderEngine struct {
@@ -160,8 +160,8 @@ type RenderEngine struct {
 }
 
 func (r *RenderEngine) Render(renderRequest *RenderRequest,
-	httpRequest *http.Request,
-	handle *Handle) os.Error {
+httpRequest *http.Request,
+handle *Handle) os.Error {
 	consumer := latitude.NewConsumer()
 	consumer.HttpClient = r.httpClientProvider.GetClient(httpRequest)
 	connection := latitude.NewConnectionForConsumer(consumer)

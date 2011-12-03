@@ -56,11 +56,11 @@ func necessaryParams() *url.Values {
 
 func TestParamsDeserializeWithMissingParams(t *testing.T) {
 	p := necessaryParams()
- 
+
 	_, err := parseHandleFromParams(p)
 	gt.AssertNil(t, err)
 
-	p.Del("hStamp");
+	p.Del("hStamp")
 	_, err = parseHandleFromParams(p)
 	gt.AssertNotNil(t, err)
 
@@ -81,7 +81,7 @@ func TestParamsDeserializeWithMissingParams(t *testing.T) {
 }
 
 func TestSuccessfulUrlSerializesAndDeserialize(t *testing.T) {
-	h := simpleHandle();
+	h := simpleHandle()
 
 	url := serializeHandleToUrl(h, "suffix", "page")
 	h2, err := parseHandleFromUrl(url)

@@ -38,9 +38,9 @@ type ServerConfig struct {
 // Use this instead of &ServerConfig{...} directly to get compile-timer
 // errors when new dependencies are introduced.
 func NewConfig(blobStorage HttpBlobStoreProvider,
-		httpClient HttpClientProvider,
-		secretStorage HttpOauthSecretStoreProvider,
-		taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
+httpClient HttpClientProvider,
+secretStorage HttpOauthSecretStoreProvider,
+taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
 	return &ServerConfig{
 		blobStorage:   blobStorage,
 		httpClient:    httpClient,
@@ -50,8 +50,8 @@ func NewConfig(blobStorage HttpBlobStoreProvider,
 			httpClient: httpClient,
 		},
 		renderEngine: &RenderEngine{
-			blobStorage:          blobStorage,
-			httpClientProvider:   httpClient,
+			blobStorage:           blobStorage,
+			httpClientProvider:    httpClient,
 			secretStorageProvider: secretStorage,
 		},
 	}

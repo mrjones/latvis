@@ -13,7 +13,7 @@ import (
 	"url"
 )
 
-func TestObjectReady(t *testing.T) {	
+func TestObjectReady(t *testing.T) {
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
 
@@ -23,7 +23,7 @@ func TestObjectReady(t *testing.T) {
 	gt.AssertEqualM(t, http.StatusOK, res1.StatusCode, "Request should have succeeded")
 	gt.AssertEqualM(t, "fail", res1.Body, "Should not have found the object")
 
-	h := &Handle{n1:1, n2:2, n3:3, timestamp: 100}
+	h := &Handle{n1: 1, n2: 2, n3: 3, timestamp: 100}
 	err := cfg.blobStorage.OpenStore(nil).Store(h, &Blob{})
 	gt.AssertNil(t, err)
 
@@ -37,35 +37,35 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
-	
+
 	// TODO(mrjones): check error messages
 
-  // No ".png" extension
+	// No ".png" extension
 	res := execute(t, "http://myhost.com/is_ready/100-1-2-3", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
 
-  // No "is_ready" path
+	// No "is_ready" path
 	res = execute(t, "http://myhost.com/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
 
-  // Extraneous path
+	// Extraneous path
 	res = execute(t, "http://myhost.com/random/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
 
-  // Not enough parts in the handle
+	// Not enough parts in the handle
 	res = execute(t, "http://myhost.com/is_ready/100-1-2.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
 
-  // Non-numeric parts in the handle
+	// Non-numeric parts in the handle
 	res = execute(t, "http://myhost.com/is_ready/a-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusInternalServerError, res.StatusCode, "Should have been an error")
 }
 
 func TestAuthorization(t *testing.T) {
 	cfg := &ServerConfig{
-	secretStorage: &InMemoryOauthSecretStoreProvider{},
-	httpClient: &StandardHttpClientProvider{},
-	latitude: &FakeLatitudeConnector{},
+		secretStorage: &InMemoryOauthSecretStoreProvider{},
+		httpClient:    &StandardHttpClientProvider{},
+		latitude:      &FakeLatitudeConnector{},
 	}
 
 	authUrl := "http://myhost.com/authorize?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
@@ -92,8 +92,8 @@ func TestAsyncTaskCreation(t *testing.T) {
 
 	gt.AssertEqualM(t, http.StatusFound, res.StatusCode, "Should redirect")
 	// TODO(mrjones): verify URL better.
-//	gt.AssertEqualM(t, "/display/100-1-2-3.png", res.Headers.Get("Location"),
-//		"Should redirect to specified URL")
+	//	gt.AssertEqualM(t, "/display/100-1-2-3.png", res.Headers.Get("Location"),
+	//		"Should redirect to specified URL")
 
 	gt.AssertEqualM(t, "/drawmap_worker", q.lastUrl, "Should enqueue a drawmap worker")
 	gt.AssertEqualM(t, "1.0000000000000000", q.lastParams.Get("lllat"), "token")
@@ -135,7 +135,7 @@ func TestAsyncWorker(t *testing.T) {
 }
 
 func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
-	dir := randomDirectoryName();
+	dir := randomDirectoryName()
 	err := os.Mkdir(dir, 0755)
 	gt.AssertNil(t, err)
 
@@ -144,16 +144,16 @@ func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
 }
 
 func execute(t *testing.T,
-	url string,
-	handler func(http.ResponseWriter, *http.Request),
-	cfg *ServerConfig) *FakeResponse {
+url string,
+handler func(http.ResponseWriter, *http.Request),
+cfg *ServerConfig) *FakeResponse {
 	Setup(cfg)
 
 	req, err := http.NewRequest("GET", url, nil)
 	gt.AssertNil(t, err)
 
 	res := NewFakeResponse()
-	handler(res, req);
+	handler(res, req)
 
 	return res
 }
@@ -165,11 +165,10 @@ func randomDirectoryName() string {
 // MockRenderEngine
 type MockRenderEngine struct {
 	lastRenderRequest *RenderRequest
-	lastHandle *Handle
+	lastHandle        *Handle
 }
 
-func (m *MockRenderEngine) Render(
-	renderReq *RenderRequest, httpReq *http.Request, h *Handle) os.Error {
+func (m *MockRenderEngine) Render(renderReq *RenderRequest, httpReq *http.Request, h *Handle) os.Error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
 
@@ -180,29 +179,33 @@ func (m *MockRenderEngine) Render(
 type MockTaskQueueProvider struct {
 	target *MockTaskQueue
 }
+
 func (f *MockTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
 	return f.target
 }
 
 type MockTaskQueue struct {
-	lastUrl string
+	lastUrl    string
 	lastParams *url.Values
 }
+
 func (q *MockTaskQueue) Enqueue(url string, params *url.Values) os.Error {
 	q.lastUrl = url
 	q.lastParams = params
-	return nil;
+	return nil
 }
 
 // FakeLatitudeConnection
-type FakeLatitudeConnector struct {}
+type FakeLatitudeConnector struct{}
+
 func (f *FakeLatitudeConnector) NewConnection(r *http.Request) LatitudeConnection {
 	return &FakeLatitudeConnection{}
 }
 
-type FakeLatitudeConnection struct { }
-func (f *FakeLatitudeConnection) TokenRedirectUrl(callback string) (*oauth.RequestToken,string, os.Error) {
-	return &oauth.RequestToken{Token:"TOKEN", Secret:"SECRET"}, "http://redirect.com", nil
+type FakeLatitudeConnection struct{}
+
+func (f *FakeLatitudeConnection) TokenRedirectUrl(callback string) (*oauth.RequestToken, string, os.Error) {
+	return &oauth.RequestToken{Token: "TOKEN", Secret: "SECRET"}, "http://redirect.com", nil
 }
 
 //
@@ -211,6 +214,7 @@ func (f *FakeLatitudeConnection) TokenRedirectUrl(callback string) (*oauth.Reque
 type DumbBlobStoreProvider struct {
 	Target BlobStore
 }
+
 func (p *DumbBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 	return p.Target
 }
@@ -219,20 +223,21 @@ func (p *DumbBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 // Fake Response
 //
 type FakeResponse struct {
-	Headers http.Header
-	Body string
+	Headers    http.Header
+	Body       string
 	StatusCode int
 }
 
-func NewFakeResponse() *FakeResponse{
+func NewFakeResponse() *FakeResponse {
 	return &FakeResponse{Headers: make(http.Header), StatusCode: -1}
 }
 
-func (r *FakeResponse) Header() http.Header { return r.Headers }
-func (r *FakeResponse) WriteHeader(statusCode int) { r.StatusCode = statusCode } 
+func (r *FakeResponse) Header() http.Header        { return r.Headers }
+func (r *FakeResponse) WriteHeader(statusCode int) { r.StatusCode = statusCode }
 func (r *FakeResponse) Write(body []byte) (int, os.Error) {
-	if r.StatusCode == -1 { r.StatusCode = 200 }
+	if r.StatusCode == -1 {
+		r.StatusCode = 200
+	}
 	r.Body = string(body)
 	return len(body), nil
 }
-

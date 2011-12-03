@@ -150,5 +150,5 @@ func (s *LocalFSBlobStore) Fetch(handle *Handle) (*Blob, os.Error) {
 }
 
 func (s *LocalFSBlobStore) filename(h *Handle) string {
-	return fmt.Sprintf(s.location + "/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3)
+	return fmt.Sprintf(s.location+"/%d-%d%d%d.png", h.timestamp, h.n1, h.n2, h.n3)
 }
