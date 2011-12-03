@@ -32,7 +32,7 @@ type ServerConfig struct {
 	taskQueue     HttpUrlTaskQueueProvider
 	latitude      HttpLatitudeConnectionProvider
 
-	renderEngine *RenderEngine
+	renderEngine RenderEngineInterface
 }
 
 // Use this instead of &ServerConfig{...} directly to get compile-timer

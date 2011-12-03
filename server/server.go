@@ -204,6 +204,8 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		serveErrorWithLabel(response, "engine.Render error", err)
 		return
 	}
+
+	response.WriteHeader(http.StatusOK)
 }
 
 func serveErrorWithLabel(response http.ResponseWriter, message string, err os.Error) {

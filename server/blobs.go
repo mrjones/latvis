@@ -64,17 +64,17 @@ func parseHandleFromParams(p *url.Values) (*Handle, os.Error) {
 
 	n1, err := strconv.Atoi64(p.Get("h1"))
 	if err != nil {
-		return nil, os.NewError("[n1=" + p.Get("n1") + "]" + err.String())
+		return nil, os.NewError("[h1=" + p.Get("h1") + "]" + err.String())
 	}
 
 	n2, err := strconv.Atoi64(p.Get("h2"))
 	if err != nil {
-		return nil, os.NewError("[n2=" + p.Get("n2") + "]" + err.String())
+		return nil, os.NewError("[h2=" + p.Get("h2") + "]" + err.String())
 	}
 
 	n3, err := strconv.Atoi64(p.Get("h3"))
 	if err != nil {
-		return nil, os.NewError("[n3=" + p.Get("n3") + "]" + err.String())
+		return nil, os.NewError("[h3=" + p.Get("h3") + "]" + err.String())
 	}
 
 	return &Handle{timestamp: timestamp, n1: n1, n2: n2, n3: n3}, nil

@@ -147,6 +147,12 @@ func propogateParameter(base string, params *url.Values, key string) string {
 }
 
 // Capable of executing RenderRequests.
+type RenderEngineInterface interface {
+	Render(renderRequest *RenderRequest,
+		httpRequest *http.Request,
+		handle *Handle) os.Error
+}
+
 type RenderEngine struct {
 	blobStorage           HttpBlobStoreProvider
 	httpClientProvider    HttpClientProvider

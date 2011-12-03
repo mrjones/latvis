@@ -60,7 +60,6 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
-	Setup(cfg)
 	
 	// TODO(mrjones): check error messages
 
@@ -91,7 +90,6 @@ func TestAuthorization(t *testing.T) {
 	httpClient: &StandardHttpClientProvider{},
 	latitude: &FakeLatitudeConnector{},
 	}
-	Setup(cfg)
 
 	authUrl := "http://myhost.com/authorize?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
 		"&start=5&end=6"
@@ -109,7 +107,6 @@ func TestAuthorization(t *testing.T) {
 func TestAsyncTaskCreation(t *testing.T) {
 	q := &FakeTaskQueue{}
 	cfg := &ServerConfig{taskQueue: &FakeTaskQueueProvider{target: q}}
-	Setup(cfg)
 
 	u := "http://myhost.com/async_drawmap/?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
 		"&start=5&end=6&oauth_token=tok&oauth_verifier=ver"
@@ -132,8 +129,35 @@ func TestAsyncTaskCreation(t *testing.T) {
 	gt.AssertEqualM(t, "ver", q.lastParams.Get("oauth_verifier"), "token")
 }
 
+func TestAsyncWorker(t *testing.T) {
+	mockEngine := &MockRenderEngine{}
+	cfg := &ServerConfig{renderEngine: mockEngine}
+
+	u := "http://myhost.com/drsawmap_worker/?lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0" +
+		"&start=5&end=6&oauth_token=tok&oauth_verifier=ver&hStamp=100&h1=1&h2=2&h3=3"
+
+	res := execute(t, u, DrawMapWorker, cfg)
+
+	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
+	gt.AssertEqualM(t, 1.0, mockEngine.lastRenderRequest.bounds.LowerLeft().Lat, "")
+}
+
 func randomDirectoryName() string {
 	return "test-dir-" + strconv.Itoa(rand.Int())
+}
+
+// MockRenderEngine
+type MockRenderEngine struct {
+	lastRenderRequest *RenderRequest
+	lastHandle *Handle
+}
+
+func (m *MockRenderEngine) Render(
+	renderReq *RenderRequest, httpReq *http.Request, h *Handle) os.Error {
+	m.lastRenderRequest = renderReq
+	m.lastHandle = h
+
+	return nil
 }
 
 // FakeTaskQueue
