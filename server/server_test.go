@@ -9,6 +9,7 @@ import (
 	"rand"
 	"strconv"
 	"testing"
+	"time"
 	"url"
 )
 
@@ -139,7 +140,22 @@ func TestAsyncWorker(t *testing.T) {
 	res := execute(t, u, DrawMapWorker, cfg)
 
 	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
+
 	gt.AssertEqualM(t, 1.0, mockEngine.lastRenderRequest.bounds.LowerLeft().Lat, "")
+	gt.AssertEqualM(t, 2.0, mockEngine.lastRenderRequest.bounds.LowerLeft().Lng, "")
+	gt.AssertEqualM(t, 3.0, mockEngine.lastRenderRequest.bounds.UpperRight().Lat, "")
+	gt.AssertEqualM(t, 4.0, mockEngine.lastRenderRequest.bounds.UpperRight().Lng, "")
+
+	gt.AssertEqualM(t, time.SecondsToUTC(5), mockEngine.lastRenderRequest.start, "")
+	gt.AssertEqualM(t, time.SecondsToUTC(6), mockEngine.lastRenderRequest.end, "")
+
+	gt.AssertEqualM(t, "tok", mockEngine.lastRenderRequest.oauthToken, "")
+	gt.AssertEqualM(t, "ver", mockEngine.lastRenderRequest.oauthVerifier, "")
+
+	gt.AssertEqualM(t, int64(100), mockEngine.lastHandle.timestamp, "")
+	gt.AssertEqualM(t, int64(1), mockEngine.lastHandle.n1, "")
+	gt.AssertEqualM(t, int64(2), mockEngine.lastHandle.n2, "")
+	gt.AssertEqualM(t, int64(3), mockEngine.lastHandle.n3, "")
 }
 
 func randomDirectoryName() string {
