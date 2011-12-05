@@ -79,7 +79,10 @@ var resultPageSource = `
 <html>
  <body>
   <div id='canvas' />
-  <img src='/img/spinner.gif' id='spinner' />
+  <div id='loading' style='width:auto; padding: 5em; text-align: center'>
+    <img src='/img/generating.png' id='generating' />
+    <img src='/img/spinner.gif' id='spinner' />
+  </div>
   <br />
   <div id='debug' />
   <script type='text/javascript' src='/js/image-loader.js'></script>

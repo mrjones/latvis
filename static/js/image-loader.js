@@ -4,14 +4,14 @@ var loadImage = function(filename, backoff) {
   }
   doAjax("/is_ready/" + filename, function(result) {
     if (result == 'ok') {
-      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
       var canvas = document.getElementById('canvas');
       var map = document.createElement('img');
       map.setAttribute('src', '/render/' + filename);
       canvas.appendChild(map);
     } else if (result = 'fail') {
       setTimeout("loadImage('" + filename + "', " + backoff + " * 1.5)", backoff * 1000);
-      document.getElementById('debug').innerHTML = 'backing off: ' + backoff;
+//      document.getElementById('debug').innerHTML = 'backing off: ' + backoff;
     } else {
       alert("Unexpected Result: " + result);
     }
