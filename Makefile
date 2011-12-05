@@ -43,4 +43,8 @@ test:   test.dirs
 nuke: nuke.dirs
 				rm -rf "$(GOROOT)"/pkg/*
 
+appengine_local: install
+				dev_appserver.py --address mrjon.es .
 
+appengine_deploy: install
+				appcfg.py update .
