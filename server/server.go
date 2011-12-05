@@ -78,6 +78,7 @@ type ResultPageInfo struct {
 var resultPageSource = `
 <html>
  <head>
+  <title>image - latvis.mrjon.es</title>
   <link rel='stylesheet' media='all' href='/css/style.css'>
  </head>
  <body class='latvis-render'>
