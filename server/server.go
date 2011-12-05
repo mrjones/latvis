@@ -77,16 +77,33 @@ type ResultPageInfo struct {
 
 var resultPageSource = `
 <html>
- <body>
-  <div id='canvas' />
+ <head>
+  <link rel='stylesheet' media='all' href='/css/style.css'>
+ </head>
+ <body class='latvis-render'>
+  <div id='metadata' class='latvis-metadata' style='display:none;'></div>
+  <div id='canvas' class='latvis-image'></div>
   <div id='loading' style='width:auto; padding: 5em; text-align: center'>
     <img src='/img/generating.png' id='generating' />
+    <br />
     <img src='/img/spinner.gif' id='spinner' />
   </div>
   <br />
-  <div id='debug' />
+  <div id='debug'></div>
   <script type='text/javascript' src='/js/image-loader.js'></script>
   <script type='text/javascript'>loadImage('{{.Filename}}', 5);</script>
+  <script type="text/javascript">
+   var _gaq = _gaq || [];
+   _gaq.push(['_setAccount', 'UA-16767111-2']);
+   _gaq.push(['_trackPageview']);
+   _gaq.push(['_trackPageLoadTime']);
+
+   (function() {
+     var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+     ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
  </body>
 </html>`
 

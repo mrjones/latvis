@@ -233,3 +233,24 @@ img {
   -webkit-border-radius: 4px;
   background: #eeeeee;
 }
+
+.latvis-render body {
+  margin: 0
+}
+
+.latvis-render .latvis-metadata {
+  background-color: #EEEEEE;
+  border-bottom: 1px solid #999999;
+  padding: 1em;
+  vertical-align: middle;
+}
+
+.latvis-render .latvis-generate-link a {
+  font-weight: bold;
+  color: #CC6600;  
+}
+
+.latvis-render .latvis-image {
+  width: auto;
+  text-align: center;
+}
