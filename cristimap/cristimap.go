@@ -7,6 +7,8 @@ import (
 	"log"
 	"io/ioutil"
 	"os"
+	"strings"
+	"strconv"
 	"time"
 )
 
@@ -380,9 +382,48 @@ func (s *StaticHistorySource) FetchRange(start, end time.Time) (*location.Histor
 	return &h, nil
 }
 
+type FileHistorySource struct { }
+
+func (s *FileHistorySource) GetHistory(year int64, month int) (*location.History, os.Error) {
+	log.Printf("GH")
+	return nil, nil
+}
+
+func (s *FileHistorySource) FetchRange(start, end time.Time) (*location.History, os.Error) {
+	b, err := ioutil.ReadFile("/home/mrjones/coffeelatlng.txt")
+	if err != nil {
+		panic(err)
+	}
+	str := string(b)
+	h := make(location.History, 0)
+
+	i := 0;
+	lines := strings.Split(str, "\r\n");
+	for _, line := range lines {
+		if len(line) > 0 {
+			i++
+			latlng := strings.Split(line, "\t")
+			lat, err := strconv.Atof64(latlng[0])
+			if err != nil {
+				log.Printf("Error with: %d -> %s", i,  latlng[0])
+				panic(err)
+			}
+			lng, err := strconv.Atof64(latlng[1])
+			if err != nil {
+				log.Printf("Error converting %d [%s]\n", i, line)
+				log.Printf("Error converting %d [%s]", i, latlng[1])
+				panic(err)
+			}
+			h = append(h, &location.Coordinate{Lat: lat, Lng: lng})
+		}
+	}
+	return &h, nil
+}
+
 func main() {
 	var data location.HistorySource
-	data = &StaticHistorySource{}
+//	data = &StaticHistorySource{}
+	data = &FileHistorySource{}
 //	http://latvis.mrjon.es/authorize
 //?lllat=40.68820915280362&lllng=-74.03124499511716
 //&urlat=40.86188317984097&urlng=-73.8959758300781
@@ -410,5 +451,5 @@ func main() {
 		panic(err)
 	}
 
-	ioutil.WriteFile("/var/www/cristimap.png", *bytes, 0777)
+	ioutil.WriteFile("/var/www/coffee.png", *bytes, 0777)
 }
