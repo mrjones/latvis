@@ -10,6 +10,7 @@ DIRS=\
 				visualization\
 				server\
 				localserver\
+        cristimap\
 
 TEST=\
 				location\
