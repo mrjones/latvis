@@ -3,6 +3,7 @@ package location
 import (
 	"os"
 	"time"
+	"log"
 )
 
 type Coordinate struct {
@@ -35,6 +36,7 @@ func (b *BoundingBox) isReversed() bool {
 }
 
 func (b *BoundingBox) Contains(c *Coordinate) bool {
+	log.Printf("Checking: %f,%f\n", c.Lat, c.Lng)
 	boxShift := 0.0
 	pointShift := 0.0
 	if b.isReversed() {
