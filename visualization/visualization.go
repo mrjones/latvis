@@ -20,11 +20,10 @@ func Draw(history *location.History, bounds *location.BoundingBox, styler Styler
 	if err != nil {
 		return nil, err
 	}
-	return renderImageToBytes(img)
+	return imageToPNGBytes(img)
 }
 
-
-func renderImageToBytes(img image.Image) (*[]byte, os.Error) {
+func imageToPNGBytes(img image.Image) (*[]byte, os.Error) {
 	buffer := bytes.NewBuffer(make([]byte, 0))
 
 	if err := png.Encode(buffer, img); err != nil {
