@@ -10,6 +10,14 @@ import (
 	"os"
 )
 
+// Turns a location history into an image, based on the selected style.
+// - history:   The list of points to render.
+// - bounds:    The borders of the image (points outside the bounds are dropped).
+// - styler:    The Styler to use when turning the history into an image
+// - imageSize: (Asumes a square) the width & height of the final image in pixels
+//
+// returns
+// - a []byte representing a PNG image
 func Draw(history *location.History, bounds *location.BoundingBox, styler Styler, imageSize int) (*[]byte, os.Error) {
 	width := imageSize
 	height := imageSize
@@ -34,7 +42,7 @@ func imageToPNGBytes(img image.Image) (*[]byte, os.Error) {
 	return &bytes, nil
 }
 
-// Interface for different styles of stylers to implement.
+// Interface to implement different styles of maps.
 //
 // *Subject to change*
 //
@@ -55,7 +63,7 @@ type Styler interface {
 
 type Grid struct {
 	points [][]int
-	width int
+	width  int
 	height int
 }
 
@@ -63,7 +71,7 @@ func NewGrid(width, height int) *Grid {
 	grid := Grid{points: make([][]int, width, width)}
 	for i, _ := range grid.points {
 		grid.points[i] = make([]int, height, height)
-	}	
+	}
 	grid.width = width
 	grid.height = height
 	return &grid
@@ -99,12 +107,12 @@ func aggregateHistory(history *location.History, bounds *location.BoundingBox, g
 	// Figure out which dimension to constrict, and how much
 	// to construct it by.
 
-	inputSkew := bounds.Width() / bounds.Height();
+	inputSkew := bounds.Width() / bounds.Height()
 	outputSkew := float64(gridWidth) / float64(gridHeight)
 	xScale := 1.0
 	yScale := 1.0
-	// change 1.0 to gridWidth / gridHeight
-	if (inputSkew >= outputSkew) {
+
+	if inputSkew >= outputSkew {
 		yScale = outputSkew / inputSkew
 	} else {
 		xScale = inputSkew / outputSkew
@@ -114,6 +122,7 @@ func aggregateHistory(history *location.History, bounds *location.BoundingBox, g
 		if bounds.Contains(history.At(i)) {
 			xBucket := int(bounds.WidthFraction(history.At(i)) * xScale * float64(gridWidth))
 			yBucket := int(bounds.HeightFraction(history.At(i)) * yScale * float64(gridHeight))
+			// TODO(mrjones): explain this
 			yBucket = gridHeight - yBucket - 1
 			grid.Inc(xBucket, yBucket)
 		}
@@ -124,63 +133,46 @@ func aggregateHistory(history *location.History, bounds *location.BoundingBox, g
 
 /////////////////////////////////////////////
 
-func scaleHeat(input int) float64 {
-	return float64(math.Sqrt(math.Sqrt(float64(input))))
-}
-
-type Heatmap struct {
-	Points [][]float64
-}
-
 //
 // BWStyler
 //
 
-type BWStyler struct {
+type IntensityGrid struct {
+	Points [][]float64
 }
+
+type BWStyler struct { }
 
 func (r *BWStyler) Style(grid *Grid, width int, height int) (image.Image, os.Error) {
-	heatmap := gridAsHeatmap(grid, width, height)
-	return heatmapToBWImage(heatmap), nil
+	intensityGrid := formatAsIntensityGrid(grid, width, height)
+	return intensityGridToBWImage(intensityGrid), nil
 }
 
-func heatmapToBWImage(heatmap *Heatmap) image.Image {
-	size := len(heatmap.Points)
+func intensityGridToBWImage(intensityGrid *IntensityGrid) image.Image {
+	size := len(intensityGrid.Points)
 	img := image.NewNRGBA(size, size)
+
+	BLACK := image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
+	WHITE := image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
 
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
-			val := heatmap.Points[i][j]
+			val := intensityGrid.Points[i][j]
 			if val > 0 {
-//				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
-				img.Set(i, j, image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255})
+				img.Set(i, j, BLACK)
 			} else {
-//				img.Pix[j*img.Stride+i] = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
-				img.Set(i, j, image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255})
+				img.Set(i, j, WHITE)
 			}
 		}
 	}
 	return img
 }
 
-//
-// BWVectorStyler
-//
-
-//type BWVectorStyler struct {
-//}
-//
-//func (r *BWVectorStyler) Style(grid *Grid, width int, height int) (image.Image, os.Error) {
-//	heatmap := gridAsHeatmap(grid, width, height)
-//	return heatmapToBWVectorImage(heatmap), nil
-//}
-
-
-func gridAsHeatmap(grid *Grid, width int, height int) *Heatmap {
-	heatmap := &Heatmap{}
-	heatmap.Points = make([][]float64, width)
-	for i := 0 ; i < height ; i++ {
-		heatmap.Points[i] = make([]float64, height)
+func formatAsIntensityGrid(grid *Grid, width int, height int) *IntensityGrid {
+	intensityGrid := &IntensityGrid{}
+	intensityGrid.Points = make([][]float64, width)
+	for i := 0; i < height; i++ {
+		intensityGrid.Points[i] = make([]float64, height)
 	}
 
 	maxCount := float64(0.0)
@@ -192,11 +184,15 @@ func gridAsHeatmap(grid *Grid, width int, height int) *Heatmap {
 		}
 	}
 
-	for x := 0; x < grid.Width() ; x++ {
-		for y := 0; y < grid.Height() ; y++ {
-			heatmap.Points[x][y] = scaleHeat(grid.Get(x, y)) / float64(maxCount)
+	for x := 0; x < grid.Width(); x++ {
+		for y := 0; y < grid.Height(); y++ {
+			intensityGrid.Points[x][y] = scaleHeat(grid.Get(x, y)) / float64(maxCount)
 		}
 	}
 
-	return heatmap
+	return intensityGrid
+}
+
+func scaleHeat(input int) float64 {
+	return float64(math.Sqrt(math.Sqrt(float64(input))))
 }
