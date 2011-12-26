@@ -34,8 +34,8 @@ func (v *Visualizer) Bytes() (*[]byte, os.Error) {
 		return nil, err
 	}
 
-	renderer := &BWRenderer{}
-	img, err := MakeImage(history, v.bounds, v.imageSize, v.imageSize, renderer)
+	styler := &BWStyler{}
+	img, err := MakeImage(history, v.bounds, v.imageSize, v.imageSize, styler)
 	return renderImageToBytes(img)
 }
 
@@ -55,7 +55,7 @@ func renderImageToBytes(img image.Image) (*[]byte, os.Error) {
 	return &bytes, nil
 }
 
-// Interface for different styles of renderers to implement.
+// Interface for different styles of stylers to implement.
 //
 // *Subject to change*
 //
@@ -70,8 +70,8 @@ func renderImageToBytes(img image.Image) (*[]byte, os.Error) {
 //
 // TODO(mrjones): what about returning a (byte[], mime-type)?
 // that would let us handle images as well as other things like KML files for maps
-type Renderer interface {
-	Render(grid *Grid, imageWidth int, imageHeight int) (image.Image, os.Error)
+type Styler interface {
+	Style(grid *Grid, imageWidth int, imageHeight int) (image.Image, os.Error)
 }
 
 // Interface for callers to visualize a location history.
@@ -81,16 +81,16 @@ type Renderer interface {
 //
 // bounds:
 // a bounding box for selecting points to display.  points which fall outside
-// the box will be discarded. The grid for rendering will also be constructed
+// the box will be discarded. The grid for styleing will also be constructed
 // relative to this box (meaning white space outside of any points, but inside
 // the bounding box will be preserved in the grid ... and probably by the
-// Renderer as well).
+// Styler as well).
 //
 // width / height:
 // the width and height of the grid (how many cells to divide it into)
-func MakeImage(history *location.History, bounds *location.BoundingBox, width int, height int, renderer Renderer) (image.Image, os.Error) {
+func MakeImage(history *location.History, bounds *location.BoundingBox, width int, height int, styler Styler) (image.Image, os.Error) {
 	grid := aggregateHistory(history, bounds, width, height)
-	return renderer.Render(grid, width, height)
+	return styler.Style(grid, width, height)
 }
 
 type Grid struct {
@@ -173,13 +173,13 @@ type Heatmap struct {
 }
 
 //
-// BWRenderer
+// BWStyler
 //
 
-type BWRenderer struct {
+type BWStyler struct {
 }
 
-func (r *BWRenderer) Render(grid *Grid, width int, height int) (image.Image, os.Error) {
+func (r *BWStyler) Style(grid *Grid, width int, height int) (image.Image, os.Error) {
 	heatmap := gridAsHeatmap(grid, width, height)
 	return heatmapToBWImage(heatmap), nil
 }
@@ -204,13 +204,13 @@ func heatmapToBWImage(heatmap *Heatmap) image.Image {
 }
 
 //
-// BWVectorRenderer
+// BWVectorStyler
 //
 
-//type BWVectorRenderer struct {
+//type BWVectorStyler struct {
 //}
 //
-//func (r *BWVectorRenderer) Render(grid *Grid, width int, height int) (image.Image, os.Error) {
+//func (r *BWVectorStyler) Style(grid *Grid, width int, height int) (image.Image, os.Error) {
 //	heatmap := gridAsHeatmap(grid, width, height)
 //	return heatmapToBWVectorImage(heatmap), nil
 //}
