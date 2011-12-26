@@ -10,27 +10,12 @@ import (
 	"os"
 )
 
-type Visualizer struct {
-  imageSize int // Generates a square image, each side is length "imageSize"
-	history *location.History
-	bounds *location.BoundingBox
-	styler Styler
-}
+func Draw(history *location.History, bounds *location.BoundingBox, styler Styler, imageSize int) (*[]byte, os.Error) {
+	width := imageSize
+	height := imageSize
 
-func NewVisualizer(
-		imageSize int,
-	  history *location.History,
-	  bounds *location.BoundingBox,
-	  styler Styler) *Visualizer {
-  return &Visualizer{imageSize: imageSize, history: history, bounds: bounds, styler: styler};
-}
-
-func (v *Visualizer) Bytes() (*[]byte, os.Error) {
-	width := v.imageSize
-	height := v.imageSize
-
-	grid := aggregateHistory(v.history, v.bounds, width, height)
-	img, err := v.styler.Style(grid, width, height)
+	grid := aggregateHistory(history, bounds, width, height)
+	img, err := styler.Style(grid, width, height)
 
 	if err != nil {
 		return nil, err
