@@ -8,7 +8,6 @@ import (
 	"image/png"
 	"math"
 	"os"
-	"time"
 )
 
 type Visualizer struct {
@@ -26,17 +25,19 @@ func NewVisualizer(
 
 func (v *Visualizer) Bytes() (*[]byte, os.Error) {
 	styler := &BWStyler{}
-	img, err := MakeImage(v.history, v.bounds, v.imageSize, v.imageSize, styler)
+
+	width := v.imageSize
+	height := v.imageSize
+
+	grid := aggregateHistory(v.history, v.bounds, width, height)
+	img, err := styler.Style(grid, width, height)
+
 	if err != nil {
 		return nil, err
 	}
 	return renderImageToBytes(img)
 }
 
-
-func readData(historySource location.HistorySource, start time.Time, end time.Time) (*location.History, os.Error) {
-	return historySource.FetchRange(start, end)
-}
 
 func renderImageToBytes(img image.Image) (*[]byte, os.Error) {
 	buffer := bytes.NewBuffer(make([]byte, 0))
@@ -66,25 +67,6 @@ func renderImageToBytes(img image.Image) (*[]byte, os.Error) {
 // that would let us handle images as well as other things like KML files for maps
 type Styler interface {
 	Style(grid *Grid, imageWidth int, imageHeight int) (image.Image, os.Error)
-}
-
-// Interface for callers to visualize a location history.
-//
-// history: 
-// all the points in the users history
-//
-// bounds:
-// a bounding box for selecting points to display.  points which fall outside
-// the box will be discarded. The grid for styleing will also be constructed
-// relative to this box (meaning white space outside of any points, but inside
-// the bounding box will be preserved in the grid ... and probably by the
-// Styler as well).
-//
-// width / height:
-// the width and height of the grid (how many cells to divide it into)
-func MakeImage(history *location.History, bounds *location.BoundingBox, width int, height int, styler Styler) (image.Image, os.Error) {
-	grid := aggregateHistory(history, bounds, width, height)
-	return styler.Style(grid, width, height)
 }
 
 type Grid struct {
