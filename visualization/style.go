@@ -44,7 +44,7 @@ func intensityGridToBWImage(intensityGrid *IntensityGrid) image.Image {
 func formatAsIntensityGrid(grid *Grid, width int, height int) *IntensityGrid {
 	intensityGrid := &IntensityGrid{}
 	intensityGrid.Points = make([][]float64, width)
-	for i := 0; i < height; i++ {
+	for i := 0; i < width; i++ {
 		intensityGrid.Points[i] = make([]float64, height)
 	}
 
