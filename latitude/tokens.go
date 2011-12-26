@@ -1,3 +1,4 @@
+// TODO(mrjones): reconcile with server.OauthSecretStore
 package latitude
 
 import (
