@@ -180,12 +180,18 @@ handle *Handle) os.Error {
 
 	var authorizedConnection location.HistorySource
 	authorizedConnection = connection.Authorize(atoken)
+
+	history, err := authorizedConnection.FetchRange(
+		*renderRequest.start, *renderRequest.end)
+
+	if err != nil {
+		return err
+	}
+
 	vis := visualization.NewVisualizer(
 		512,
-		&authorizedConnection,
-		renderRequest.bounds,
-		*renderRequest.start,
-		*renderRequest.end)
+		history,
+		renderRequest.bounds)
 
 	data, err := vis.Bytes()
 	if err != nil {

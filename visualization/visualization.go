@@ -13,29 +13,23 @@ import (
 
 type Visualizer struct {
   imageSize int // Generates a square image, each side is length "imageSize"
-  historySource *location.HistorySource
+	history *location.History
 	bounds *location.BoundingBox
-	start time.Time
-	end time.Time
 }
 
 func NewVisualizer(
 		imageSize int,
-	  historySource *location.HistorySource,
-	  bounds *location.BoundingBox,
-	  start time.Time,
-	  end time.Time) *Visualizer {
-  return &Visualizer{imageSize: imageSize, historySource: historySource, bounds: bounds, start: start, end: end};
+	  history *location.History,
+	  bounds *location.BoundingBox) *Visualizer {
+  return &Visualizer{imageSize: imageSize, history: history, bounds: bounds};
 }
 
 func (v *Visualizer) Bytes() (*[]byte, os.Error) {
-	history, err := readData(*v.historySource, v.start, v.end)
+	styler := &BWStyler{}
+	img, err := MakeImage(v.history, v.bounds, v.imageSize, v.imageSize, styler)
 	if err != nil {
 		return nil, err
 	}
-
-	styler := &BWStyler{}
-	img, err := MakeImage(history, v.bounds, v.imageSize, v.imageSize, styler)
 	return renderImageToBytes(img)
 }
 
