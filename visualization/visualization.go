@@ -14,23 +14,23 @@ type Visualizer struct {
   imageSize int // Generates a square image, each side is length "imageSize"
 	history *location.History
 	bounds *location.BoundingBox
+	styler Styler
 }
 
 func NewVisualizer(
 		imageSize int,
 	  history *location.History,
-	  bounds *location.BoundingBox) *Visualizer {
-  return &Visualizer{imageSize: imageSize, history: history, bounds: bounds};
+	  bounds *location.BoundingBox,
+	  styler Styler) *Visualizer {
+  return &Visualizer{imageSize: imageSize, history: history, bounds: bounds, styler: styler};
 }
 
 func (v *Visualizer) Bytes() (*[]byte, os.Error) {
-	styler := &BWStyler{}
-
 	width := v.imageSize
 	height := v.imageSize
 
 	grid := aggregateHistory(v.history, v.bounds, width, height)
-	img, err := styler.Style(grid, width, height)
+	img, err := v.styler.Style(grid, width, height)
 
 	if err != nil {
 		return nil, err

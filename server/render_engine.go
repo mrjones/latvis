@@ -191,7 +191,8 @@ handle *Handle) os.Error {
 	vis := visualization.NewVisualizer(
 		512,
 		history,
-		renderRequest.bounds)
+		renderRequest.bounds,
+		&visualization.BWStyler{})
 
 	data, err := vis.Bytes()
 	if err != nil {
