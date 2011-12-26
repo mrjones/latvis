@@ -19,6 +19,7 @@ const (
 )
 
 type AppengineUrlTaskQueueProvider struct {
+
 }
 
 func (p *AppengineUrlTaskQueueProvider) GetQueue(req *http.Request) server.UrlTaskQueue {
@@ -41,9 +42,9 @@ func (q *AppengineUrlTaskQueue) Enqueue(url string, params *url.Values) os.Error
 	return err
 }
 
-
 /// Blob Sorage ////
 type AppengineBlobStoreProvider struct {
+
 }
 
 func (p *AppengineBlobStoreProvider) OpenStore(req *http.Request) server.BlobStore {
@@ -67,15 +68,15 @@ func (s *AppengineBlobStore) Fetch(handle *server.Handle) (*server.Blob, os.Erro
 	c.Infof("Looking up blob with handle: '%s'", handle.String())
 
 	blob := new(server.Blob)
-  if err := datastore.Get(c, keyFromHandle(c, handle), blob); err != nil {
+	if err := datastore.Get(c, keyFromHandle(c, handle), blob); err != nil {
 		return nil, err
-  }
+	}
 	return blob, nil
 }
 
-
 /// URL/HTTP Fetching ////
 type AppengineHttpClientProvider struct {
+
 }
 
 func (p *AppengineHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient {
@@ -83,16 +84,15 @@ func (p *AppengineHttpClientProvider) GetClient(req *http.Request) oauth.HttpCli
 	return urlfetch.Client(c)
 }
 
-
 func keyFromHandle(c appengine.Context, h *server.Handle) *datastore.Key {
 	return datastore.NewKey(c, LATVIS_OUTPUT_DATATYPE, h.String(), 0, nil)
 }
 
 func init() {
 	config := server.NewConfig(
-	  &AppengineBlobStoreProvider{},
-  	&AppengineHttpClientProvider{},
-  	&server.InMemoryOauthSecretStoreProvider{},
+		&AppengineBlobStoreProvider{},
+		&AppengineHttpClientProvider{},
+		&server.InMemoryOauthSecretStoreProvider{},
 		&AppengineUrlTaskQueueProvider{})
-  server.Setup(config)
+	server.Setup(config)
 }

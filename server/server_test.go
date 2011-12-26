@@ -143,7 +143,7 @@ func TestDisplayPage(t *testing.T) {
 
 	gt.AssertEqualM(t, http.StatusOK, res.StatusCode, "")
 	gt.AssertTrueM(t, strings.Contains(res.Body, "loadImage('100-1-2-3.png'"),
-		"Missing expected loadImage call in [" + res.Body + "]")
+		"Missing expected loadImage call in ["+res.Body+"]")
 }
 
 func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {

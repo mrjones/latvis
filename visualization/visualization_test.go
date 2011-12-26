@@ -40,12 +40,12 @@ func TestSimpleAggregateHistory(t *testing.T) {
 
 	actual := aggregateHistory(&history, bounds, 5, 5)
 
-	expected := gridLiteral([][]int {
-			{0, 0, 0, 0, 0},
-			{0, 0, 0, 1, 0},
-			{0, 0, 1, 0, 0},
-			{0, 1, 0, 0, 0},
-			{0, 0, 0, 0, 0},
+	expected := gridLiteral([][]int{
+		{0, 0, 0, 0, 0},
+		{0, 0, 0, 1, 0},
+		{0, 0, 1, 0, 0},
+		{0, 1, 0, 0, 0},
+		{0, 0, 0, 0, 0},
 	})
 
 	assertGridsEqual(t, expected, actual)
@@ -72,7 +72,7 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion(t *testing.T) {
 
 	actual := aggregateHistory(&history, bounds, 4, 3)
 
-	expected := gridLiteral([][]int {
+	expected := gridLiteral([][]int{
 		{1, 0, 0, 0},
 		{1, 0, 0, 0},
 		{0, 0, 0, 0},
@@ -103,7 +103,7 @@ func TestSqueezesLineWithoutDistortion(t *testing.T) {
 
 	actual := aggregateHistory(&history, bounds, 4, 3)
 
-	expected := gridLiteral([][]int {
+	expected := gridLiteral([][]int{
 		{2, 2, 0, 0},
 		{0, 0, 0, 0},
 		{0, 0, 0, 0},
@@ -134,7 +134,7 @@ func TestSqueezesLineWithoutDistortion2(t *testing.T) {
 
 	actual := aggregateHistory(&history, bounds, 4, 3)
 
-	expected := gridLiteral([][]int {
+	expected := gridLiteral([][]int{
 		{2, 2, 0, 0},
 		{0, 0, 0, 0},
 		{0, 0, 0, 0},
@@ -177,7 +177,7 @@ func TestSqueezesSquareWithoutDistortion(t *testing.T) {
 
 	actual := aggregateHistory(&history, bounds, 4, 3)
 
-	expected := gridLiteral([][]int {
+	expected := gridLiteral([][]int{
 		{4, 4, 0, 0},
 		{4, 4, 0, 0},
 		{0, 0, 0, 0},
@@ -193,8 +193,8 @@ func debug(expected, actual *Grid) {
 }
 
 func printGrid(g *Grid) {
-	for y := 0 ; y < g.Height() ; y++ {
-		for x := 0 ; x < g.Width() ; x++ {
+	for y := 0; y < g.Height(); y++ {
+		for x := 0; x < g.Width(); x++ {
 			fmt.Printf("%d ", g.Get(x, y))
 		}
 		fmt.Println()
@@ -204,31 +204,30 @@ func printGrid(g *Grid) {
 func gridLiteral(literal [][]int) *Grid {
 	// remember this is reversed
 	grid := NewGrid(len(literal[0]), len(literal))
-	for i := 0 ; i < len(literal) ; i++ {
-		for j := 0 ; j < len(literal[i]) ; j++ {
-			grid.Set(j, i, literal[i][j]);
+	for i := 0; i < len(literal); i++ {
+		for j := 0; j < len(literal[i]); j++ {
+			grid.Set(j, i, literal[i][j])
 		}
 	}
-	return grid;
+	return grid
 }
-
 
 func assertGridsEqual(t *testing.T, expected *Grid, actual *Grid) {
 	if expected.Width() != actual.Width() {
 		debug(expected, actual)
 		t.Fatalf("Grids have different number of columns. Expected: %d, Actual: %d",
-			expected.Width(), actual.Width());
+			expected.Width(), actual.Width())
 	}
 
 	if expected.Height() != actual.Height() {
 		debug(expected, actual)
 		t.Fatalf("Grids have different number rows. Expected: %d, Actual: %d",
-			expected.Height(), actual.Height());
+			expected.Height(), actual.Height())
 	}
 
-	failed := false;
-	for i := 0 ; i < expected.Width() ; i++ {
-		for j := 0 ; j < expected.Height() ; j++ {
+	failed := false
+	for i := 0; i < expected.Width(); i++ {
+		for j := 0; j < expected.Height(); j++ {
 			if expected.Get(i, j) != actual.Get(i, j) {
 				failed = true
 				t.Errorf("Grid mismatch -- grid[%d][%d]. Expected %d, Actual: %d",
@@ -240,4 +239,3 @@ func assertGridsEqual(t *testing.T, expected *Grid, actual *Grid) {
 		debug(expected, actual)
 	}
 }
-

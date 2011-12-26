@@ -1,7 +1,7 @@
 package latitude
 
 import (
-  "github.com/mrjones/oauth"
+	"github.com/mrjones/oauth"
 	"github.com/mrjones/latvis/location"
 
 	"fmt"
@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	CONSUMER_KEY = "mrjon.es"
-	CONSUMER_SECRET = "UpS7//zXk60DkyDO8ES/xeS3"
-	API_KEY = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
+	CONSUMER_KEY         = "mrjon.es"
+	CONSUMER_SECRET      = "UpS7//zXk60DkyDO8ES/xeS3"
+	API_KEY              = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
 	OUT_OF_BAND_CALLBACK = "oob"
-)	
+)
 
 // Example usage:
 // connection := latitude_api.NewConnection()
@@ -35,14 +35,14 @@ type JsonRoot struct {
 }
 
 type JsonData struct {
-	Kind string
+	Kind  string
 	Items []JsonItem
 }
 
 type JsonItem struct {
-	Kind string
-	Latitude float64
-	Longitude float64
+	Kind        string
+	Latitude    float64
+	Longitude   float64
 	TimestampMs string
 }
 
@@ -58,35 +58,39 @@ func NewConnection() *Connection {
 }
 
 func NewConnectionForConsumer(consumer *oauth.Consumer) *Connection {
-	return &Connection{consumer: consumer}  
+	return &Connection{consumer: consumer}
 }
 
 func NewConsumer() (consumer *oauth.Consumer) {
 	sp := oauth.ServiceProvider{
 		RequestTokenUrl: "https://www.google.com/accounts/OAuthGetRequestToken",
-		AccessTokenUrl: "https://www.google.com/accounts/OAuthGetAccessToken",
-			// NOTE: The AuthorizeToken URL for latitude is different than for
-			// standard Google applications.
+		AccessTokenUrl:  "https://www.google.com/accounts/OAuthGetAccessToken",
+		// NOTE: The AuthorizeToken URL for latitude is different than for
+		// standard Google applications.
 		AuthorizeTokenUrl: "https://www.google.com/latitude/apps/OAuthAuthorizeToken",
 	}
 
 	c := oauth.NewConsumer(CONSUMER_KEY, CONSUMER_SECRET, sp)
-	c.AdditionalParams["scope"] = "https://www.googleapis.com/auth/latitude";
+	c.AdditionalParams["scope"] = "https://www.googleapis.com/auth/latitude"
 	return c
 }
 
 func (connection *Connection) TokenRedirectUrl(callback string) (*oauth.RequestToken, string, os.Error) {
 	token, url, err := connection.consumer.GetRequestTokenAndUrl(callback)
-	if err != nil{ return nil, "", err }
+	if err != nil {
+		return nil, "", err
+	}
 
 	// The latitude API requires additional parameters
 	url = url + "&domain=mrjon.es&location=all&granularity=best"
-  return token, url, nil
+	return token, url, nil
 }
 
 func (connection *Connection) NewAccessToken() (*oauth.AccessToken, os.Error) {
 	token, url, err := connection.consumer.GetRequestTokenAndUrl(OUT_OF_BAND_CALLBACK)
-	if err != nil{ return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	// The latitude API requires additional parameters
 	url = url + "&domain=mrjon.es&location=all&granularity=best"
@@ -102,7 +106,7 @@ func (connection *Connection) NewAccessToken() (*oauth.AccessToken, os.Error) {
 }
 
 func (connection *Connection) ParseToken(token *oauth.RequestToken, verifier string) (*oauth.AccessToken, os.Error) {
-  return connection.consumer.AuthorizeToken(token, verifier)
+	return connection.consumer.AuthorizeToken(token, verifier)
 }
 
 func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedConnection {
@@ -115,23 +119,27 @@ func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedCon
 
 type AuthorizedConnection struct {
 	accessToken *oauth.AccessToken
-	consumer *oauth.Consumer
+	consumer    *oauth.Consumer
 }
 
 func (connection *AuthorizedConnection) FetchUrl(url string, params map[string]string) (responseBody string, err os.Error) {
-  params["key"] = API_KEY
+	params["key"] = API_KEY
 	response, err := connection.consumer.Get(url, params, connection.accessToken)
 
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	defer response.Body.Close()
 	responseBodyBytes, err := ioutil.ReadAll(response.Body)
 
-	if err != nil { return "", err }
+	if err != nil {
+		return "", err
+	}
 	return string(responseBodyBytes), nil
 }
 
 func wrapError(wrapper string, cause os.Error) os.Error {
-	return os.NewError(wrapper + ": " + cause.String());
+	return os.NewError(wrapper + ": " + cause.String())
 }
 
 func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) (minTs int64, itemsReturned int, err os.Error) {
@@ -139,30 +147,38 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 
 	fmt.Printf("Time Range: %d - %d\n", startMs, endMs)
 
-	params := map[string]string {
+	params := map[string]string{
 		"granularity": "best",
 		"max-results": strconv.Itoa(windowSize),
-		"min-time": strconv.Itoa64(startMs),
-		"max-time": strconv.Itoa64(endMs),
+		"min-time":    strconv.Itoa64(startMs),
+		"max-time":    strconv.Itoa64(endMs),
 	}
 
 	body, err := conn.FetchUrl(locationHistoryUrl, params)
-	if err != nil { return -1, -1, wrapError("FetchUrl error / " + locationHistoryUrl, err) }
+	if err != nil {
+		return -1, -1, wrapError("FetchUrl error / "+locationHistoryUrl, err)
+	}
 
 	var jsonObject JsonRoot
 	err = json.Unmarshal([]byte(body), &jsonObject)
-	if err != nil { return -1, -1, wrapError("JSON Error", err) }
+	if err != nil {
+		return -1, -1, wrapError("JSON Error", err)
+	}
 
-	for i := 0 ; i < len(jsonObject.Data.Items) ; i++ {
-		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude }
+	for i := 0; i < len(jsonObject.Data.Items); i++ {
+		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude}
 		history.Add(point)
 		if jsonObject.Data.Items[i].TimestampMs == "" {
-			data, err := json.Marshal(jsonObject.Data.Items[i]);
-			if (err != nil) { fmt.Println("Can't even error properly: " + err.String()); }
-			fmt.Println("Bad history item: " + string(data));
+			data, err := json.Marshal(jsonObject.Data.Items[i])
+			if err != nil {
+				fmt.Println("Can't even error properly: " + err.String())
+			}
+			fmt.Println("Bad history item: " + string(data))
 		} else {
 			minTs, err = strconv.Atoi64(jsonObject.Data.Items[i].TimestampMs)
-			if err != nil { return -1, -1, wrapError("Atoi Error / " + jsonObject.Data.Items[i].TimestampMs, err) }
+			if err != nil {
+				return -1, -1, wrapError("Atoi Error / "+jsonObject.Data.Items[i].TimestampMs, err)
+			}
 		}
 	}
 
@@ -183,7 +199,9 @@ func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp i
 
 	for keepGoing {
 		minTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
-		if err != nil { panic(err) }
+		if err != nil {
+			panic(err)
+		}
 		fmt.Printf("Got %d items\n", itemsReturned)
 		keepGoing = (itemsReturned == windowSize)
 		windowEnd = minTs
@@ -193,17 +211,17 @@ func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp i
 func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.History, os.Error) {
 	history := &location.History{}
 
-	startTimestamp := 1000* start.Seconds()
+	startTimestamp := 1000 * start.Seconds()
 	endTimestamp := 1000 * end.Seconds()
 
 	parallelism := 20
-	shardMillis := float64(endTimestamp - startTimestamp) / float64(parallelism)
+	shardMillis := float64(endTimestamp-startTimestamp) / float64(parallelism)
 
 	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
 
-	for i := 0 ; i < parallelism ; i++ {
-		shardStart := startTimestamp + int64(float64(i) * shardMillis)
-		shardEnd := startTimestamp + int64(float64(i + 1) * shardMillis)
+	for i := 0; i < parallelism; i++ {
+		shardStart := startTimestamp + int64(float64(i)*shardMillis)
+		shardEnd := startTimestamp + int64(float64(i+1)*shardMillis)
 		conn.fetchMilliRange(shardStart, shardEnd, history)
 	}
 
@@ -215,39 +233,45 @@ func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*location.Hi
 //
 
 type TokenSource interface {
-  GetToken(userid string) (*oauth.AccessToken, os.Error)
+	GetToken(userid string) (*oauth.AccessToken, os.Error)
 }
 
 type SimpleTokenSource struct {
-  connection *Connection
+	connection *Connection
 }
 
 func NewSimpleTokenSource(connection *Connection) *SimpleTokenSource {
-  return &SimpleTokenSource{connection: connection}
+	return &SimpleTokenSource{connection: connection}
 }
 
 type CachingTokenSource struct {
-  connection *Connection
-  cache *Storage
+	connection *Connection
+	cache      *Storage
 }
 
 func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
-  return source.connection.NewAccessToken();
+	return source.connection.NewAccessToken()
 }
 
 func NewCachingTokenSource(connection *Connection, cache *Storage) *CachingTokenSource {
-  return &CachingTokenSource{connection: connection, cache: cache}
+	return &CachingTokenSource{connection: connection, cache: cache}
 }
 
 func (source *CachingTokenSource) GetToken(userid string) (*oauth.AccessToken, os.Error) {
- 	accessToken, err := source.cache.Fetch(userid)
-	if err != nil{ return nil, err }
+	accessToken, err := source.cache.Fetch(userid)
+	if err != nil {
+		return nil, err
+	}
 	if accessToken == nil {
 		fmt.Printf("No saved token found. Generating new one")
 		accessToken, err = source.connection.NewAccessToken()
-		if err != nil{ return nil, err }
+		if err != nil {
+			return nil, err
+		}
 		err = source.cache.Store(userid, accessToken)
-		if err != nil{ return nil, err }
+		if err != nil {
+			return nil, err
+		}
 	}
 	return accessToken, nil
 }

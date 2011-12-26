@@ -6,10 +6,10 @@ import (
 
 func main() {
 	config := server.NewConfig(
-	  &server.LocalFSBlobStoreProvider{},
-  	&server.StandardHttpClientProvider{},
-  	&server.InMemoryOauthSecretStoreProvider{},
+		&server.LocalFSBlobStoreProvider{},
+		&server.StandardHttpClientProvider{},
+		&server.InMemoryOauthSecretStoreProvider{},
 		&server.SyncUrlTaskQueueProvider{})
-  server.Setup(config)
-  server.Serve()     
+	server.Setup(config)
+	server.Serve()
 }

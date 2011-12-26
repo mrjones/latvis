@@ -11,7 +11,7 @@ type Coordinate struct {
 }
 
 type BoundingBox struct {
-	lowerLeft Coordinate
+	lowerLeft  Coordinate
 	upperRight Coordinate
 }
 
@@ -46,8 +46,8 @@ func (b *BoundingBox) Contains(c *Coordinate) bool {
 
 	return c.Lat > b.lowerLeft.Lat &&
 		c.Lat < b.upperRight.Lat &&
-		c.Lng + pointShift > b.lowerLeft.Lng &&
-		c.Lng + pointShift < b.upperRight.Lng + boxShift
+		c.Lng+pointShift > b.lowerLeft.Lng &&
+		c.Lng+pointShift < b.upperRight.Lng+boxShift
 }
 
 func (b *BoundingBox) WidthFraction(c *Coordinate) float64 {
@@ -82,18 +82,18 @@ func (h *History) Add(c *Coordinate) {
 	history := *h
 	curLen := len(history)
 
-	if curLen + 1 > cap(history) {
-		newHistory := make([]*Coordinate, curLen, 2 * curLen + 1)
+	if curLen+1 > cap(history) {
+		newHistory := make([]*Coordinate, curLen, 2*curLen+1)
 		copy(newHistory, history)
 		history = newHistory
 	}
-	history = history[0 : curLen + 1]
+	history = history[0 : curLen+1]
 	history[curLen] = c
 	*h = history
 }
 
 func (this *History) AddAll(that *History) {
-	for i := 0 ; i < that.Len(); i++ {
+	for i := 0; i < that.Len(); i++ {
 		this.Add(that.At(i))
 	}
 }

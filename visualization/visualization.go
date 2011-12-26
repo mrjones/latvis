@@ -141,7 +141,7 @@ type IntensityGrid struct {
 	Points [][]float64
 }
 
-type BWStyler struct { }
+type BWStyler struct{}
 
 func (r *BWStyler) Style(grid *Grid, width int, height int) (image.Image, os.Error) {
 	intensityGrid := formatAsIntensityGrid(grid, width, height)
