@@ -64,13 +64,15 @@ func TestBWStylerNotSquare(t *testing.T) {
 	h = append(h, &location.Coordinate{Lat: .5, Lng: .5})
 	h = append(h, &location.Coordinate{Lat: 1.5, Lng: 1.5})
 	h = append(h, &location.Coordinate{Lat: 2.5, Lng: 2.5})
+	h = append(h, &location.Coordinate{Lat: 1.5, Lng: 3.5})
+	h = append(h, &location.Coordinate{Lat: .5, Lng: 4.5})
 
 	styler := &BWStyler{}
 
 	// Expected Image:
 	//  W W B W W
-	//  W B W W W
-	//  B W W W W
+	//  W B W B W
+	//  B W W W B
 	img, err := styler.Style(&h, bounds, 5, 3)
 	gt.AssertNil(t, err)
 	assertWhite(t, img.At(0, 0))
