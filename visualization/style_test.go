@@ -87,16 +87,24 @@ func assertBlack(t *testing.T, i image.Image, x, y int) {
 	r, g, b, a := i.At(x, y).RGBA()
 	gt.AssertEqualM(t, uint32(0), r,
 		fmt.Sprintf("Red should be 0 for black at (%d, %d).", x, y))
-	gt.AssertEqualM(t, uint32(0), g, "Blue should be 0 for black")
-	gt.AssertEqualM(t, uint32(0), b, "Green should be 0 for black")
-	gt.AssertEqualM(t, uint32(0xFFFF), a, "Alpha should be max-uint32")
+	gt.AssertEqualM(t, uint32(0), g,
+		fmt.Sprintf("Green should be 0 for black at (%d, %d).", x, y))
+	gt.AssertEqualM(t, uint32(0), b,
+		fmt.Sprintf("Blue should be 0 for black at (%d, %d).", x, y))
+
+	gt.AssertEqualM(t, uint32(0xFFFF), a,
+		fmt.Sprintf("Alpha should be max-uint32 for black at (%d, %d).", x, y))
 }
 
 func assertWhite(t *testing.T, i image.Image, x, y int) {
 	r, g, b, a := i.At(x, y).RGBA()
 	gt.AssertEqualM(t, uint32(0xFFFF), r,
 		fmt.Sprintf("Red should be max-uint32 for white at (%d, %d).", x, y))
-	gt.AssertEqualM(t, uint32(0xFFFF), g, "Blue should be max-uint32 for white")
-	gt.AssertEqualM(t, uint32(0xFFFF), b, "Green should be max-uint32 for white")
-	gt.AssertEqualM(t, uint32(0xFFFF), a, "Alpha should be max-uint32")
+	gt.AssertEqualM(t, uint32(0xFFFF), g,
+		fmt.Sprintf("Green should be max-uint32 for white at (%d, %d).", x, y))
+	gt.AssertEqualM(t, uint32(0xFFFF), b,
+		fmt.Sprintf("Blue should be max-uint32 for white at (%d, %d).", x, y))
+
+	gt.AssertEqualM(t, uint32(0xFFFF), a,
+		fmt.Sprintf("Alpha should be max-uint32 for white at (%d, %d).", x, y))
 }
