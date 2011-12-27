@@ -31,27 +31,19 @@ func TestBWStyler2By2(t *testing.T) {
 
 	styler := &BWStyler{}
 
-	// Expected Image:
-	//  W W
-	//  B W
 	img, err := styler.Style(&h, bounds, 2, 2)
 	gt.AssertNil(t, err)
-	assertWhite(t, img, 0, 0)
-	assertWhite(t, img, 1, 0)
-	assertBlack(t, img, 0, 1)
-	assertWhite(t, img, 1, 1)
+	assertImage(t, [][]string{
+		[]string{ "W", "W" },
+		[]string{ "B", "W" }}, img)
 
 	h = append(h, &location.Coordinate{Lat: 1.5, Lng: 1.5})
 	
-	// Expected Image:
-	//  W B
-	//  B W
 	img, err = styler.Style(&h, bounds, 2, 2)
 	gt.AssertNil(t, err)
-	assertWhite(t, img, 0, 0)
-	assertBlack(t, img, 1, 0)
-	assertBlack(t, img, 0, 1)
-	assertWhite(t, img, 1, 1)
+	assertImage(t, [][]string{
+		[]string{ "W", "B" },
+		[]string{ "B", "W" }}, img)
 }
 
 func TestBWStylerNotSquare(t *testing.T) {
@@ -72,12 +64,6 @@ func TestBWStylerNotSquare(t *testing.T) {
 
 	img, err := styler.Style(&h, bounds, 5, 3)
 	gt.AssertNil(t, err)
-//	assertWhite(t, img, 0, 0)
-
-//	assertBlack(t, img, 0, 2)
-//	assertBlack(t, img, 1, 1)
-//	assertBlack(t, img, 2, 0)
-
 	assertImage(t, [][]string{
 		[]string{ "W", "W", "B", "W", "W" },
 		[]string{ "W", "B", "W", "B", "W" },
