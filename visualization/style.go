@@ -25,14 +25,15 @@ func (r *BWStyler) Style(history *location.History, bounds *location.BoundingBox
 }
 
 func intensityGridToBWImage(intensityGrid *IntensityGrid) image.Image {
-	size := len(intensityGrid.Points)
-	img := image.NewNRGBA(size, size)
+	width := len(intensityGrid.Points)
+	height := len(intensityGrid.Points[0])
+	img := image.NewNRGBA(width, height)
 
 	BLACK := image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
 	WHITE := image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
 
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
 			val := intensityGrid.Points[i][j]
 			if val > 0 {
 				img.Set(i, j, BLACK)
