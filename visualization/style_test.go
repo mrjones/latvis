@@ -9,6 +9,14 @@ import (
 	"testing"
 )
 
+//
+// WxH image (0,0) is in the top left:
+// (i.e. increasing Y-coordinates move downwards)
+// (0,0) ----- (W,0)
+//   |           |
+// (0,H) ----- (W,H)
+//
+// But in Lat/Lng, increasing Latitudes move upwards.
 func TestBWStyler2By2(t *testing.T) {
 	bounds, err := location.NewBoundingBox(
 		location.Coordinate{Lat: 0, Lng: 0},
@@ -22,6 +30,9 @@ func TestBWStyler2By2(t *testing.T) {
 
 	styler := &BWStyler{}
 
+	// Expected Image:
+	//  W W
+	//  B W
 	img, err := styler.Style(&h, bounds, 2, 2)
 	gt.AssertNil(t, err)
 	assertWhite(t, img.At(0, 0))
@@ -29,13 +40,17 @@ func TestBWStyler2By2(t *testing.T) {
 	assertBlack(t, img.At(0, 1))
 	assertWhite(t, img.At(1, 1))
 
-//	g.Set(1, 1, 1)
-//	img, err = styler.Style(g, 2, 2)
-//	gt.AssertNil(t, err)
-//	assertBlack(t, img.At(0, 0))
-//	assertWhite(t, img.At(1, 0))
-//	assertWhite(t, img.At(0, 1))
-//	assertBlack(t, img.At(1, 1))
+	h = append(h, &location.Coordinate{Lat: 1.5, Lng: 1.5})
+	
+	// Expected Image:
+	//  W B
+	//  B W
+	img, err = styler.Style(&h, bounds, 2, 2)
+	gt.AssertNil(t, err)
+	assertWhite(t, img.At(0, 0))
+	assertBlack(t, img.At(1, 0))
+	assertBlack(t, img.At(0, 1))
+	assertWhite(t, img.At(1, 1))
 }
 
 //func TestBWStylerNotSquare(t *testing.T) {
