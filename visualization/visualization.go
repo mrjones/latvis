@@ -9,6 +9,12 @@ import (
 	"os"
 )
 
+// Interface to implement different styles of maps.
+type Styler interface {
+	Style(history *location.History, bounds *location.BoundingBox, imageWidth int, imageHeight int) (image.Image, os.Error)
+}
+
+
 // Turns a location history into an image, based on the selected style.
 // - history:   The list of points to render.
 // - bounds:    The borders of the image (points outside the bounds are dropped).
@@ -38,25 +44,6 @@ func imageToPNGBytes(img image.Image) (*[]byte, os.Error) {
 
 	bytes := buffer.Bytes()
 	return &bytes, nil
-}
-
-// Interface to implement different styles of maps.
-//
-// *Subject to change*
-//
-// The input is a "Grid" (see below), representing location history data:
-// The entire selected are is broken down into a coordinate grid, with a
-// discrete number of cells.  The Grid object represents the number of location
-// history events occuring in each cell.
-//
-// TODO(mrjones): The grid is latitude / longitude independent. This is fine for
-// rendering context-independent PNGs, but won't work if we want to show the data
-// overlaid on a map.
-//
-// TODO(mrjones): what about returning a (byte[], mime-type)?
-// that would let us handle images as well as other things like KML files for maps
-type Styler interface {
-	Style(history *location.History, bounds *location.BoundingBox, imageWidth int, imageHeight int) (image.Image, os.Error)
 }
 
 type Grid struct {
