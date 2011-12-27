@@ -1,6 +1,8 @@
 package visualization
 
 import (
+	"github.com/mrjones/latvis/location"
+
 	"image"
 	"math"
 	"os"
@@ -16,7 +18,8 @@ type IntensityGrid struct {
 
 type BWStyler struct { }
 
-func (r *BWStyler) Style(grid *Grid, width int, height int) (image.Image, os.Error) {
+func (r *BWStyler) Style(history *location.History, bounds *location.BoundingBox, width int, height int) (image.Image, os.Error) {
+	grid := aggregateHistory(history, bounds, width, height)
 	intensityGrid := formatAsIntensityGrid(grid, width, height)
 	return intensityGridToBWImage(intensityGrid), nil
 }

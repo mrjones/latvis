@@ -21,8 +21,7 @@ func Draw(history *location.History, bounds *location.BoundingBox, styler Styler
 	width := imageSize
 	height := imageSize
 
-	grid := aggregateHistory(history, bounds, width, height)
-	img, err := styler.Style(grid, width, height)
+	img, err := styler.Style(history, bounds, width, height)
 
 	if err != nil {
 		return nil, err
@@ -57,7 +56,7 @@ func imageToPNGBytes(img image.Image) (*[]byte, os.Error) {
 // TODO(mrjones): what about returning a (byte[], mime-type)?
 // that would let us handle images as well as other things like KML files for maps
 type Styler interface {
-	Style(grid *Grid, imageWidth int, imageHeight int) (image.Image, os.Error)
+	Style(history *location.History, bounds *location.BoundingBox, imageWidth int, imageHeight int) (image.Image, os.Error)
 }
 
 type Grid struct {
