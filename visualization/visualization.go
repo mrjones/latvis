@@ -10,6 +10,10 @@ import (
 )
 
 // Interface to implement different styles of maps.
+//
+// TODO(mrjones): The result is an image.Image. Should we be returning
+// []bytes from here? That would allow us to support things that aren't
+// images (e.g. KML files).
 type Styler interface {
 	Style(history *location.History, bounds *location.BoundingBox, imageWidth int, imageHeight int) (image.Image, os.Error)
 }
