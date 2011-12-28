@@ -7,6 +7,7 @@ var loadImage = function(filename, backoff) {
       document.getElementById('loading').style.display = 'none';
       var canvas = document.getElementById('canvas');
       var map = document.createElement('img');
+      map.setAttribute('class', 'latvis-image');
       map.setAttribute('src', '/render/' + filename);
       canvas.appendChild(map);
       renderMetadata();
@@ -14,7 +15,6 @@ var loadImage = function(filename, backoff) {
     } else if (result = 'fail') {
       setTimeout("loadImage('" + filename + "', " + backoff + " * 1.5)", backoff * 1000);
       _gat._getTrackerByName()._trackEvent("latvis-render", "timeout-error");
-//      document.getElementById('debug').innerHTML = 'backing off: ' + backoff;
     } else {
       alert("Unexpected Result: " + result);
     }
@@ -25,7 +25,10 @@ function renderMetadata() {
   var container = document.getElementById('metadata');
   var url = window.location;
 
-  container.innerHTML = "<span class='latvis-generate-link'><a href='http://latvis.mrjon.es'>Generate new image</a></span> | <a href='" + url + "'>Link to this page</a> | <a href='https://twitter.com/share'>Tweet</a>";
+  container.innerHTML = 
+    "<div class='logo'>" +
+    "<a href='/'><img src='/img/small_latvis_eeeeee.png'></a></div>" +
+    "<div class='links'><span class='latvis-generate-link'><a href='http://latvis.mrjon.es'>Generate new image</a></span> | <a href='" + url + "'>Link to this page</a> | <a href='https://twitter.com/share'>Tweet</a></div>";
 
   container.style.display = 'block';
 }

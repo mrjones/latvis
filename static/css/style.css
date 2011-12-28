@@ -245,6 +245,19 @@ img {
   vertical-align: middle;
 }
 
+.latvis-render .latvis-metadata .logo {
+  display: inline-block;
+  vertical-align: middle;
+  width: 25%;
+}
+
+.latvis-render .latvis-metadata .links {
+  display: inline-block;
+  vertical-align: middle;
+  text-align: right;
+  width: 75%;
+}
+
 .latvis-render .latvis-generate-link a {
   font-weight: bold;
   color: #CC6600;  
@@ -253,4 +266,11 @@ img {
 .latvis-render .latvis-image {
   width: auto;
   text-align: center;
+
+}
+
+.latvis-render .latvis-image img {
+  margin-top: 2em;
+  box-shadow: 5px 5px 10px #CCCCCC;
+  border: 1px solid #999999;
 }
