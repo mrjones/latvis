@@ -10,6 +10,11 @@ import (
 	"testing"
 )
 
+var (
+	B = BLACK
+	W = WHITE
+)
+
 func TestBWStyler2By2(t *testing.T) {
 	bounds, err := location.NewBoundingBox(
 		location.Coordinate{Lat: 0, Lng: 0},
@@ -23,17 +28,17 @@ func TestBWStyler2By2(t *testing.T) {
 
 	img, err := styler.Style(&h, bounds, 2, 2)
 	gt.AssertNil(t, err)
-	assertImage(t, [][]string{
-		[]string{ "W", "W" },
-		[]string{ "B", "W" }}, img)
+	assertImage(t, [][]image.Color{
+		[]image.Color{ W, W },
+		[]image.Color{ B, W }}, img)
 
 	h = append(h, &location.Coordinate{Lat: 1.5, Lng: 1.5})
 	
 	img, err = styler.Style(&h, bounds, 2, 2)
 	gt.AssertNil(t, err)
-	assertImage(t, [][]string{
-		[]string{ "W", "B" },
-		[]string{ "B", "W" }}, img)
+	assertImage(t, [][]image.Color{
+		[]image.Color{ W, B },
+		[]image.Color{ B, W }}, img)
 }
 
 func TestBWStylerNotSquare(t *testing.T) {
@@ -53,13 +58,13 @@ func TestBWStylerNotSquare(t *testing.T) {
 
 	img, err := styler.Style(&h, bounds, 5, 3)
 	gt.AssertNil(t, err)
-	assertImage(t, [][]string{
-		[]string{ "W", "W", "B", "W", "W" },
-		[]string{ "W", "B", "W", "B", "W" },
-		[]string{ "B", "W", "W", "W", "B" }}, img)
+	assertImage(t, [][]image.Color{
+		[]image.Color{ W, W, B, W, W },
+		[]image.Color{ W, B, W, B, W },
+		[]image.Color{ B, W, W, W, B }}, img)
 }
 
-func assertImage(t *testing.T, expected [][]string, actual image.Image) {
+func assertImage(t *testing.T, expected [][]image.Color, actual image.Image) {
 	gt.AssertEqualM(t, len(expected), actual.Bounds().Dy(), "Unexpected image height")
 	gt.AssertEqualM(t, len(expected[0]), actual.Bounds().Dx(), "Unexpected image width")
 
@@ -75,34 +80,8 @@ func assertImage(t *testing.T, expected [][]string, actual image.Image) {
 	for x := 0 ; x < len(expected[0]) ; x++ {
 		for y := 0 ; y < len(expected) ; y++ {
 			expPix := expected[y][x]
-			if expPix == "B" { assertBlack(t, actual, x, y) }
-			if expPix == "W" { assertWhite(t, actual, x, y) }
+			gt.AssertEqualM(t, expPix, actual.At(x, y),
+				fmt.Sprintf("Unexpected pixel at: (%d, %d)", x, y))
 		}
 	}
-}
-
-func assertBlack(t *testing.T, i image.Image, x, y int) {
-	r, g, b, a := i.At(x, y).RGBA()
-	gt.AssertEqualM(t, uint32(0), r,
-		fmt.Sprintf("Red should be 0 for black at (%d, %d).", x, y))
-	gt.AssertEqualM(t, uint32(0), g,
-		fmt.Sprintf("Green should be 0 for black at (%d, %d).", x, y))
-	gt.AssertEqualM(t, uint32(0), b,
-		fmt.Sprintf("Blue should be 0 for black at (%d, %d).", x, y))
-
-	gt.AssertEqualM(t, uint32(0xFFFF), a,
-		fmt.Sprintf("Alpha should be max-uint32 for black at (%d, %d).", x, y))
-}
-
-func assertWhite(t *testing.T, i image.Image, x, y int) {
-	r, g, b, a := i.At(x, y).RGBA()
-	gt.AssertEqualM(t, uint32(0xFFFF), r,
-		fmt.Sprintf("Red should be max-uint32 for white at (%d, %d).", x, y))
-	gt.AssertEqualM(t, uint32(0xFFFF), g,
-		fmt.Sprintf("Green should be max-uint32 for white at (%d, %d).", x, y))
-	gt.AssertEqualM(t, uint32(0xFFFF), b,
-		fmt.Sprintf("Blue should be max-uint32 for white at (%d, %d).", x, y))
-
-	gt.AssertEqualM(t, uint32(0xFFFF), a,
-		fmt.Sprintf("Alpha should be max-uint32 for white at (%d, %d).", x, y))
 }
