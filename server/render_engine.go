@@ -13,6 +13,10 @@ import (
 	"url"
 )
 
+const (
+	IMAGE_SIZE_PX = 512
+)
+
 // All the information necessary to specify a visualization.
 type RenderRequest struct {
 	bounds        *location.BoundingBox
@@ -188,11 +192,14 @@ handle *Handle) os.Error {
 		return err
 	}
 
+	w, h := imgSize(renderRequest.bounds, IMAGE_SIZE_PX)
+
 	data, err := visualization.Draw(
 		history,
 		renderRequest.bounds,
 		&visualization.BWStyler{},
-		512)
+		w,
+		h)
 	if err != nil {
 		return err
 	}
@@ -204,4 +211,19 @@ handle *Handle) os.Error {
 	}
 
 	return nil
+}
+
+func imgSize(bounds *location.BoundingBox, max int) (w, h int) {
+	maxF := float64(max)
+
+	w = max
+	h = max
+
+	skew := bounds.Height() / bounds.Width()
+	if skew > 1.0 {
+		w = int(maxF / skew)
+	} else {
+		h = int(maxF * skew)
+	}
+	return w, h
 }

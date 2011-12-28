@@ -156,7 +156,7 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 
 	body, err := conn.FetchUrl(locationHistoryUrl, params)
 	if err != nil {
-		return -1, -1, wrapError("FetchUrl error / "+locationHistoryUrl, err)
+		return -1, -1, wrapError("FetchUrl error / " + locationHistoryUrl, err)
 	}
 
 	var jsonObject JsonRoot

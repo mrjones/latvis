@@ -15,21 +15,18 @@ import (
 // []bytes from here? That would allow us to support things that aren't
 // images (e.g. KML files).
 type Styler interface {
-	Style(history *location.History, bounds *location.BoundingBox, imageWidth int, imageHeight int) (image.Image, os.Error)
+	Style(history *location.History, bounds *location.BoundingBox, imageWidth, imageHeight int) (image.Image, os.Error)
 }
-
 
 // Turns a location history into an image, based on the selected style.
 // - history:   The list of points to render.
 // - bounds:    The borders of the image (points outside the bounds are dropped).
 // - styler:    The Styler to use when turning the history into an image
-// - imageSize: (Asumes a square) the width & height of the final image in pixels
+// - width/height:  The width & height of the final image in pixels
 //
 // returns
 // - a []byte representing a PNG image
-func Draw(history *location.History, bounds *location.BoundingBox, styler Styler, imageSize int) (*[]byte, os.Error) {
-	width := imageSize
-	height := imageSize
+func Draw(history *location.History, bounds *location.BoundingBox, styler Styler, width, height int) (*[]byte, os.Error) {
 
 	img, err := styler.Style(history, bounds, width, height)
 
