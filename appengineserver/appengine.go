@@ -1,5 +1,15 @@
 package appengineserver
 
+// Configures a LatVis server which uses appengine services (e.g. blob storage,
+// http client, etc.).
+//
+// All AppEngine-specific code should be completely encapsulated inside this package.
+//
+// Run it locally with:
+// $ dev_appserver.py .
+// From the root latvis directory.
+//
+// Also works in a deployed appengine instance.
 import (
 	"github.com/mrjones/latvis/server"
 	"github.com/mrjones/oauth"
@@ -18,9 +28,19 @@ const (
 	LATVIS_OUTPUT_DATATYPE = "latvis-output"
 )
 
-type AppengineUrlTaskQueueProvider struct {
-
+func init() {
+	config := server.NewConfig(
+		&AppengineBlobStoreProvider{},
+		&AppengineHttpClientProvider{},
+		&server.InMemoryOauthSecretStoreProvider{},
+		&AppengineUrlTaskQueueProvider{})
+	server.Setup(config)
 }
+
+//
+// TASK QUEUE
+//
+type AppengineUrlTaskQueueProvider struct { }
 
 func (p *AppengineUrlTaskQueueProvider) GetQueue(req *http.Request) server.UrlTaskQueue {
 	return NewAppengineUrlTaskQueue(req)
@@ -42,10 +62,10 @@ func (q *AppengineUrlTaskQueue) Enqueue(url string, params *url.Values) os.Error
 	return err
 }
 
-/// Blob Sorage ////
-type AppengineBlobStoreProvider struct {
-
-}
+//
+// BLOB STORAGE
+//
+type AppengineBlobStoreProvider struct { }
 
 func (p *AppengineBlobStoreProvider) OpenStore(req *http.Request) server.BlobStore {
 	return &AppengineBlobStore{request: req}
@@ -74,10 +94,10 @@ func (s *AppengineBlobStore) Fetch(handle *server.Handle) (*server.Blob, os.Erro
 	return blob, nil
 }
 
-/// URL/HTTP Fetching ////
-type AppengineHttpClientProvider struct {
-
-}
+//
+// HTTP CLIENT
+//
+type AppengineHttpClientProvider struct { }
 
 func (p *AppengineHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient {
 	c := appengine.NewContext(req)
@@ -86,13 +106,4 @@ func (p *AppengineHttpClientProvider) GetClient(req *http.Request) oauth.HttpCli
 
 func keyFromHandle(c appengine.Context, h *server.Handle) *datastore.Key {
 	return datastore.NewKey(c, LATVIS_OUTPUT_DATATYPE, h.String(), 0, nil)
-}
-
-func init() {
-	config := server.NewConfig(
-		&AppengineBlobStoreProvider{},
-		&AppengineHttpClientProvider{},
-		&server.InMemoryOauthSecretStoreProvider{},
-		&AppengineUrlTaskQueueProvider{})
-	server.Setup(config)
 }
