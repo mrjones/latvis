@@ -64,6 +64,30 @@ func TestBWStylerNotSquare(t *testing.T) {
 		[]image.Color{ B, W, W, W, B }}, img)
 }
 
+func TestBWStylerSmushed(t *testing.T) {
+	bounds, err := location.NewBoundingBox(
+		location.Coordinate{Lat: 0, Lng: 0},
+		location.Coordinate{Lat: 50, Lng: 50})
+	gt.AssertNil(t, err)
+
+	h := make(location.History, 0)
+	// Lots of points, but they're all in the lower left.
+	h = append(h, &location.Coordinate{Lat: 1, Lng: 1})
+	h = append(h, &location.Coordinate{Lat: 2, Lng: 2})
+	h = append(h, &location.Coordinate{Lat: 3, Lng: 3})
+	h = append(h, &location.Coordinate{Lat: 4, Lng: 4})
+	h = append(h, &location.Coordinate{Lat: 5, Lng: 5})
+
+	styler := &BWStyler{}
+
+	img, err := styler.Style(&h, bounds, 2, 2)
+	gt.AssertNil(t, err)
+	assertImage(t, [][]image.Color{
+		[]image.Color{ W, W },
+		[]image.Color{ B, W }}, img)
+
+}
+
 func assertImage(t *testing.T, expected [][]image.Color, actual image.Image) {
 	gt.AssertEqualM(t, len(expected), actual.Bounds().Dy(), "Unexpected image height")
 	gt.AssertEqualM(t, len(expected[0]), actual.Bounds().Dx(), "Unexpected image width")
