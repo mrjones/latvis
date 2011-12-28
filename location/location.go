@@ -103,6 +103,5 @@ func (h *History) At(i int) *Coordinate {
 }
 
 type HistorySource interface {
-	GetHistory(year int64, month int) (*History, os.Error)
 	FetchRange(start, end time.Time) (*History, os.Error)
 }

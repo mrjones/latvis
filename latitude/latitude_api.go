@@ -25,7 +25,7 @@ const (
 // authorizedConnection := connection.Authorize(tokenSource.GetToken("userid"))
 // authorizedConnection.FetchUrl("url", nil)
 //  or
-// authorizedConnection.GetHistory(2011, 01);
+// authorizedConnection.FetchRange(<start time>, <end time>);
 
 //
 // JSON Data Model of Latitude API Responses
@@ -138,8 +138,8 @@ func (connection *AuthorizedConnection) FetchUrl(url string, params map[string]s
 	return string(responseBodyBytes), nil
 }
 
-func wrapError(wrapper string, cause os.Error) os.Error {
-	return os.NewError(wrapper + ": " + cause.String())
+func wrapError(wrapMsg string, cause os.Error) os.Error {
+	return os.NewError(wrapMsg + ": " + cause.String())
 }
 
 func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int64, windowSize int, history *location.History) (minTs int64, itemsReturned int, err os.Error) {
@@ -166,7 +166,9 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 	}
 
 	for i := 0; i < len(jsonObject.Data.Items); i++ {
-		point := &location.Coordinate{Lat: jsonObject.Data.Items[i].Latitude, Lng: jsonObject.Data.Items[i].Longitude}
+		point := &location.Coordinate{
+			Lat: jsonObject.Data.Items[i].Latitude,
+			Lng: jsonObject.Data.Items[i].Longitude}
 		history.Add(point)
 		if jsonObject.Data.Items[i].TimestampMs == "" {
 			data, err := json.Marshal(jsonObject.Data.Items[i])
@@ -177,19 +179,13 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 		} else {
 			minTs, err = strconv.Atoi64(jsonObject.Data.Items[i].TimestampMs)
 			if err != nil {
-				return -1, -1, wrapError("Atoi Error / "+jsonObject.Data.Items[i].TimestampMs, err)
+				return -1, -1, wrapError(
+					"Atoi Error / " + jsonObject.Data.Items[i].TimestampMs, err)
 			}
 		}
 	}
 
 	return minTs, len(jsonObject.Data.Items), nil
-}
-
-func (conn *AuthorizedConnection) GetHistory(year int64, month int) (*location.History, os.Error) {
-	startTime := time.Time{Year: year, Month: month, Day: 1}
-	endTime := time.Time{Year: year, Month: month + 1, Day: 1}
-
-	return conn.FetchRange(startTime, endTime)
 }
 
 func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *location.History) {
