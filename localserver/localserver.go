@@ -1,12 +1,13 @@
 package main
 
 // Usage:
-// - cd src/latvis
+// - cd src/latvis/latvis
+// - go test
 // - go install
 // - go run localserver/localserver.go
 
 import (
-	"latvis"
+	"latvis/latvis"
 )
 
 func main() {
