@@ -1,16 +1,12 @@
-package server
+package latvis
 
 import (
-	"github.com/mrjones/latvis/latitude"
-	"github.com/mrjones/latvis/location"
-	"github.com/mrjones/latvis/visualization"
-
+	"errors"
 	"fmt"
-	"http"
-	"os"
+	"net/http"
+	"net/url"
 	"strconv"
 	"time"
-	"url"
 )
 
 const (
@@ -19,8 +15,8 @@ const (
 
 // All the information necessary to specify a visualization.
 type RenderRequest struct {
-	bounds        *location.BoundingBox
-	start, end    *time.Time
+	bounds        *BoundingBox
+	start, end    time.Time
 	oauthToken    string
 	oauthVerifier string
 }
@@ -32,13 +28,13 @@ func serializeRenderRequest(r *RenderRequest, m *url.Values) {
 		panic("nil map")
 	}
 
-	m.Add("start", strconv.Itoa64(r.start.Seconds()))
-	m.Add("end", strconv.Itoa64(r.end.Seconds()))
+	m.Add("start", strconv.FormatInt(r.start.Unix(), 10))
+	m.Add("end", strconv.FormatInt(r.end.Unix(), 10))
 
-	m.Add("lllat", strconv.Ftoa64(r.bounds.LowerLeft().Lat, 'f', 16))
-	m.Add("lllng", strconv.Ftoa64(r.bounds.LowerLeft().Lng, 'f', 16))
-	m.Add("urlat", strconv.Ftoa64(r.bounds.UpperRight().Lat, 'f', 16))
-	m.Add("urlng", strconv.Ftoa64(r.bounds.UpperRight().Lng, 'f', 16))
+	m.Add("lllat", strconv.FormatFloat(r.bounds.LowerLeft().Lat, 'f', 16, 64))
+	m.Add("lllng", strconv.FormatFloat(r.bounds.LowerLeft().Lng, 'f', 16, 64))
+	m.Add("urlat", strconv.FormatFloat(r.bounds.UpperRight().Lat, 'f', 16, 64))
+	m.Add("urlng", strconv.FormatFloat(r.bounds.UpperRight().Lng, 'f', 16, 64))
 
 	m.Add("oauth_token", r.oauthToken)
 	m.Add("oauth_verifier", r.oauthVerifier)
@@ -46,7 +42,7 @@ func serializeRenderRequest(r *RenderRequest, m *url.Values) {
 
 // De-Serializas a RenderRequest which has been encoded in a URL.
 // It is expected that the encoding came from serializeRenderRequest.
-func deserializeRenderRequest(params *url.Values) (*RenderRequest, os.Error) {
+func deserializeRenderRequest(params *url.Values) (*RenderRequest, error) {
 	// Parse all input parameters from the URL
 	lowerLeft, err := extractCoordinateFromUrl(params, "lllat", "lllng")
 	if err != nil {
@@ -71,7 +67,7 @@ func deserializeRenderRequest(params *url.Values) (*RenderRequest, os.Error) {
 		return nil, err
 	}
 
-	bounds, err := location.NewBoundingBox(*lowerLeft, *upperRight)
+	bounds, err := NewBoundingBox(*lowerLeft, *upperRight)
 	if err != nil {
 		return nil, err
 	}
@@ -100,41 +96,41 @@ func deserializeRenderRequest(params *url.Values) (*RenderRequest, os.Error) {
 // ======================================
 
 func extractCoordinateFromUrl(params *url.Values,
-latparam string,
-lngparam string) (*location.Coordinate, os.Error) {
+	latparam string,
+	lngparam string) (*Coordinate, error) {
 	if params.Get(latparam) == "" {
-		return nil, os.NewError("Missing required query paramter: " + latparam)
+		return nil, errors.New("Missing required query paramter: " + latparam)
 	}
 	if params.Get(lngparam) == "" {
-		return nil, os.NewError("Missing required query paramter: " + lngparam)
+		return nil, errors.New("Missing required query paramter: " + lngparam)
 	}
 
-	lat, err := strconv.Atof64(params.Get(latparam))
+	lat, err := strconv.ParseFloat(params.Get(latparam), 64)
 	if err != nil {
 		return nil, err
 	}
-	lng, err := strconv.Atof64(params.Get(lngparam))
+	lng, err := strconv.ParseFloat(params.Get(lngparam), 64)
 	if err != nil {
 		return nil, err
 	}
 
-	return &location.Coordinate{Lat: lat, Lng: lng}, nil
+	return &Coordinate{Lat: lat, Lng: lng}, nil
 }
 
-func extractTimeFromUrl(params *url.Values, param string) (*time.Time, os.Error) {
+func extractTimeFromUrl(params *url.Values, param string) (time.Time, error) {
 	if params.Get(param) == "" {
-		return nil, os.NewError("Missing query param: " + param)
+		return time.Now(), errors.New("Missing query param: " + param)
 	}
-	startTs, err := strconv.Atoi64(params.Get(param))
+	startTs, err := strconv.ParseInt(params.Get(param), 10, 64)
 	if err != nil {
 		startTs = -1
 	}
-	return time.SecondsToUTC(startTs), nil
+	return time.Unix(startTs, 0).UTC(), nil
 }
 
-func extractStringFromUrl(params *url.Values, param string) (string, os.Error) {
+func extractStringFromUrl(params *url.Values, param string) (string, error) {
 	if params.Get(param) == "" {
-		return "", os.NewError("Missing query param: " + param)
+		return "", errors.New("Missing query param: " + param)
 	}
 	return params.Get(param), nil
 }
@@ -153,8 +149,8 @@ func propogateParameter(base string, params *url.Values, key string) string {
 // Capable of executing RenderRequests.
 type RenderEngineInterface interface {
 	Render(renderRequest *RenderRequest,
-	httpRequest *http.Request,
-	handle *Handle) os.Error
+		httpRequest *http.Request,
+		handle *Handle) error
 }
 
 type RenderEngine struct {
@@ -164,17 +160,17 @@ type RenderEngine struct {
 }
 
 func (r *RenderEngine) Render(renderRequest *RenderRequest,
-httpRequest *http.Request,
-handle *Handle) os.Error {
+	httpRequest *http.Request,
+	handle *Handle) error {
 
-	consumer := latitude.NewConsumer()
+	consumer := NewConsumer()
 	consumer.HttpClient = r.httpClientProvider.GetClient(httpRequest)
-	connection := latitude.NewConnectionForConsumer(consumer)
+	connection := NewConnectionForConsumer(consumer)
 
 	rtoken := r.secretStorageProvider.GetStore(httpRequest).Lookup(
 		renderRequest.oauthToken)
 	if rtoken == nil {
-		return os.NewError("No token stored for: " + renderRequest.oauthToken)
+		return errors.New("No token stored for: " + renderRequest.oauthToken)
 	}
 	atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
 
@@ -182,11 +178,11 @@ handle *Handle) os.Error {
 		return err
 	}
 
-	var authorizedConnection location.HistorySource
+	var authorizedConnection HistorySource
 	authorizedConnection = connection.Authorize(atoken)
 
 	history, err := authorizedConnection.FetchRange(
-		*renderRequest.start, *renderRequest.end)
+		renderRequest.start, renderRequest.end)
 
 	if err != nil {
 		return err
@@ -194,10 +190,10 @@ handle *Handle) os.Error {
 
 	w, h := imgSize(renderRequest.bounds, IMAGE_SIZE_PX)
 
-	data, err := visualization.Draw(
+	data, err := Draw(
 		history,
 		renderRequest.bounds,
-		&visualization.BWStyler{},
+		&BWStyler{},
 		w,
 		h)
 	if err != nil {
@@ -213,7 +209,7 @@ handle *Handle) os.Error {
 	return nil
 }
 
-func imgSize(bounds *location.BoundingBox, max int) (w, h int) {
+func imgSize(bounds *BoundingBox, max int) (w, h int) {
 	maxF := float64(max)
 
 	w = max

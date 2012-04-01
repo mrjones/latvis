@@ -10,15 +10,13 @@
 // Some default implementations are also provided in this file, however, a
 // number of them are only for testing and shouldn't be used in deployed
 // servers.
-package server
+package latvis
 
 import (
-	"github.com/mrjones/latvis/latitude"
 	"github.com/mrjones/oauth"
 
-	"http"
-	"os"
-	"url"
+	"net/http"
+	"net/url"
 )
 
 // ServerConfig represents all the dependencies for a latvis server.
@@ -38,9 +36,9 @@ type ServerConfig struct {
 // Use this instead of &ServerConfig{...} directly to get compile-timer
 // errors when new dependencies are introduced.
 func NewConfig(blobStorage HttpBlobStoreProvider,
-httpClient HttpClientProvider,
-secretStorage HttpOauthSecretStoreProvider,
-taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
+	httpClient HttpClientProvider,
+	secretStorage HttpOauthSecretStoreProvider,
+	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
 	return &ServerConfig{
 		blobStorage:   blobStorage,
 		httpClient:    httpClient,
@@ -85,7 +83,7 @@ type HttpUrlTaskQueueProvider interface {
 }
 
 type LatitudeConnection interface {
-	TokenRedirectUrl(callback string) (*oauth.RequestToken, string, os.Error)
+	TokenRedirectUrl(callback string) (*oauth.RequestToken, string, error)
 }
 
 type HttpLatitudeConnectionProvider interface {
@@ -115,7 +113,7 @@ type OauthSecretStore interface {
 // server would choose to implement tasks this way, but I'm not sure it would
 // be the first choice.  Anyway, for now we'll live with it.
 type UrlTaskQueue interface {
-	Enqueue(url string, params *url.Values) os.Error
+	Enqueue(url string, params *url.Values) error
 }
 
 type OauthConsumerProvider interface {
@@ -143,7 +141,7 @@ type SyncUrlTaskQueue struct {
 	httpClient oauth.HttpClient
 }
 
-func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) os.Error {
+func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) error {
 	//	u := url.Parse(baseUrl + url + params.Encode())
 
 	//	var req http.Request
@@ -220,7 +218,7 @@ type StandardLatitudeConnector struct {
 }
 
 func (p *StandardLatitudeConnector) NewConnection(req *http.Request) LatitudeConnection {
-	consumer := latitude.NewConsumer()
+	consumer := NewConsumer()
 	consumer.HttpClient = p.httpClient.GetClient(req)
-	return latitude.NewConnectionForConsumer(consumer)
+	return NewConnectionForConsumer(consumer)
 }

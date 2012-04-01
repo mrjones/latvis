@@ -1,10 +1,10 @@
-package server
+package latvis
 
 import (
 	"github.com/mrjones/gt"
 
+	"net/url"
 	"testing"
-	"url"
 )
 
 func simpleHandle() *Handle {

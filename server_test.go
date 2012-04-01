@@ -1,17 +1,17 @@
-package server
+package latvis
 
 import (
-	"github.com/mrjones/oauth"
 	"github.com/mrjones/gt"
+	"github.com/mrjones/oauth"
 
-	"http"
+	"math/rand"
+	"net/http"
+	"net/url"
 	"os"
-	"rand"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
-	"url"
 )
 
 func TestObjectReady(t *testing.T) {
@@ -121,8 +121,8 @@ func TestAsyncWorker(t *testing.T) {
 	gt.AssertEqualM(t, 3.0, mockEngine.lastRenderRequest.bounds.UpperRight().Lat, "")
 	gt.AssertEqualM(t, 4.0, mockEngine.lastRenderRequest.bounds.UpperRight().Lng, "")
 
-	gt.AssertEqualM(t, time.SecondsToUTC(5), mockEngine.lastRenderRequest.start, "")
-	gt.AssertEqualM(t, time.SecondsToUTC(6), mockEngine.lastRenderRequest.end, "")
+	gt.AssertEqualM(t, time.Unix(5, 0).UTC(), mockEngine.lastRenderRequest.start, "")
+	gt.AssertEqualM(t, time.Unix(6, 0).UTC(), mockEngine.lastRenderRequest.end, "")
 
 	gt.AssertEqualM(t, "tok", mockEngine.lastRenderRequest.oauthToken, "")
 	gt.AssertEqualM(t, "ver", mockEngine.lastRenderRequest.oauthVerifier, "")
@@ -156,10 +156,10 @@ func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
 }
 
 func execute(t *testing.T,
-url string,
-handler func(http.ResponseWriter, *http.Request),
-cfg *ServerConfig) *FakeResponse {
-	Setup(cfg)
+	url string,
+	handler func(http.ResponseWriter, *http.Request),
+	cfg *ServerConfig) *FakeResponse {
+	UseConfig(cfg)
 
 	req, err := http.NewRequest("GET", url, nil)
 	gt.AssertNil(t, err)
@@ -180,7 +180,7 @@ type MockRenderEngine struct {
 	lastHandle        *Handle
 }
 
-func (m *MockRenderEngine) Render(renderReq *RenderRequest, httpReq *http.Request, h *Handle) os.Error {
+func (m *MockRenderEngine) Render(renderReq *RenderRequest, httpReq *http.Request, h *Handle) error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
 
@@ -201,7 +201,7 @@ type MockTaskQueue struct {
 	lastParams *url.Values
 }
 
-func (q *MockTaskQueue) Enqueue(url string, params *url.Values) os.Error {
+func (q *MockTaskQueue) Enqueue(url string, params *url.Values) error {
 	q.lastUrl = url
 	q.lastParams = params
 	return nil
@@ -216,7 +216,7 @@ func (f *FakeLatitudeConnector) NewConnection(r *http.Request) LatitudeConnectio
 
 type FakeLatitudeConnection struct{}
 
-func (f *FakeLatitudeConnection) TokenRedirectUrl(callback string) (*oauth.RequestToken, string, os.Error) {
+func (f *FakeLatitudeConnection) TokenRedirectUrl(callback string) (*oauth.RequestToken, string, error) {
 	return &oauth.RequestToken{Token: "TOKEN", Secret: "SECRET"}, "http://redirect.com", nil
 }
 
@@ -246,7 +246,7 @@ func NewFakeResponse() *FakeResponse {
 
 func (r *FakeResponse) Header() http.Header        { return r.Headers }
 func (r *FakeResponse) WriteHeader(statusCode int) { r.StatusCode = statusCode }
-func (r *FakeResponse) Write(body []byte) (int, os.Error) {
+func (r *FakeResponse) Write(body []byte) (int, error) {
 	if r.StatusCode == -1 {
 		r.StatusCode = 200
 	}

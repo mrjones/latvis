@@ -1,16 +1,15 @@
-package server
+package latvis
 
 import (
 	"github.com/mrjones/gt"
-	"github.com/mrjones/latvis/location"
 
 	"testing"
 )
 
 func TestSquareBox(t *testing.T) {
-	box, err := location.NewBoundingBox(
-		location.Coordinate{Lat: 0, Lng: 0},
-		location.Coordinate{Lat: 10, Lng: 10})
+	box, err := NewBoundingBox(
+		Coordinate{Lat: 0, Lng: 0},
+		Coordinate{Lat: 10, Lng: 10})
 	gt.AssertNil(t, err)
 
 	w, h := imgSize(box, 500)
@@ -20,9 +19,9 @@ func TestSquareBox(t *testing.T) {
 }
 
 func TestWideBox(t *testing.T) {
-	box, err := location.NewBoundingBox(
-		location.Coordinate{Lat: 0, Lng: 0},
-		location.Coordinate{Lat: 10, Lng: 100})
+	box, err := NewBoundingBox(
+		Coordinate{Lat: 0, Lng: 0},
+		Coordinate{Lat: 10, Lng: 100})
 	gt.AssertNil(t, err)
 
 	w, h := imgSize(box, 500)
@@ -32,9 +31,9 @@ func TestWideBox(t *testing.T) {
 }
 
 func TestTallBox(t *testing.T) {
-	box, err := location.NewBoundingBox(
-		location.Coordinate{Lat: 0, Lng: 0},
-		location.Coordinate{Lat: 10, Lng: 5})
+	box, err := NewBoundingBox(
+		Coordinate{Lat: 0, Lng: 0},
+		Coordinate{Lat: 10, Lng: 5})
 	gt.AssertNil(t, err)
 
 	w, h := imgSize(box, 500)

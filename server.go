@@ -1,19 +1,23 @@
-package server
+package latvis
 
 import (
+	"errors"
 	"fmt"
-	"http"
 	"log"
-	"os"
+	"net/http"
+	"net/url"
 	"strings"
-	"template"
-	"url"
+	"text/template"
 )
 
 var config *ServerConfig
 
-func Setup(serverConfig *ServerConfig) {
+func UseConfig(serverConfig *ServerConfig) {
 	config = serverConfig
+}
+
+func Setup(serverConfig *ServerConfig) {
+	UseConfig(serverConfig)
 
 	// Starts the process, redirecting to Google for OAuth credentials
 	http.HandleFunc("/authorize", AuthorizeHandler)
@@ -111,10 +115,10 @@ var resultPageSource = `
 func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 	urlParts := strings.Split(request.URL.Path, "/")
 	if len(urlParts) != 3 {
-		serveError(response, os.NewError("Invalid filename [1]: "+request.URL.Path))
+		serveError(response, errors.New("Invalid filename [1]: "+request.URL.Path))
 	}
 	if urlParts[0] != "" {
-		serveError(response, os.NewError("Invalid filename [2]: "+request.URL.Path))
+		serveError(response, errors.New("Invalid filename [2]: "+request.URL.Path))
 	}
 
 	t, err := template.New("Result Page").Parse(resultPageSource)
@@ -140,7 +144,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 	}
 
 	if blob == nil {
-		serveError(response, os.NewError("blob is nil"))
+		serveError(response, errors.New("blob is nil"))
 		return
 	}
 
@@ -231,7 +235,7 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Seconds(), rr.end.Seconds())
+	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Unix(), rr.end.Unix())
 
 	// parse from URL
 	handle, err := parseHandleFromParams(&request.Form)
@@ -250,12 +254,12 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	response.WriteHeader(http.StatusOK)
 }
 
-func serveErrorWithLabel(response http.ResponseWriter, message string, err os.Error) {
-	serveErrorMessage(response, message+":"+err.String())
+func serveErrorWithLabel(response http.ResponseWriter, message string, err error) {
+	serveErrorMessage(response, message+":"+err.Error())
 }
 
-func serveError(response http.ResponseWriter, err os.Error) {
-	serveErrorMessage(response, err.String())
+func serveError(response http.ResponseWriter, err error) {
+	serveErrorMessage(response, err.Error())
 }
 
 func serveErrorMessage(response http.ResponseWriter, message string) {
