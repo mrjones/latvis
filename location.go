@@ -1,7 +1,7 @@
-package location
+package latvis
 
 import (
-	"os"
+	"errors"
 	"time"
 )
 
@@ -15,9 +15,9 @@ type BoundingBox struct {
 	upperRight Coordinate
 }
 
-func NewBoundingBox(lowerLeft, upperRight Coordinate) (*BoundingBox, os.Error) {
+func NewBoundingBox(lowerLeft, upperRight Coordinate) (*BoundingBox, error) {
 	if lowerLeft.Lat > upperRight.Lat {
-		return nil, os.NewError("Latitude of lowerLeft must be less than longitude of upperRight")
+		return nil, errors.New("Latitude of lowerLeft must be less than longitude of upperRight")
 	}
 	return &BoundingBox{lowerLeft: lowerLeft, upperRight: upperRight}, nil
 }
@@ -103,5 +103,5 @@ func (h *History) At(i int) *Coordinate {
 }
 
 type HistorySource interface {
-	FetchRange(start, end time.Time) (*History, os.Error)
+	FetchRange(start, end time.Time) (*History, error)
 }

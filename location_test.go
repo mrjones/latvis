@@ -1,4 +1,4 @@
-package location
+package latvis
 
 import (
 	"github.com/mrjones/gt"
