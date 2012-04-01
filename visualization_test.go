@@ -1,8 +1,6 @@
-package visualization
+package latvis
 
 import (
-	"github.com/mrjones/latvis/location"
-
 	"fmt"
 	"testing"
 )
@@ -25,14 +23,14 @@ func TestSimpleGrid(t *testing.T) {
 }
 
 func TestSimpleAggregateHistory(t *testing.T) {
-	history := location.History{}
-	history.Add(&location.Coordinate{Lat: 1.0, Lng: 1.0})
-	history.Add(&location.Coordinate{Lat: 2.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 3.0, Lng: 3.0})
+	history := History{}
+	history.Add(&Coordinate{Lat: 1.0, Lng: 1.0})
+	history.Add(&Coordinate{Lat: 2.0, Lng: 2.0})
+	history.Add(&Coordinate{Lat: 3.0, Lng: 3.0})
 
-	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: 0.0, Lng: 0.0},
-		location.Coordinate{Lat: 4.0, Lng: 4.0})
+	bounds, err := NewBoundingBox(
+		Coordinate{Lat: 0.0, Lng: 0.0},
+		Coordinate{Lat: 4.0, Lng: 4.0})
 
 	if err != nil {
 		t.Fatal(err)
@@ -58,13 +56,13 @@ func TestSimpleAggregateHistory(t *testing.T) {
 // 0 0
 // 0 0
 func TestSqueezesTallBoxIntoWideImageNoDistortion(t *testing.T) {
-	history := location.History{}
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 0.0})
-	history.Add(&location.Coordinate{Lat: 3.0, Lng: 0.0})
+	history := History{}
+	history.Add(&Coordinate{Lat: 5.0, Lng: 0.0})
+	history.Add(&Coordinate{Lat: 3.0, Lng: 0.0})
 
-	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: 0.00001, Lng: -0.00001},
-		location.Coordinate{Lat: 5.00001, Lng: 1.00001})
+	bounds, err := NewBoundingBox(
+		Coordinate{Lat: 0.00001, Lng: -0.00001},
+		Coordinate{Lat: 5.00001, Lng: 1.00001})
 
 	if err != nil {
 		t.Fatal(err)
@@ -87,15 +85,15 @@ func TestSqueezesTallBoxIntoWideImageNoDistortion(t *testing.T) {
 // 0 0 0 0
 // 0 0 0 0
 func TestSqueezesLineWithoutDistortion(t *testing.T) {
-	history := location.History{}
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 0.0})
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 1.0})
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 3.0})
+	history := History{}
+	history.Add(&Coordinate{Lat: 5.0, Lng: 0.0})
+	history.Add(&Coordinate{Lat: 5.0, Lng: 1.0})
+	history.Add(&Coordinate{Lat: 5.0, Lng: 2.0})
+	history.Add(&Coordinate{Lat: 5.0, Lng: 3.0})
 
-	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: -0.00001, Lng: -0.00001},
-		location.Coordinate{Lat: 5.00001, Lng: 3.00001})
+	bounds, err := NewBoundingBox(
+		Coordinate{Lat: -0.00001, Lng: -0.00001},
+		Coordinate{Lat: 5.00001, Lng: 3.00001})
 
 	if err != nil {
 		t.Fatal(err)
@@ -118,15 +116,15 @@ func TestSqueezesLineWithoutDistortion(t *testing.T) {
 // 0 0 0 0
 // 0 0 0 0
 func TestSqueezesLineWithoutDistortion2(t *testing.T) {
-	history := location.History{}
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 0.0})
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 1.0})
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 3.0})
+	history := History{}
+	history.Add(&Coordinate{Lat: 4.0, Lng: 0.0})
+	history.Add(&Coordinate{Lat: 4.0, Lng: 1.0})
+	history.Add(&Coordinate{Lat: 4.0, Lng: 2.0})
+	history.Add(&Coordinate{Lat: 4.0, Lng: 3.0})
 
-	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: -0.00001, Lng: -0.00001},
-		location.Coordinate{Lat: 5.00001, Lng: 3.00001})
+	bounds, err := NewBoundingBox(
+		Coordinate{Lat: -0.00001, Lng: -0.00001},
+		Coordinate{Lat: 5.00001, Lng: 3.00001})
 
 	if err != nil {
 		t.Fatal(err)
@@ -149,27 +147,27 @@ func TestSqueezesLineWithoutDistortion2(t *testing.T) {
 // 0 0 0 0
 // 0 0 0 0
 func TestSqueezesSquareWithoutDistortion(t *testing.T) {
-	history := location.History{}
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 0.0})
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 1.0})
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 5.0, Lng: 3.0})
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 0.0})
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 1.0})
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 4.0, Lng: 3.0})
-	history.Add(&location.Coordinate{Lat: 3.0, Lng: 0.0})
-	history.Add(&location.Coordinate{Lat: 3.0, Lng: 1.0})
-	history.Add(&location.Coordinate{Lat: 3.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 3.0, Lng: 3.0})
-	history.Add(&location.Coordinate{Lat: 2.0, Lng: 0.0})
-	history.Add(&location.Coordinate{Lat: 2.0, Lng: 1.0})
-	history.Add(&location.Coordinate{Lat: 2.0, Lng: 2.0})
-	history.Add(&location.Coordinate{Lat: 2.0, Lng: 3.0})
+	history := History{}
+	history.Add(&Coordinate{Lat: 5.0, Lng: 0.0})
+	history.Add(&Coordinate{Lat: 5.0, Lng: 1.0})
+	history.Add(&Coordinate{Lat: 5.0, Lng: 2.0})
+	history.Add(&Coordinate{Lat: 5.0, Lng: 3.0})
+	history.Add(&Coordinate{Lat: 4.0, Lng: 0.0})
+	history.Add(&Coordinate{Lat: 4.0, Lng: 1.0})
+	history.Add(&Coordinate{Lat: 4.0, Lng: 2.0})
+	history.Add(&Coordinate{Lat: 4.0, Lng: 3.0})
+	history.Add(&Coordinate{Lat: 3.0, Lng: 0.0})
+	history.Add(&Coordinate{Lat: 3.0, Lng: 1.0})
+	history.Add(&Coordinate{Lat: 3.0, Lng: 2.0})
+	history.Add(&Coordinate{Lat: 3.0, Lng: 3.0})
+	history.Add(&Coordinate{Lat: 2.0, Lng: 0.0})
+	history.Add(&Coordinate{Lat: 2.0, Lng: 1.0})
+	history.Add(&Coordinate{Lat: 2.0, Lng: 2.0})
+	history.Add(&Coordinate{Lat: 2.0, Lng: 3.0})
 
-	bounds, err := location.NewBoundingBox(
-		location.Coordinate{Lat: -0.00001, Lng: -0.00001},
-		location.Coordinate{Lat: 5.00001, Lng: 3.00001})
+	bounds, err := NewBoundingBox(
+		Coordinate{Lat: -0.00001, Lng: -0.00001},
+		Coordinate{Lat: 5.00001, Lng: 3.00001})
 
 	if err != nil {
 		t.Fatal(err)

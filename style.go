@@ -1,17 +1,16 @@
-package visualization
+package latvis
 
 import (
-	"github.com/mrjones/latvis/location"
-
 	"image"
+	"image/color"
 	"math"
-	"os"
 )
 
 var (
-	BLACK = image.NRGBAColor{uint8(0), uint8(0), uint8(0), 255}
-	WHITE = image.NRGBAColor{uint8(255), uint8(255), uint8(255), 255}
+	BLACK = color.NRGBA{uint8(0), uint8(0), uint8(0), 255}
+	WHITE = color.NRGBA{uint8(255), uint8(255), uint8(255), 255}
 )
+
 //
 // BWStyler
 //
@@ -20,9 +19,9 @@ type IntensityGrid struct {
 	Points [][]float64
 }
 
-type BWStyler struct { }
+type BWStyler struct{}
 
-func (r *BWStyler) Style(history *location.History, bounds *location.BoundingBox, width int, height int) (image.Image, os.Error) {
+func (r *BWStyler) Style(history *History, bounds *BoundingBox, width int, height int) (image.Image, error) {
 	grid := aggregateHistory(history, bounds, width, height)
 	intensityGrid := formatAsIntensityGrid(grid, width, height)
 	return intensityGridToBWImage(intensityGrid), nil
@@ -31,7 +30,7 @@ func (r *BWStyler) Style(history *location.History, bounds *location.BoundingBox
 func intensityGridToBWImage(intensityGrid *IntensityGrid) image.Image {
 	width := len(intensityGrid.Points)
 	height := len(intensityGrid.Points[0])
-	img := image.NewNRGBA(width, height)
+	img := image.NewNRGBA(image.Rect(0, 0, width, height))
 
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {

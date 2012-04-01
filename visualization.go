@@ -1,12 +1,9 @@
-package visualization
+package latvis
 
 import (
-	"github.com/mrjones/latvis/location"
-
 	"bytes"
 	"image"
 	"image/png"
-	"os"
 )
 
 // Interface to implement different styles of maps.
@@ -15,7 +12,7 @@ import (
 // []bytes from here? That would allow us to support things that aren't
 // images (e.g. KML files).
 type Styler interface {
-	Style(history *location.History, bounds *location.BoundingBox, imageWidth, imageHeight int) (image.Image, os.Error)
+	Style(history *History, bounds *BoundingBox, imageWidth, imageHeight int) (image.Image, error)
 }
 
 // Turns a location history into an image, based on the selected style.
@@ -26,7 +23,7 @@ type Styler interface {
 //
 // returns
 // - a []byte representing a PNG image
-func Draw(history *location.History, bounds *location.BoundingBox, styler Styler, width, height int) (*[]byte, os.Error) {
+func Draw(history *History, bounds *BoundingBox, styler Styler, width, height int) (*[]byte, error) {
 
 	img, err := styler.Style(history, bounds, width, height)
 
@@ -36,7 +33,7 @@ func Draw(history *location.History, bounds *location.BoundingBox, styler Styler
 	return imageToPNGBytes(img)
 }
 
-func imageToPNGBytes(img image.Image) (*[]byte, os.Error) {
+func imageToPNGBytes(img image.Image) (*[]byte, error) {
 	buffer := bytes.NewBuffer(make([]byte, 0))
 
 	if err := png.Encode(buffer, img); err != nil {
@@ -83,7 +80,7 @@ func (g *Grid) Height() int {
 	return g.height
 }
 
-func aggregateHistory(history *location.History, bounds *location.BoundingBox, gridWidth int, gridHeight int) *Grid {
+func aggregateHistory(history *History, bounds *BoundingBox, gridWidth int, gridHeight int) *Grid {
 	grid := NewGrid(gridWidth, gridHeight)
 
 	// For now, we always generate a square output image
