@@ -1,15 +1,20 @@
 package main
 
+// Usage:
+// - cd src/latvis
+// - go install
+// - go run localserver/localserver.go
+
 import (
-	"github.com/mrjones/latvis/server"
+	"latvis"
 )
 
 func main() {
-	config := server.NewConfig(
-		&server.LocalFSBlobStoreProvider{},
-		&server.StandardHttpClientProvider{},
-		&server.InMemoryOauthSecretStoreProvider{},
-		&server.SyncUrlTaskQueueProvider{})
-	server.Setup(config)
-	server.Serve()
+	config := latvis.NewConfig(
+		&latvis.LocalFSBlobStoreProvider{},
+		&latvis.StandardHttpClientProvider{},
+		&latvis.InMemoryOauthSecretStoreProvider{},
+		&latvis.SyncUrlTaskQueueProvider{})
+	latvis.Setup(config)
+	latvis.Serve()
 }

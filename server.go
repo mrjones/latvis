@@ -55,6 +55,7 @@ func Setup(serverConfig *ServerConfig) {
 }
 
 func Serve() {
+	fmt.Println("Localserver Serving on Port 8081")
 	err := http.ListenAndServe(":8081", nil)
 	log.Fatal(err)
 }
