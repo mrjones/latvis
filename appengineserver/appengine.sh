@@ -3,6 +3,6 @@ if [[ $1 == "run" ]]; then
 fi
 
 if [[ $1 == "upload" ]]; then
-    appcfg.py update .
+    appcfg.py update latvis
 fi
 
