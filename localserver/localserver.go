@@ -7,15 +7,15 @@ package main
 // - go run localserver/localserver.go
 
 import (
-	"latvis/latvis"
+//	"latvis/latvis"
 )
 
 func main() {
-	config := latvis.NewConfig(
-		&latvis.LocalFSBlobStoreProvider{},
-		&latvis.StandardHttpClientProvider{},
-		&latvis.InMemoryOauthSecretStoreProvider{},
-		&latvis.SyncUrlTaskQueueProvider{})
-	latvis.Setup(config)
-	latvis.Serve()
+//	config := latvis.NewConfig(
+//		&latvis.LocalFSBlobStoreProvider{},
+//		&latvis.StandardHttpClientProvider{},
+//		&latvis.InMemoryOauthSecretStoreProvider{},
+//		&latvis.SyncUrlTaskQueueProvider{})
+//	latvis.Setup(config)
+//	latvis.Serve()
 }

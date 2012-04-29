@@ -52,6 +52,8 @@ func Setup(serverConfig *ServerConfig) {
 	// Checks if the requested image is ready or not (used for polling on
 	// the "display" page.
 	http.HandleFunc("/is_ready/", IsReadyHandler)
+
+	http.Handle("/", http.FileServer(http.Dir("static")))
 }
 
 func Serve() {

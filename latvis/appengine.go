@@ -1,4 +1,4 @@
-package appengineserver
+package latvis
 
 // Configures a LatVis server which uses appengine services (e.g. blob storage,
 // http client, etc.).
@@ -18,11 +18,8 @@ import (
 	"appengine/taskqueue"
 	"appengine/urlfetch"
 
-	"latvis"
-
-	"http"
-	"os"
-	"url"
+	"net/http"
+	"net/url"
 )
 
 const (
@@ -30,20 +27,20 @@ const (
 )
 
 func init() {
-	config := latvis.NewConfig(
+	config := NewConfig(
 		&AppengineBlobStoreProvider{},
 		&AppengineHttpClientProvider{},
-		&latvis.InMemoryOauthSecretStoreProvider{},
+		&InMemoryOauthSecretStoreProvider{},
 		&AppengineUrlTaskQueueProvider{})
-	latvis.Setup(config)
+	Setup(config)
 }
 
 //
 // TASK QUEUE
 //
-type AppengineUrlTaskQueueProvider struct { }
+type AppengineUrlTaskQueueProvider struct{}
 
-func (p *AppengineUrlTaskQueueProvider) GetQueue(req *http.Request) latvis.UrlTaskQueue {
+func (p *AppengineUrlTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
 	return NewAppengineUrlTaskQueue(req)
 }
 
@@ -51,11 +48,11 @@ type AppengineUrlTaskQueue struct {
 	request *http.Request
 }
 
-func NewAppengineUrlTaskQueue(request *http.Request) latvis.UrlTaskQueue {
+func NewAppengineUrlTaskQueue(request *http.Request) UrlTaskQueue {
 	return &AppengineUrlTaskQueue{request: request}
 }
 
-func (q *AppengineUrlTaskQueue) Enqueue(url string, params *url.Values) os.Error {
+func (q *AppengineUrlTaskQueue) Enqueue(url string, params *url.Values) error {
 	c := appengine.NewContext(q.request)
 
 	t := taskqueue.NewPOSTTask(url, *params)
@@ -66,9 +63,9 @@ func (q *AppengineUrlTaskQueue) Enqueue(url string, params *url.Values) os.Error
 //
 // BLOB STORAGE
 //
-type AppengineBlobStoreProvider struct { }
+type AppengineBlobStoreProvider struct{}
 
-func (p *AppengineBlobStoreProvider) OpenStore(req *http.Request) latvis.BlobStore {
+func (p *AppengineBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 	return &AppengineBlobStore{request: req}
 }
 
@@ -76,7 +73,7 @@ type AppengineBlobStore struct {
 	request *http.Request
 }
 
-func (s *AppengineBlobStore) Store(handle *latvis.Handle, blob *latvis.Blob) os.Error {
+func (s *AppengineBlobStore) Store(handle *Handle, blob *Blob) error {
 	c := appengine.NewContext(s.request)
 	c.Infof("Storing blob with handle: '%s'", handle.String())
 
@@ -84,11 +81,11 @@ func (s *AppengineBlobStore) Store(handle *latvis.Handle, blob *latvis.Blob) os.
 	return nil
 }
 
-func (s *AppengineBlobStore) Fetch(handle *latvis.Handle) (*latvis.Blob, os.Error) {
+func (s *AppengineBlobStore) Fetch(handle *Handle) (*Blob, error) {
 	c := appengine.NewContext(s.request)
 	c.Infof("Looking up blob with handle: '%s'", handle.String())
 
-	blob := new(latvis.Blob)
+	blob := new(Blob)
 	if err := datastore.Get(c, keyFromHandle(c, handle), blob); err != nil {
 		return nil, err
 	}
@@ -98,13 +95,13 @@ func (s *AppengineBlobStore) Fetch(handle *latvis.Handle) (*latvis.Blob, os.Erro
 //
 // HTTP CLIENT
 //
-type AppengineHttpClientProvider struct { }
+type AppengineHttpClientProvider struct{}
 
 func (p *AppengineHttpClientProvider) GetClient(req *http.Request) oauth.HttpClient {
 	c := appengine.NewContext(req)
 	return urlfetch.Client(c)
 }
 
-func keyFromHandle(c appengine.Context, h *latvis.Handle) *datastore.Key {
+func keyFromHandle(c appengine.Context, h *Handle) *datastore.Key {
 	return datastore.NewKey(c, LATVIS_OUTPUT_DATATYPE, h.String(), 0, nil)
 }
