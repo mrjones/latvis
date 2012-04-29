@@ -21,11 +21,14 @@
       var linkStart = null;
       var linkEnd = null;
 
+      var MAX_DATE_RANGE_MONTHS = 36;
+
       function dateFromOffset(offset) {
         var tempDate = new goog.date.DateTime();
         var date = new goog.date.DateTime(
           tempDate.getYear(), tempDate.getMonth(), tempDate.getDate());
-        date.add(new goog.date.Interval(goog.date.Interval.MONTHS, -23 + offset));
+        date.add(new goog.date.Interval(
+          goog.date.Interval.MONTHS, offset - MAX_DATE_RANGE_MONTHS + 1));
         date.setDate(1);
         return date;
       }
@@ -89,8 +92,8 @@
            $( "#slider-range" ).slider({
              range: true,
              min: 0,
-             max: 24,
-             values: [ 13, 24 ],
+             max: MAX_DATE_RANGE_MONTHS,
+             values: [ MAX_DATE_RANGE_MONTHS - 11, MAX_DATE_RANGE_MONTHS ],
              slide: function( event, ui ) {
                $("#slider-display").text(formatSliderOffset(ui.values[0], false) + " - " + formatSliderOffset(ui.values[1], true));
                linkStart = sliderOffsetToSeconds(ui.values[0]);
