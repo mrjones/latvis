@@ -164,6 +164,8 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 		return -1, -1, wrapError("JSON Error", err)
 	}
 
+//	fmt.Println("JSON: ", body)
+
 	for i := 0; i < len(jsonObject.Data.Items); i++ {
 		point := &Coordinate{
 			Lat: jsonObject.Data.Items[i].Latitude,
@@ -192,14 +194,18 @@ func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp i
 	windowSize := 1000
 	keepGoing := true
 
+	// The Latitude API returns points at the end of the time range we ask for.
+	// So we iteratively shrink our window, excluding the time range covered by
+	// the data recieved so far, until we no longer get any new data.
 	for keepGoing {
 		minTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Printf("Got %d items\n", itemsReturned)
-		keepGoing = (itemsReturned == windowSize)
-		windowEnd = minTs
+		keepGoing = (itemsReturned > 0)
+		// Make sure we exclude everything we've seen: ask for the min, minus 1ms
+		windowEnd = minTs - 1  
 	}
 }
 
@@ -209,7 +215,7 @@ func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*History, er
 	startTimestamp := 1000 * start.Unix()
 	endTimestamp := 1000 * end.Unix()
 
-	parallelism := 20
+	parallelism := 1
 	shardMillis := float64(endTimestamp-startTimestamp) / float64(parallelism)
 
 	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
