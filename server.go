@@ -30,7 +30,7 @@ func Setup(serverConfig *ServerConfig) {
 	//   this function is a lot easier to implement on a non-appengine
 	//   stack. (I.e. you don't need to supply an implementation of
 	//   UrlTaskQueue.)
-	http.HandleFunc("/drawmap", SynchronousDrawMapHandler)
+//	http.HandleFunc("/drawmap", SynchronousDrawMapHandler)
 
 	// Asynchronously kicks off a worker to fetch data and generate
 	// an image, and then immediately redirects to a page which displays
@@ -156,56 +156,61 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
-	connection := config.latitude.NewConnection(request)
+//	connection := config.latitude.NewConnection(request)
 
 	request.ParseForm()
-	latlng := ""
-	latlng = propogateParameter(latlng, &request.Form, "lllat")
-	latlng = propogateParameter(latlng, &request.Form, "lllng")
-	latlng = propogateParameter(latlng, &request.Form, "urlat")
-	latlng = propogateParameter(latlng, &request.Form, "urlng")
-	latlng = propogateParameter(latlng, &request.Form, "start")
-	latlng = propogateParameter(latlng, &request.Form, "end")
+	state := ""
+	state = propogateParameter(state, &request.Form, "lllat")
+	state = propogateParameter(state, &request.Form, "lllng")
+	state = propogateParameter(state, &request.Form, "urlat")
+	state = propogateParameter(state, &request.Form, "urlng")
+	state = propogateParameter(state, &request.Form, "start")
+	state = propogateParameter(state, &request.Form, "end")
 
-	protocol := "http"
-	if request.TLS != nil {
-		protocol = "https"
+	if !inited {
+		fmt.Println("INITTING")
+		inited = true
+		protocol := "http"
+		if request.TLS != nil {
+			protocol = "https"
+		}
+		redirectUrl := fmt.Sprintf("%s://%s/async_drawmap", protocol, request.Host)
+
+		log.Printf("Redirect URL: '%s' + '%s'\n", redirectUrl, state)
+
+		configHolder = NewOauthConfig(redirectUrl)
 	}
-	redirectUrl := fmt.Sprintf("%s://%s/async_drawmap?%s", protocol, request.Host, latlng)
-	//redirectUrl := fmt.Sprintf("%s://%s/drawmap?%s", protocol, request.Host, latlng)
+//	token, url, err := connection.TokenRedirectUrl(redirectUrl)
+//	if err != nil {
+//		serveErrorWithLabel(response, "TokenRedirectUrl error", err)
+//		return
+//	}
+	authUrl := configHolder.AuthCodeURL(state)
 
-	log.Printf("Redirect URL: '%s'\n", redirectUrl)
-
-	token, url, err := connection.TokenRedirectUrl(redirectUrl)
-	if err != nil {
-		serveErrorWithLabel(response, "TokenRedirectUrl error", err)
-		return
-	}
-
-	config.secretStorage.GetStore(request).Store(token.Token, token)
-	http.Redirect(response, request, url, http.StatusFound)
+//	config.secretStorage.GetStore(request).Store(token.Token, token)
+	http.Redirect(response, request, authUrl, http.StatusFound)
 }
 
-func SynchronousDrawMapHandler(response http.ResponseWriter, request *http.Request) {
-	request.ParseForm()
-
-	rr, err := deserializeRenderRequest(&request.Form)
-	if err != nil {
-		serveErrorWithLabel(response, "SynchronousDrawMapHandler/deserializeRenderRequest error", err)
-		return
-	}
-
-	handle := generateNewHandle()
-	err = config.renderEngine.Render(rr, request, handle)
-
-	if err != nil {
-		serveErrorWithLabel(response, "SynchronousDrawMapHandler/engine.Render", err)
-		return
-	}
-
-	url := serializeHandleToUrl(handle, "png", "render")
-	http.Redirect(response, request, url, http.StatusFound)
-}
+//func SynchronousDrawMapHandler(response http.ResponseWriter, request *http.Request) {
+//	request.ParseForm()
+//
+//	rr, err := deserializeRenderRequest(&request.Form)
+//	if err != nil {
+//		serveErrorWithLabel(response, "SynchronousDrawMapHandler/deserializeRenderRequest error", err)
+//		return
+//	}
+//
+//	handle := generateNewHandle()
+//	err = config.renderEngine.Render(rr, request, handle)
+//
+//	if err != nil {
+//		serveErrorWithLabel(response, "SynchronousDrawMapHandler/engine.Render", err)
+//		return
+//	}
+//
+//	url := serializeHandleToUrl(handle, "png", "render")
+//	http.Redirect(response, request, url, http.StatusFound)
+//}
 
 func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
@@ -218,9 +223,21 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	handle := generateNewHandle()
 
+	token, _, err := OauthClientFromVerificationCode(request.FormValue("code"))
+
+	if err != nil {
+		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken1", err)
+		return
+	}
+	if token == nil {
+		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken2", fmt.Errorf("foo"))
+		return
+	}
+
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
 	serializeHandleToParams(handle, &params)
+	AppendTokenToQueryParams(token, &params)
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
@@ -229,7 +246,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
-	fmt.Println("DrawMapWorker...")
+	fmt.Println("DrawMapWorker: ", request.URL.String())
 	request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
@@ -237,6 +254,8 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		serveErrorWithLabel(response, "deserializeRenderRequest() error", err)
 		return
 	}
+
+	oauthToken := ParseTokenFromQueryParams(&request.Form)
 
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Unix(), rr.end.Unix())
 
@@ -247,7 +266,7 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = config.renderEngine.Render(rr, request, handle)
+	err = config.renderEngine.Render(rr, oauthToken, request, handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)

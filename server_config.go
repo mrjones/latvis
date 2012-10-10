@@ -44,9 +44,9 @@ func NewConfig(blobStorage HttpBlobStoreProvider,
 		httpClient:    httpClient,
 		secretStorage: secretStorage,
 		taskQueue:     taskQueue,
-		latitude: &StandardLatitudeConnector{
-			httpClient: httpClient,
-		},
+//		latitude: &StandardLatitudeConnector{
+//			httpClient: httpClient,
+//		},
 		renderEngine: &RenderEngine{
 			blobStorage:           blobStorage,
 			httpClientProvider:    httpClient,
@@ -212,13 +212,13 @@ func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 	return NewLocalFSBlobStore(p.Location)
 }
 
-// StandardLatitudeConnectionProvider
-type StandardLatitudeConnector struct {
-	httpClient HttpClientProvider
-}
+//// StandardLatitudeConnectionProvider
+//type StandardLatitudeConnector struct {
+//	httpClient HttpClientProvider
+//}
 
-func (p *StandardLatitudeConnector) NewConnection(req *http.Request) LatitudeConnection {
-	consumer := NewConsumer()
-	consumer.HttpClient = p.httpClient.GetClient(req)
-	return NewConnectionForConsumer(consumer)
-}
+//func (p *StandardLatitudeConnector) NewConnection(req *http.Request) LatitudeConnection {
+//	consumer := NewConsumer()
+//	consumer.HttpClient = p.httpClient.GetClient(req)
+//	return NewConnectionForConsumer(consumer)
+//}

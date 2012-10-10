@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"code.google.com/p/goauth2/oauth"
 )
 
 const (
@@ -27,29 +29,44 @@ func serializeRenderRequest(r *RenderRequest, m *url.Values) {
 	if m == nil {
 		panic("nil map")
 	}
+	var m2 = make(url.Values)
+	
+	m2.Add("start", strconv.FormatInt(r.start.Unix(), 10))
+	m2.Add("end", strconv.FormatInt(r.end.Unix(), 10))
 
-	m.Add("start", strconv.FormatInt(r.start.Unix(), 10))
-	m.Add("end", strconv.FormatInt(r.end.Unix(), 10))
+	m2.Add("lllat", strconv.FormatFloat(r.bounds.LowerLeft().Lat, 'f', 16, 64))
+	m2.Add("lllng", strconv.FormatFloat(r.bounds.LowerLeft().Lng, 'f', 16, 64))
+	m2.Add("urlat", strconv.FormatFloat(r.bounds.UpperRight().Lat, 'f', 16, 64))
+	m2.Add("urlng", strconv.FormatFloat(r.bounds.UpperRight().Lng, 'f', 16, 64))
 
-	m.Add("lllat", strconv.FormatFloat(r.bounds.LowerLeft().Lat, 'f', 16, 64))
-	m.Add("lllng", strconv.FormatFloat(r.bounds.LowerLeft().Lng, 'f', 16, 64))
-	m.Add("urlat", strconv.FormatFloat(r.bounds.UpperRight().Lat, 'f', 16, 64))
-	m.Add("urlng", strconv.FormatFloat(r.bounds.UpperRight().Lng, 'f', 16, 64))
-
-	m.Add("oauth_token", r.oauthToken)
-	m.Add("oauth_verifier", r.oauthVerifier)
+//	m.Add("oauth_token", r.oauthToken)
+//	m.Add("oauth_verifier", r.oauthVerifier)
+	m.Add("state", m2.Encode())
 }
 
 // De-Serializas a RenderRequest which has been encoded in a URL.
 // It is expected that the encoding came from serializeRenderRequest.
-func deserializeRenderRequest(params *url.Values) (*RenderRequest, error) {
+func deserializeRenderRequest(rawParams *url.Values) (*RenderRequest, error) {
+	stateString, err := url.QueryUnescape(rawParams.Get("state"))
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("state string: " + stateString)
+	params, err := url.ParseQuery(stateString)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	fmt.Println("llat? " + params.Get("lllat"))
+	
+
 	// Parse all input parameters from the URL
-	lowerLeft, err := extractCoordinateFromUrl(params, "lllat", "lllng")
+	lowerLeft, err := extractCoordinateFromUrl(&params, "lllat", "lllng")
 	if err != nil {
 		return nil, err
 	}
 
-	upperRight, err := extractCoordinateFromUrl(params, "urlat", "urlng")
+	upperRight, err := extractCoordinateFromUrl(&params, "urlat", "urlng")
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +74,12 @@ func deserializeRenderRequest(params *url.Values) (*RenderRequest, error) {
 	fmt.Printf("Bounding Box: LL[%f,%f], UR[%f,%f]",
 		lowerLeft.Lat, lowerLeft.Lng, upperRight.Lat, upperRight.Lng)
 
-	start, err := extractTimeFromUrl(params, "start")
+	start, err := extractTimeFromUrl(&params, "start")
 	if err != nil {
 		return nil, err
 	}
 
-	end, err := extractTimeFromUrl(params, "end")
+	end, err := extractTimeFromUrl(&params, "end")
 	if err != nil {
 		return nil, err
 	}
@@ -72,22 +89,22 @@ func deserializeRenderRequest(params *url.Values) (*RenderRequest, error) {
 		return nil, err
 	}
 
-	oauthToken, err := extractStringFromUrl(params, "oauth_token")
-	if err != nil {
-		return nil, err
-	}
-
-	oauthVerifier, err := extractStringFromUrl(params, "oauth_verifier")
-	if err != nil {
-		return nil, err
-	}
+//	oauthToken, err := extractStringFromUrl(&params, "oauth_token")
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	oauthVerifier, err := extractStringFromUrl(&params, "oauth_verifier")
+//	if err != nil {
+//		return nil, err
+//	}
 
 	return &RenderRequest{
 		bounds:        bounds,
 		start:         start,
 		end:           end,
-		oauthToken:    oauthToken,
-		oauthVerifier: oauthVerifier,
+//		oauthToken:    oauthToken,
+//		oauthVerifier: oauthVerifier,
 	}, nil
 }
 
@@ -141,7 +158,8 @@ func propogateParameter(base string, params *url.Values, key string) string {
 			base = base + "&"
 		}
 		// TODO(mrjones): sigh use the right library
-		base = base + key + "=" + url.QueryEscape(params.Get(key))
+//		base = base + key + "=" + url.QueryEscape(params.Get(key))
+		base = base + key + "=" + params.Get(key)
 	}
 	return base
 }
@@ -149,6 +167,8 @@ func propogateParameter(base string, params *url.Values, key string) string {
 // Capable of executing RenderRequests.
 type RenderEngineInterface interface {
 	Render(renderRequest *RenderRequest,
+		// TODO(mrjones): make this a http client?
+		oauthToken *oauth.Token,
 		httpRequest *http.Request,
 		handle *Handle) error
 }
@@ -160,51 +180,55 @@ type RenderEngine struct {
 }
 
 func (r *RenderEngine) Render(renderRequest *RenderRequest,
+	oauthToken *oauth.Token,
 	httpRequest *http.Request,
 	handle *Handle) error {
 
-	consumer := NewConsumer()
-	consumer.HttpClient = r.httpClientProvider.GetClient(httpRequest)
-	connection := NewConnectionForConsumer(consumer)
+//	consumer := NewConsumer()
+//	consumer.HttpClient = r.httpClientProvider.GetClient(httpRequest)
+//	connection := NewConnectionForConsumer(consumer)
 
-	rtoken := r.secretStorageProvider.GetStore(httpRequest).Lookup(
-		renderRequest.oauthToken)
-	if rtoken == nil {
-		return errors.New("No token stored for: " + renderRequest.oauthToken)
-	}
-	atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
+//	rtoken := r.secretStorageProvider.GetStore(httpRequest).Lookup(
+//		renderRequest.oauthToken)
+//	if rtoken == nil {
+//		return errors.New("No token stored for: " + renderRequest.oauthToken)
+//	}
+//	atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
 
-	if err != nil {
-		return err
-	}
+//	if err != nil {
+//		return err
+//	}
 
-	var authorizedConnection HistorySource
-	authorizedConnection = connection.Authorize(atoken)
+//	var authorizedConnection HistorySource
+//	authorizedConnection = connection.Authorize(atoken)
 
-	history, err := authorizedConnection.FetchRange(
-		renderRequest.start, renderRequest.end)
+	httpClient := OauthClientFromToken(oauthToken)
+	httpClient.Get("http://www.google.com")
 
-	if err != nil {
-		return err
-	}
-
-	w, h := imgSize(renderRequest.bounds, IMAGE_SIZE_PX)
-
-	data, err := Draw(
-		history,
-		renderRequest.bounds,
-		&BWStyler{},
-		w,
-		h)
-	if err != nil {
-		return err
-	}
-
-	blob := &Blob{Data: *data}
-	err = r.blobStorage.OpenStore(httpRequest).Store(handle, blob)
-	if err != nil {
-		return err
-	}
+//	history, err := authorizedConnection.FetchRange(
+//		renderRequest.start, renderRequest.end)
+//
+//	if err != nil {
+//		return err
+//	}
+//
+//	w, h := imgSize(renderRequest.bounds, IMAGE_SIZE_PX)
+//
+//	data, err := Draw(
+//		history,
+//		renderRequest.bounds,
+//		&BWStyler{},
+//		w,
+//		h)
+//	if err != nil {
+//		return err
+//	}
+//
+//	blob := &Blob{Data: *data}
+//	err = r.blobStorage.OpenStore(httpRequest).Store(handle, blob)
+//	if err != nil {
+//		return err
+//	}
 
 	return nil
 }
