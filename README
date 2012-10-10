@@ -9,6 +9,8 @@ $ go run localserver/localserver.go
 Runs it on port 8081 (This should be a flag).
 
 ### Running a dev appengine server ###
+$ sudo apt-get install python-mysqldb
+$ sudo apt-get install python-imaging
 $ appengineserver/appengine.sh run
 
 ### Uploading to the real appengine server ###
