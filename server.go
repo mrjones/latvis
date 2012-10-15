@@ -22,16 +22,6 @@ func Setup(serverConfig *ServerConfig) {
 	// Starts the process, redirecting to Google for OAuth credentials
 	http.HandleFunc("/authorize", AuthorizeHandler)
 
-	// Fetches data and draws a map (synchronously), once the process
-	// is complete, it redirects to a page to display the image.
-	//
-	// NOTE: This endpoint seems like it should be obsolete, and replaced
-	//   by "async_drawmap", however, I'm keeping it around for now since
-	//   this function is a lot easier to implement on a non-appengine
-	//   stack. (I.e. you don't need to supply an implementation of
-	//   UrlTaskQueue.)
-//	http.HandleFunc("/drawmap", SynchronousDrawMapHandler)
-
 	// Asynchronously kicks off a worker to fetch data and generate
 	// an image, and then immediately redirects to a page which displays
 	// a spinner and polls, waiting for the image to be complete.
@@ -180,37 +170,10 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 
 		configHolder = NewOauthConfig(redirectUrl)
 	}
-//	token, url, err := connection.TokenRedirectUrl(redirectUrl)
-//	if err != nil {
-//		serveErrorWithLabel(response, "TokenRedirectUrl error", err)
-//		return
-//	}
 	authUrl := configHolder.AuthCodeURL(state)
 
-//	config.secretStorage.GetStore(request).Store(token.Token, token)
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
-
-//func SynchronousDrawMapHandler(response http.ResponseWriter, request *http.Request) {
-//	request.ParseForm()
-//
-//	rr, err := deserializeRenderRequest(&request.Form)
-//	if err != nil {
-//		serveErrorWithLabel(response, "SynchronousDrawMapHandler/deserializeRenderRequest error", err)
-//		return
-//	}
-//
-//	handle := generateNewHandle()
-//	err = config.renderEngine.Render(rr, request, handle)
-//
-//	if err != nil {
-//		serveErrorWithLabel(response, "SynchronousDrawMapHandler/engine.Render", err)
-//		return
-//	}
-//
-//	url := serializeHandleToUrl(handle, "png", "render")
-//	http.Redirect(response, request, url, http.StatusFound)
-//}
 
 func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
@@ -238,7 +201,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
 	serializeHandleToParams(handle, &params)
-	AppendTokenToQueryParams(token, &params)
+	appendTokenToQueryParams(token, &params)
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
@@ -256,9 +219,11 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	oauthToken := ParseTokenFromQueryParams(&request.Form)
-	fmt.Println("WORKER GOT TOKEN: " + oauthToken.AccessToken + "/" + oauthToken.RefreshToken + " expiring at: " + oauthToken.Expiry.String()  + " using code: " + request.FormValue("code"))
-
+	oauthToken, err := parseTokenFromQueryParams(&request.Form)
+	if err != nil {
+		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken3", err)
+		return
+	}
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Unix(), rr.end.Unix())
 
 	// parse from URL

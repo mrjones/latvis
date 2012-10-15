@@ -203,7 +203,7 @@ func (r *RenderEngine) Render(renderRequest *RenderRequest,
 //	authorizedConnection = connection.Authorize(atoken)
 
 	httpClient := OauthClientFromToken(oauthToken)
-	authorizedConnection := &AuthorizedConnection{Client: httpClient}
+	authorizedConnection := NewDataStreamFromOauthHttpClient(httpClient)
 
 	history, err := authorizedConnection.FetchRange(
 		renderRequest.start, renderRequest.end)

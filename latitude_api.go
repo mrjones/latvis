@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,19 +15,12 @@ import (
 )
 
 const (
-	CONSUMER_KEY         = "mrjon.es"
-	CONSUMER_SECRET      = "UpS7//zXk60DkyDO8ES/xeS3"
 	API_KEY              = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
+	CLIENT_ID            = "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com"
+	CLIENT_SECRET        = "s-DSmW16VVC6tW-9BSctdML5"
+	LOCATION_HISTORY_URL = "https://www.googleapis.com/latitude/v1/location"
 	OUT_OF_BAND_CALLBACK = "oob"
 )
-
-// Example usage:
-// connection := latitude_api.NewConnection()
-// tokenSource := latitude_api.NewSimpleTokenSource(connection)
-// authorizedConnection := connection.Authorize(tokenSource.GetToken("userid"))
-// authorizedConnection.FetchUrl("url", nil)
-//  or
-// authorizedConnection.FetchRange(<start time>, <end time>);
 
 //
 // JSON Data Model of Latitude API Responses
@@ -49,36 +41,14 @@ type JsonItem struct {
 	TimestampMs string
 }
 
-func AppendTokenToQueryParams(token *oauth.Token, params *url.Values) {
-	if params == nil {
-		panic("nil map")
-	}
-	params.Add("access_token", token.AccessToken)
-	params.Add("refresh_token", token.RefreshToken)
-	params.Add("expiration_time", strconv.FormatInt(token.Expiry.Unix(), 10))
-}
-
-// errors?
-func ParseTokenFromQueryParams(params *url.Values) *oauth.Token {
-	// TODO(mrjones): handle erros
-	unix, _ := strconv.ParseInt(params.Get("expiration_time"), 10, 64)
-	fmt.Println("Reconstructing token from: " + params.Encode())
-	return &oauth.Token{
-		AccessToken: params.Get("access_token"),
-		RefreshToken: params.Get("refresh_token"),
-		Expiry: time.Unix(int64(unix), 0),
-	}
-}
-
+// TODO(mrjones): gross
 var inited = false
 var configHolder = &oauth.Config{}
 
 func NewOauthConfig(callbackUrl string) *oauth.Config {
 	return &oauth.Config {
-//		ClientId:     "202917186305.apps.googleusercontent.com",
-//		ClientSecret: "misioP3p+wNjgnaN9Z1QzXZR",
-		ClientId:     "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com",
-		ClientSecret: "s-DSmW16VVC6tW-9BSctdML5",
+		ClientId:     CLIENT_ID,
+		ClientSecret: CLIENT_SECRET,
 		Scope:        "https://www.googleapis.com/auth/latitude.all.best",
 		AuthURL:      "https://accounts.google.com/o/oauth2/auth",
 		TokenURL:     "https://accounts.google.com/o/oauth2/token",
@@ -86,10 +56,8 @@ func NewOauthConfig(callbackUrl string) *oauth.Config {
 	}
 }
 
-// TODO(mrjones) errors
 func OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error) {
 	transport := &oauth.Transport{Config: configHolder}
-	fmt.Println("CODE: " + code)
 	token, err := transport.Exchange(code)
 	if err != nil {
 		return nil, nil, err
@@ -103,60 +71,34 @@ func OauthClientFromToken(token *oauth.Token) *http.Client {
 	return transport.Client()
 }
 
+func appendTokenToQueryParams(token *oauth.Token, params *url.Values) {
+	params.Add("access_token", token.AccessToken)
+	params.Add("refresh_token", token.RefreshToken)
+	params.Add("expiration_time", strconv.FormatInt(token.Expiry.Unix(), 10))
+}
 
-//func (connection *Connection) NewAccessToken() (*oauth.AccessToken, error) {
-//	token, url, err := connection.consumer.GetRequestTokenAndUrl(OUT_OF_BAND_CALLBACK)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	// The latitude API requires additional parameters
-//	url = url + "&domain=mrjon.es&location=all&granularity=best"
-//
-//	fmt.Printf("Go to this URL: '%s'\n", url)
-//	fmt.Printf("Grant access, and then enter the verification code here: ")
-//
-//	verificationCode := ""
-//
-//	fmt.Scanln(&verificationCode)
-//
-//	return connection.consumer.AuthorizeToken(token, verificationCode)
-//}
-//
-//func (connection *Connection) ParseToken(token *oauth.RequestToken, verifier string) (*oauth.AccessToken, error) {
-//	return connection.consumer.AuthorizeToken(token, verifier)
-//}
-//
-//func (connection *Connection) Authorize(token *oauth.AccessToken) *AuthorizedConnection {
-//	return &AuthorizedConnection{accessToken: token, consumer: connection.consumer}
-//}
+func parseTokenFromQueryParams(params *url.Values) (*oauth.Token, error) {
+	unix, err := strconv.ParseInt(params.Get("expiration_time"), 10, 64)
+	if (err != nil) {
+		return nil, err
+	}
+	return &oauth.Token{
+		AccessToken: params.Get("access_token"),
+		RefreshToken: params.Get("refresh_token"),
+		Expiry: time.Unix(int64(unix), 0),
+	}, nil
+}
 
-//
-// AuthorizedConnection
-//
-
-type AuthorizedConnection struct {
+// Simple ApiClient supports raw (authenticated) HTTP requests to the
+// latitude API.
+type ApiClient struct {
 	Client *http.Client
 }
 
-func (connection *AuthorizedConnection) FetchUrl(url string, params url.Values) (responseBody string, err error) {
+func (conn *ApiClient) FetchUrl(url string, params url.Values) (responseBody string, err error) {
 	params.Set("key", API_KEY)
 
-//	query := ""
-//	delim := ""
-//	for k,v := range(params) {
-//		query = query + delim + k + "=" + v
-//		delim = "&"
-//	}
-
-
-	response, err := connection.Client.Get(url + "?" + params.Encode())
-
-//	request, err := http.NewRequest("GET", url + "?key=" + API_KEY, nil)
-//	if err != nil {
-//		return "", err
-//	}
-//	response, err := connection.Client.Do(request)
+	response, err := conn.Client.Get(url + "?" + params.Encode())
 
 	if err != nil {
 		return "", err
@@ -174,38 +116,52 @@ func wrapError(wrapMsg string, cause error) error {
 	return errors.New(wrapMsg + ": " + cause.Error())
 }
 
-func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int64, windowSize int, history *History) (minTs int64, maxTs int64, itemsReturned int, err error) {
-	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
+// Layer on top of ApiClient to support latvis-specific history fetching
+// from the latitude API.
+type DataStream struct {
+	client *ApiClient
+}
 
-	fmt.Printf("Time Range: %d - %d\n", startMs, endMs)
+func NewDataStreamFromOauthHttpClient(client *http.Client) *DataStream {
+	return &DataStream{client: &ApiClient{Client: client} }
+}
 
+func NewDataStreamFromLatitudeClient(client *ApiClient) *DataStream {
+	return &DataStream{client: client}
+}
+
+// TODO(mrjones): convert int64 to time.Time
+func (stream *DataStream) fetchJsonForRange(startMs int64, endMs int64, maxResults int) (*JsonRoot, error) {
+	fmt.Printf("fetchJsonForRange: %d - %d\n", startMs, endMs)
 	params := make(url.Values)
 	params.Set("granularity", "best")
-	params.Set("max-results", strconv.Itoa(windowSize))
+	params.Set("max-results", strconv.Itoa(maxResults))
 	params.Set("min-time", strconv.FormatInt(startMs, 10))
 	params.Set("max-time", strconv.FormatInt(endMs, 10))
 
-	body, err := conn.FetchUrl(locationHistoryUrl, params)
+	body, err := stream.client.FetchUrl(LOCATION_HISTORY_URL, params)
 	if err != nil {
-		return -1, -1, -1, wrapError("FetchUrl error / "+locationHistoryUrl, err)
+		return nil, wrapError("fetchJsonForRange error / "+LOCATION_HISTORY_URL, err)
 	}
+	//	fmt.Println("JSON: ", body)
 
 	var jsonObject JsonRoot
 	err = json.Unmarshal([]byte(body), &jsonObject)
 	if err != nil {
-		return -1, -1, -1, wrapError("JSON Error", err)
+		return nil, wrapError("JSON Error", err)
 	}
+	return &jsonObject, nil
+}
 
-//	fmt.Println("JSON: ", body)
-
-	minTs = -1
-	maxTs = -1
+func (stream *DataStream) parseJson(jsonObject *JsonRoot, out *History) (startMs int64, endMs int64, count int, err error) {
+	minTs := int64(-1)
+	maxTs := int64(-1)
 
 	for i := 0; i < len(jsonObject.Data.Items); i++ {
 		point := &Coordinate{
 			Lat: jsonObject.Data.Items[i].Latitude,
 			Lng: jsonObject.Data.Items[i].Longitude}
-		history.Add(point)
+		out.Add(point)
 		if jsonObject.Data.Items[i].TimestampMs == "" {
 			data, err := json.Marshal(jsonObject.Data.Items[i])
 			if err != nil {
@@ -230,7 +186,7 @@ func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int6
 	return minTs, maxTs, len(jsonObject.Data.Items), nil
 }
 
-func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *History) {
+func (stream *DataStream) fetchShard(startTimestamp, endTimestamp int64, history *History) error {
 	windowEnd := endTimestamp
 	windowSize := 1000
 	keepGoing := true
@@ -239,18 +195,26 @@ func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp i
 	// So we iteratively shrink our window, excluding the time range covered by
 	// the data recieved so far, until we no longer get any new data.
 	for keepGoing {
-		minTs, maxTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
+		json, err := stream.fetchJsonForRange(startTimestamp, windowEnd, windowSize)
 		if err != nil {
-			panic(err)
+			return err
 		}
-		fmt.Printf("Got %d items in range: %d - %d \n", itemsReturned, minTs, maxTs)
+
+		// TODO(mrjones): verify that we're getting data at the end of the
+		// window as we expect.
+		minTs, _, itemsReturned, err := stream.parseJson(json, history)
+
+		if err != nil {
+			return err
+		}
 		keepGoing = (itemsReturned > 0)
 		// Make sure we exclude everything we've seen: ask for the min, minus 1ms
 		windowEnd = minTs - 1  
 	}
+	return nil
 }
 
-func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*History, error) {
+func (stream *DataStream) FetchRange(start, end time.Time) (*History, error) {
 	history := &History{}
 
 	startTimestamp := 1000 * start.Unix()
@@ -264,56 +228,11 @@ func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*History, er
 	for i := 0; i < parallelism; i++ {
 		shardStart := startTimestamp + int64(float64(i)*shardMillis)
 		shardEnd := startTimestamp + int64(float64(i+1)*shardMillis)
-		conn.fetchMilliRange(shardStart, shardEnd, history)
+		err := stream.fetchShard(shardStart, shardEnd, history)
+		if (err != nil) {
+			return nil, err
+		}
 	}
 
 	return history, nil
 }
-
-//
-// Various TokenSources
-//
-
-//type TokenSource interface {
-//	GetToken(userid string) (*oauth.AccessToken, error)
-//}
-//
-//type SimpleTokenSource struct {
-//	connection *Connection
-//}
-//
-//func NewSimpleTokenSource(connection *Connection) *SimpleTokenSource {
-//	return &SimpleTokenSource{connection: connection}
-//}
-//
-//type CachingTokenSource struct {
-//	connection *Connection
-//	cache      *Storage
-//}
-//
-//func (source *SimpleTokenSource) GetToken(userid string) (*oauth.AccessToken, error) {
-//	return source.connection.NewAccessToken()
-//}
-//
-//func NewCachingTokenSource(connection *Connection, cache *Storage) *CachingTokenSource {
-//	return &CachingTokenSource{connection: connection, cache: cache}
-//}
-//
-//func (source *CachingTokenSource) GetToken(userid string) (*oauth.AccessToken, error) {
-//	accessToken, err := source.cache.Fetch(userid)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if accessToken == nil {
-//		fmt.Printf("No saved token found. Generating new one")
-//		accessToken, err = source.connection.NewAccessToken()
-//		if err != nil {
-//			return nil, err
-//		}
-//		err = source.cache.Store(userid, accessToken)
-//		if err != nil {
-//			return nil, err
-//		}
-//	}
-//	return accessToken, nil
-//}
