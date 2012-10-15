@@ -22,25 +22,6 @@ const (
 	MAX_RESULTS          = 1000
 )
 
-//
-// JSON Data Model of Latitude API Responses
-//
-type JsonRoot struct {
-	Data JsonData
-}
-
-type JsonData struct {
-	Kind  string
-	Items []JsonItem
-}
-
-type JsonItem struct {
-	Kind        string
-	Latitude    float64
-	Longitude   float64
-	TimestampMs string
-}
-
 // TODO(mrjones): gross
 var inited = false
 var configHolder = &oauth.Config{}
@@ -65,7 +46,7 @@ func OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,err
 	return token, transport.Client(), nil
 }
 
-func OauthClientFromToken(token *oauth.Token) *http.Client {
+func OauthClientFromSavedToken(token *oauth.Token) *http.Client {
 	transport := &oauth.Transport{Config: configHolder}
 	transport.Token = token
 	return transport.Client()
@@ -75,6 +56,7 @@ func OauthClientFromToken(token *oauth.Token) *http.Client {
 // DATA STREAM ----------
 // Layer on top of ApiClient to support latvis-specific history fetching
 // from the latitude API.
+
 type DataStream struct {
 	client *ApiClient
 }
@@ -85,6 +67,23 @@ func NewDataStreamFromOauthHttpClient(client *http.Client) *DataStream {
 
 func NewDataStreamFromLatitudeClient(client *ApiClient) *DataStream {
 	return &DataStream{client: client}
+}
+
+// JSON Data Model of Latitude API Responses
+type JsonRoot struct {
+	Data JsonData
+}
+
+type JsonData struct {
+	Kind  string
+	Items []JsonItem
+}
+
+type JsonItem struct {
+	Kind        string
+	Latitude    float64
+	Longitude   float64
+	TimestampMs string
 }
 
 // TODO(mrjones): convert int64 to time.Time (?)

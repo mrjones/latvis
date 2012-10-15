@@ -173,64 +173,57 @@ type RenderEngineInterface interface {
 		handle *Handle) error
 }
 
+// TODO(mrjones):
+// (1) Give this a much better name
+// (2) Split Render2/Draw off into some graphics-specific object
 type RenderEngine struct {
 	blobStorage           HttpBlobStoreProvider
 	httpClientProvider    HttpClientProvider
 	secretStorageProvider HttpOauthSecretStoreProvider
 }
 
+
 func (r *RenderEngine) Render(renderRequest *RenderRequest,
 	oauthToken *oauth.Token,
 	httpRequest *http.Request,
 	handle *Handle) error {
 
-//	consumer := NewConsumer()
-//	consumer.HttpClient = r.httpClientProvider.GetClient(httpRequest)
-//	connection := NewConnectionForConsumer(consumer)
-
-//	rtoken := r.secretStorageProvider.GetStore(httpRequest).Lookup(
-//		renderRequest.oauthToken)
-//	if rtoken == nil {
-//		return errors.New("No token stored for: " + renderRequest.oauthToken)
-//	}
-//	atoken, err := connection.ParseToken(rtoken, renderRequest.oauthVerifier)
-
-//	if err != nil {
-//		return err
-//	}
-
-//	var authorizedConnection HistorySource
-//	authorizedConnection = connection.Authorize(atoken)
-
-	httpClient := OauthClientFromToken(oauthToken)
+	httpClient := OauthClientFromSavedToken(oauthToken)
 	authorizedConnection := NewDataStreamFromOauthHttpClient(httpClient)
 
 	history, err := authorizedConnection.FetchRange(
 		renderRequest.start, renderRequest.end)
-
 	if err != nil {
 		return err
 	}
 
-	w, h := imgSize(renderRequest.bounds, IMAGE_SIZE_PX)
-
-	data, err := Draw(
-		history,
-		renderRequest.bounds,
-		&BWStyler{},
-		w,
-		h)
+	blob, err := r.Render2(history, renderRequest.bounds)
 	if err != nil {
 		return err
 	}
 
-	blob := &Blob{Data: *data}
 	err = r.blobStorage.OpenStore(httpRequest).Store(handle, blob)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (r *RenderEngine) Render2(history *History, bounds *BoundingBox) (*Blob, error) {
+	w, h := imgSize(bounds, IMAGE_SIZE_PX)
+
+	data, err := Draw(
+		history,
+		bounds,
+		&BWStyler{},
+		w,
+		h)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Blob{Data: *data}, nil
 }
 
 func imgSize(bounds *BoundingBox, max int) (w, h int) {
