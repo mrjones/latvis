@@ -203,32 +203,32 @@ func (r *RenderEngine) Render(renderRequest *RenderRequest,
 //	authorizedConnection = connection.Authorize(atoken)
 
 	httpClient := OauthClientFromToken(oauthToken)
-	httpClient.Get("http://www.google.com")
+	authorizedConnection := &AuthorizedConnection{Client: httpClient}
 
-//	history, err := authorizedConnection.FetchRange(
-//		renderRequest.start, renderRequest.end)
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	w, h := imgSize(renderRequest.bounds, IMAGE_SIZE_PX)
-//
-//	data, err := Draw(
-//		history,
-//		renderRequest.bounds,
-//		&BWStyler{},
-//		w,
-//		h)
-//	if err != nil {
-//		return err
-//	}
-//
-//	blob := &Blob{Data: *data}
-//	err = r.blobStorage.OpenStore(httpRequest).Store(handle, blob)
-//	if err != nil {
-//		return err
-//	}
+	history, err := authorizedConnection.FetchRange(
+		renderRequest.start, renderRequest.end)
+
+	if err != nil {
+		return err
+	}
+
+	w, h := imgSize(renderRequest.bounds, IMAGE_SIZE_PX)
+
+	data, err := Draw(
+		history,
+		renderRequest.bounds,
+		&BWStyler{},
+		w,
+		h)
+	if err != nil {
+		return err
+	}
+
+	blob := &Blob{Data: *data}
+	err = r.blobStorage.OpenStore(httpRequest).Store(handle, blob)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

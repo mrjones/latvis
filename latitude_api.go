@@ -1,10 +1,10 @@
 package latvis
 
 import (
-//	"errors"
-//	"encoding/json"
+	"errors"
+	"encoding/json"
 	"fmt"
-//	"io/ioutil"
+	"io/ioutil"
 
 
 	"net/http"
@@ -55,13 +55,14 @@ func AppendTokenToQueryParams(token *oauth.Token, params *url.Values) {
 	}
 	params.Add("access_token", token.AccessToken)
 	params.Add("refresh_token", token.RefreshToken)
-	params.Add("expiration_time", string(token.Expiry.Unix()))
+	params.Add("expiration_time", strconv.FormatInt(token.Expiry.Unix(), 10))
 }
 
 // errors?
 func ParseTokenFromQueryParams(params *url.Values) *oauth.Token {
 	// TODO(mrjones): handle erros
-	unix, _ := strconv.Atoi(params.Get("expiration_time"))
+	unix, _ := strconv.ParseInt(params.Get("expiration_time"), 10, 64)
+	fmt.Println("Reconstructing token from: " + params.Encode())
 	return &oauth.Token{
 		AccessToken: params.Get("access_token"),
 		RefreshToken: params.Get("refresh_token"),
@@ -74,8 +75,10 @@ var configHolder = &oauth.Config{}
 
 func NewOauthConfig(callbackUrl string) *oauth.Config {
 	return &oauth.Config {
-		ClientId:     "202917186305.apps.googleusercontent.com",
-		ClientSecret: "misioP3p+wNjgnaN9Z1QzXZR",
+//		ClientId:     "202917186305.apps.googleusercontent.com",
+//		ClientSecret: "misioP3p+wNjgnaN9Z1QzXZR",
+		ClientId:     "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com",
+		ClientSecret: "s-DSmW16VVC6tW-9BSctdML5",
 		Scope:        "https://www.googleapis.com/auth/latitude.all.best",
 		AuthURL:      "https://accounts.google.com/o/oauth2/auth",
 		TokenURL:     "https://accounts.google.com/o/oauth2/token",
@@ -132,118 +135,140 @@ func OauthClientFromToken(token *oauth.Token) *http.Client {
 // AuthorizedConnection
 //
 
-//type AuthorizedConnection struct {
-//	accessToken *oauth.AccessToken
-//	consumer    *oauth.Consumer
-//}
-//
-//func (connection *AuthorizedConnection) FetchUrl(url string, params map[string]string) (responseBody string, err error) {
-//	params["key"] = API_KEY
-//	response, err := connection.consumer.Get(url, params, connection.accessToken)
-//
+type AuthorizedConnection struct {
+	Client *http.Client
+}
+
+func (connection *AuthorizedConnection) FetchUrl(url string, params url.Values) (responseBody string, err error) {
+	params.Set("key", API_KEY)
+
+//	query := ""
+//	delim := ""
+//	for k,v := range(params) {
+//		query = query + delim + k + "=" + v
+//		delim = "&"
+//	}
+
+
+	response, err := connection.Client.Get(url + "?" + params.Encode())
+
+//	request, err := http.NewRequest("GET", url + "?key=" + API_KEY, nil)
 //	if err != nil {
 //		return "", err
 //	}
-//	defer response.Body.Close()
-//	responseBodyBytes, err := ioutil.ReadAll(response.Body)
-//
-//	if err != nil {
-//		return "", err
-//	}
-//	return string(responseBodyBytes), nil
-//}
-//
-//func wrapError(wrapMsg string, cause error) error {
-//	return errors.New(wrapMsg + ": " + cause.Error())
-//}
-//
-//func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int64, windowSize int, history *History) (minTs int64, itemsReturned int, err error) {
-//	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
-//
-//	fmt.Printf("Time Range: %d - %d\n", startMs, endMs)
-//
-//	params := map[string]string{
-//		"granularity": "best",
-//		"max-results": strconv.Itoa(windowSize),
-//		"min-time":    strconv.FormatInt(startMs, 10),
-//		"max-time":    strconv.FormatInt(endMs, 10),
-//	}
-//
-//	body, err := conn.FetchUrl(locationHistoryUrl, params)
-//	if err != nil {
-//		return -1, -1, wrapError("FetchUrl error / "+locationHistoryUrl, err)
-//	}
-//
-//	var jsonObject JsonRoot
-//	err = json.Unmarshal([]byte(body), &jsonObject)
-//	if err != nil {
-//		return -1, -1, wrapError("JSON Error", err)
-//	}
-//
-////	fmt.Println("JSON: ", body)
-//
-//	for i := 0; i < len(jsonObject.Data.Items); i++ {
-//		point := &Coordinate{
-//			Lat: jsonObject.Data.Items[i].Latitude,
-//			Lng: jsonObject.Data.Items[i].Longitude}
-//		history.Add(point)
-//		if jsonObject.Data.Items[i].TimestampMs == "" {
-//			data, err := json.Marshal(jsonObject.Data.Items[i])
-//			if err != nil {
-//				fmt.Println("Can't even error properly: " + err.Error())
-//			}
-//			fmt.Println("Bad history item: " + string(data))
-//		} else {
-//			minTs, err = strconv.ParseInt(jsonObject.Data.Items[i].TimestampMs, 10, 64)
-//			if err != nil {
-//				return -1, -1, wrapError(
-//					"Atoi Error / "+jsonObject.Data.Items[i].TimestampMs, err)
-//			}
-//		}
-//	}
-//
-//	return minTs, len(jsonObject.Data.Items), nil
-//}
-//
-//func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *History) {
-//	windowEnd := endTimestamp
-//	windowSize := 1000
-//	keepGoing := true
-//
-//	// The Latitude API returns points at the end of the time range we ask for.
-//	// So we iteratively shrink our window, excluding the time range covered by
-//	// the data recieved so far, until we no longer get any new data.
-//	for keepGoing {
-//		minTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
-//		if err != nil {
-//			panic(err)
-//		}
-//		fmt.Printf("Got %d items\n", itemsReturned)
-//		keepGoing = (itemsReturned > 0)
-//		// Make sure we exclude everything we've seen: ask for the min, minus 1ms
-//		windowEnd = minTs - 1  
-//	}
-//}
-//
-//func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*History, error) {
-//	history := &History{}
-//
-//	startTimestamp := 1000 * start.Unix()
-//	endTimestamp := 1000 * end.Unix()
-//
-//	parallelism := 1
-//	shardMillis := float64(endTimestamp-startTimestamp) / float64(parallelism)
-//
-//	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
-//
-//	for i := 0; i < parallelism; i++ {
-//		shardStart := startTimestamp + int64(float64(i)*shardMillis)
-//		shardEnd := startTimestamp + int64(float64(i+1)*shardMillis)
-//		conn.fetchMilliRange(shardStart, shardEnd, history)
-//	}
-//
-//	return history, nil
-//}
+//	response, err := connection.Client.Do(request)
+
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	responseBodyBytes, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		return "", err
+	}
+	return string(responseBodyBytes), nil
+}
+
+func wrapError(wrapMsg string, cause error) error {
+	return errors.New(wrapMsg + ": " + cause.Error())
+}
+
+func (conn *AuthorizedConnection) appendTimestampRange(startMs int64, endMs int64, windowSize int, history *History) (minTs int64, maxTs int64, itemsReturned int, err error) {
+	locationHistoryUrl := "https://www.googleapis.com/latitude/v1/location"
+
+	fmt.Printf("Time Range: %d - %d\n", startMs, endMs)
+
+	params := make(url.Values)
+	params.Set("granularity", "best")
+	params.Set("max-results", strconv.Itoa(windowSize))
+	params.Set("min-time", strconv.FormatInt(startMs, 10))
+	params.Set("max-time", strconv.FormatInt(endMs, 10))
+
+	body, err := conn.FetchUrl(locationHistoryUrl, params)
+	if err != nil {
+		return -1, -1, -1, wrapError("FetchUrl error / "+locationHistoryUrl, err)
+	}
+
+	var jsonObject JsonRoot
+	err = json.Unmarshal([]byte(body), &jsonObject)
+	if err != nil {
+		return -1, -1, -1, wrapError("JSON Error", err)
+	}
+
+//	fmt.Println("JSON: ", body)
+
+	minTs = -1
+	maxTs = -1
+
+	for i := 0; i < len(jsonObject.Data.Items); i++ {
+		point := &Coordinate{
+			Lat: jsonObject.Data.Items[i].Latitude,
+			Lng: jsonObject.Data.Items[i].Longitude}
+		history.Add(point)
+		if jsonObject.Data.Items[i].TimestampMs == "" {
+			data, err := json.Marshal(jsonObject.Data.Items[i])
+			if err != nil {
+				fmt.Println("Can't even error properly: " + err.Error())
+			}
+			fmt.Println("Bad history item: " + string(data))
+		} else {
+			ts, err := strconv.ParseInt(jsonObject.Data.Items[i].TimestampMs, 10, 64)
+			if minTs == -1 || ts < minTs {
+				minTs = ts
+			}
+			if maxTs == -1 || ts > maxTs {
+				maxTs = ts
+			}
+			if err != nil {
+				return -1, -1, -1, wrapError(
+					"Atoi Error / "+jsonObject.Data.Items[i].TimestampMs, err)
+			}
+		}
+	}
+
+	return minTs, maxTs, len(jsonObject.Data.Items), nil
+}
+
+func (conn *AuthorizedConnection) fetchMilliRange(startTimestamp, endTimestamp int64, history *History) {
+	windowEnd := endTimestamp
+	windowSize := 1000
+	keepGoing := true
+
+	// The Latitude API returns points at the end of the time range we ask for.
+	// So we iteratively shrink our window, excluding the time range covered by
+	// the data recieved so far, until we no longer get any new data.
+	for keepGoing {
+		minTs, maxTs, itemsReturned, err := conn.appendTimestampRange(startTimestamp, windowEnd, windowSize, history)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("Got %d items in range: %d - %d \n", itemsReturned, minTs, maxTs)
+		keepGoing = (itemsReturned > 0)
+		// Make sure we exclude everything we've seen: ask for the min, minus 1ms
+		windowEnd = minTs - 1  
+	}
+}
+
+func (conn *AuthorizedConnection) FetchRange(start, end time.Time) (*History, error) {
+	history := &History{}
+
+	startTimestamp := 1000 * start.Unix()
+	endTimestamp := 1000 * end.Unix()
+
+	parallelism := 1
+	shardMillis := float64(endTimestamp-startTimestamp) / float64(parallelism)
+
+	fmt.Printf("Fetching from %d to %d\n", startTimestamp, endTimestamp)
+
+	for i := 0; i < parallelism; i++ {
+		shardStart := startTimestamp + int64(float64(i)*shardMillis)
+		shardEnd := startTimestamp + int64(float64(i+1)*shardMillis)
+		conn.fetchMilliRange(shardStart, shardEnd, history)
+	}
+
+	return history, nil
+}
 
 //
 // Various TokenSources

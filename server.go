@@ -224,6 +224,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	handle := generateNewHandle()
 
 	token, _, err := OauthClientFromVerificationCode(request.FormValue("code"))
+	fmt.Println("GOT TOKEN: " + token.AccessToken + "/" + token.RefreshToken + " expiring at: " + token.Expiry.String()  + " using code: " + request.FormValue("code"))
 
 	if err != nil {
 		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken1", err)
@@ -256,6 +257,7 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	}
 
 	oauthToken := ParseTokenFromQueryParams(&request.Form)
+	fmt.Println("WORKER GOT TOKEN: " + oauthToken.AccessToken + "/" + oauthToken.RefreshToken + " expiring at: " + oauthToken.Expiry.String()  + " using code: " + request.FormValue("code"))
 
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Unix(), rr.end.Unix())
 
