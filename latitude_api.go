@@ -1,7 +1,6 @@
 package latvis
 
 import (
-	"errors"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -72,51 +71,8 @@ func OauthClientFromToken(token *oauth.Token) *http.Client {
 	return transport.Client()
 }
 
-func appendTokenToQueryParams(token *oauth.Token, params *url.Values) {
-	params.Add("access_token", token.AccessToken)
-	params.Add("refresh_token", token.RefreshToken)
-	params.Add("expiration_time", strconv.FormatInt(token.Expiry.Unix(), 10))
-}
 
-func parseTokenFromQueryParams(params *url.Values) (*oauth.Token, error) {
-	unix, err := strconv.ParseInt(params.Get("expiration_time"), 10, 64)
-	if (err != nil) {
-		return nil, err
-	}
-	return &oauth.Token{
-		AccessToken: params.Get("access_token"),
-		RefreshToken: params.Get("refresh_token"),
-		Expiry: time.Unix(int64(unix), 0),
-	}, nil
-}
-
-// Simple ApiClient supports raw (authenticated) HTTP requests to the
-// latitude API.
-type ApiClient struct {
-	Client *http.Client
-}
-
-func (conn *ApiClient) FetchUrl(url string, params url.Values) (responseBody string, err error) {
-	params.Set("key", API_KEY)
-
-	response, err := conn.Client.Get(url + "?" + params.Encode())
-
-	if err != nil {
-		return "", err
-	}
-	defer response.Body.Close()
-	responseBodyBytes, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-		return "", err
-	}
-	return string(responseBodyBytes), nil
-}
-
-func wrapError(wrapMsg string, cause error) error {
-	return errors.New(wrapMsg + ": " + cause.Error())
-}
-
+// DATA STREAM ----------
 // Layer on top of ApiClient to support latvis-specific history fetching
 // from the latitude API.
 type DataStream struct {
@@ -131,7 +87,7 @@ func NewDataStreamFromLatitudeClient(client *ApiClient) *DataStream {
 	return &DataStream{client: client}
 }
 
-// TODO(mrjones): convert int64 to time.Time
+// TODO(mrjones): convert int64 to time.Time (?)
 func (stream *DataStream) fetchJsonForRange(startMs int64, endMs int64) (*JsonRoot, error) {
 	fmt.Printf("fetchJsonForRange: %d - %d\n", startMs, endMs)
 	params := make(url.Values)
@@ -215,4 +171,29 @@ func (stream *DataStream) FetchRange(start, end time.Time) (*History, error) {
 		endTs = minTs - 1  
 	}
 	return history,nil
+}
+
+// API CLIENT ----------
+// Simple ApiClient supports raw (authenticated) HTTP requests to the
+// latitude API.
+
+type ApiClient struct {
+	Client *http.Client
+}
+
+func (conn *ApiClient) FetchUrl(url string, params url.Values) (responseBody string, err error) {
+	params.Set("key", API_KEY)
+
+	response, err := conn.Client.Get(url + "?" + params.Encode())
+
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	responseBodyBytes, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		return "", err
+	}
+	return string(responseBodyBytes), nil
 }
