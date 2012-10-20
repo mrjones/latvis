@@ -107,6 +107,7 @@ func TestAsyncTaskCreation(t *testing.T) {
 	gt.AssertEqualM(t, "4.0000000000000000", parsedS.Get("urlng"), "token")
 	gt.AssertEqualM(t, "5", parsedS.Get("start"), "token")
 	gt.AssertEqualM(t, "6", parsedS.Get("end"), "token")
+	gt.AssertEqualM(t, "abc", parsedS.Get("end"), "access_token")
 //	gt.AssertEqualM(t, "tok", q.lastParams.Get("oauth_token"), "token")
 //	gt.AssertEqualM(t, "ver", q.lastParams.Get("oauth_verifier"), "token")
 }
