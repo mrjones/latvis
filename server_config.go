@@ -26,17 +26,19 @@ import (
 type ServerConfig struct {
 	blobStorage   HttpBlobStoreProvider
 	taskQueue     HttpUrlTaskQueueProvider
-
+	oauthFactory  OauthFactoryInterface
 	renderEngine RenderEngineInterface
 }
 
 // Use this instead of &ServerConfig{...} directly to get compile-timer
 // errors when new dependencies are introduced.
 func NewConfig(blobStorage HttpBlobStoreProvider,
+	
 	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
 	return &ServerConfig{
 		blobStorage:   blobStorage,
 		taskQueue:     taskQueue,
+		oauthFactory:  &RealOauthFactory{},
 		renderEngine: &RenderEngine{
 			blobStorage:           blobStorage,
 		},

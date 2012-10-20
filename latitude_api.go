@@ -37,12 +37,14 @@ func NewOauthConfig(callbackUrl string) *oauth.Config {
 	}
 }
 
-type OauthClientFactoryInterface interface {
+type OauthFactoryInterface interface {
 	OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error);
 	OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error)
 }
 
-func OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error) {
+type RealOauthFactory struct { }
+
+func (r *RealOauthFactory) OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error) {
 	transport := &oauth.Transport{Config: configHolder}
 	token, err := transport.Exchange(code)
 	if err != nil {
@@ -51,7 +53,7 @@ func OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,err
 	return token, transport.Client(), nil
 }
 
-func OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error) {
+func (r *RealOauthFactory) OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error) {
 	transport := &oauth.Transport{Config: configHolder}
 	transport.Token = token
 	return transport.Client(), nil

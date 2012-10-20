@@ -32,7 +32,8 @@ func Setup(serverConfig *ServerConfig) {
 	http.HandleFunc("/drawmap_worker", DrawMapWorker)
 
 	// Displays the requested image (as a raw image/png)
-	http.HandleFunc("/render/", RenderHandler)
+	// NOTE: also update static/js/image-loader.js.
+	http.HandleFunc("/rawimg/", RenderHandler)
 
 	// Polls, waiting for the requested image to be ready, and once it is
 	// displays that image. (This returns text/html, with an embedded <img>
@@ -129,8 +130,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := config.blobStorage.OpenStore(request).Fetch(handle)
-
+	blob, err := config.renderEngine.FetchImage(handle, request)
 	if err != nil {
 		serveErrorWithLabel(response, "RenderHandler/OpenStore error", err)
 		return
@@ -155,6 +155,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	state = propogateParameter(state, &request.Form, "start")
 	state = propogateParameter(state, &request.Form, "end")
 
+	// TODO(mrjones): fix
 	if !inited {
 		fmt.Println("INITTING")
 		inited = true
@@ -182,14 +183,13 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	handle := generateNewHandle()
 
-	token, _, err := OauthClientFromVerificationCode(request.FormValue("code"))
+	token, _, err := config.oauthFactory.OauthClientFromVerificationCode(
+		request.FormValue("code"))
 	if token == nil {
 		serveErrorWithLabel(response, "Unable to get OauthToken", fmt.Errorf("foo"))
 		return
 	}
-	fmt.Println("GOT TOKEN: " + token.AccessToken + "/" + token.RefreshToken + " expiring at: " + token.Expiry.String()  + " using code: " + request.FormValue("code"))
 
 	if err != nil {
 		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken1", err)
@@ -200,9 +200,10 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	handle := generateNewHandle()
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
-	serializeHandleToParams(handle, &params)
+	serializeHandleToParams(generateNewHandle(), &params)
 	appendTokenToQueryParams(token, &params)
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
@@ -235,13 +236,13 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	httpClient, err := OauthClientFromSavedToken(oauthToken)
+	httpClient, err := config.oauthFactory.OauthClientFromSavedToken(oauthToken)
 	if err != nil {
 		serveErrorWithLabel(response, "OauthClientFromSavedToken error", err)
 		return
 	}
 
-	err = config.renderEngine.Render(rr, httpClient, request, handle)
+	err = config.renderEngine.Execute(rr, httpClient, request, handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)

@@ -8,7 +8,7 @@ var loadImage = function(filename, backoff) {
       var canvas = document.getElementById('canvas');
       var map = document.createElement('img');
       map.setAttribute('class', 'latvis-image');
-      map.setAttribute('src', '/render/' + filename);
+      map.setAttribute('src', '/rawimg/' + filename);
       canvas.appendChild(map);
       renderMetadata();
       _gat._getTrackerByName()._trackEvent("latvis-render", "render-complete");

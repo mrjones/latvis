@@ -88,22 +88,10 @@ func deserializeRenderRequest(rawParams *url.Values) (*RenderRequest, error) {
 		return nil, err
 	}
 
-//	oauthToken, err := extractStringFromUrl(&params, "oauth_token")
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	oauthVerifier, err := extractStringFromUrl(&params, "oauth_verifier")
-//	if err != nil {
-//		return nil, err
-//	}
-
 	return &RenderRequest{
 		bounds:        bounds,
 		start:         start,
 		end:           end,
-//		oauthToken:    oauthToken,
-//		oauthVerifier: oauthVerifier,
 	}, nil
 }
 
@@ -163,9 +151,14 @@ func propogateParameter(base string, params *url.Values, key string) string {
 	return base
 }
 
+// TODO(mrjones): I think I want to call this something like "LatvisController"
 // Capable of executing RenderRequests.
 type RenderEngineInterface interface {
-	Render(renderRequest *RenderRequest,
+	FetchImage(
+		handle *Handle,
+		httpRequest *http.Request) (*Blob, error)
+
+	Execute(renderRequest *RenderRequest,
 		httpClient *http.Client,
 		httpRequest *http.Request,
 		handle *Handle) error
@@ -178,8 +171,12 @@ type RenderEngine struct {
 	blobStorage           HttpBlobStoreProvider
 }
 
+func (r *RenderEngine) FetchImage(handle *Handle, httpRequest *http.Request) (*Blob, error) {
+	return r.blobStorage.OpenStore(httpRequest).Fetch(handle)
 
-func (r *RenderEngine) Render(renderRequest *RenderRequest,
+}
+
+func (r *RenderEngine) Execute(renderRequest *RenderRequest,
 	httpClient *http.Client,
 	httpRequest *http.Request,
 	handle *Handle) error {

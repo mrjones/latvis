@@ -1,6 +1,7 @@
 package latvis
 
 import (
+	"code.google.com/p/goauth2/oauth"
 	"github.com/mrjones/gt"
 
 	"math/rand"
@@ -82,7 +83,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 
 func TestAsyncTaskCreation(t *testing.T) {
 	q := &MockTaskQueue{}
-	cfg := &ServerConfig{taskQueue: &MockTaskQueueProvider{target: q}}
+	cfg := &ServerConfig{taskQueue: &MockTaskQueueProvider{target: q}, oauthFactory: &MockOauthFactory{}}
 	s := "lllat=1.0&lllng=2.0&urlat%3d3.0&urlng=4.0&start=5&end=6"
 	u := "http://myhost.com/async_drawmap/?state=" + url.QueryEscape(s)
 
@@ -95,22 +96,27 @@ func TestAsyncTaskCreation(t *testing.T) {
 	//		"Should redirect to specified URL")
 
 	gt.AssertEqualM(t, "/drawmap_worker", q.lastUrl, "Should enqueue a drawmap worker")
-	gt.AssertEqualM(t, "1.0000000000000000", q.lastParams.Get("lllat"), "token")
-	gt.AssertEqualM(t, "2.0000000000000000", q.lastParams.Get("lllng"), "token")
-	gt.AssertEqualM(t, "3.0000000000000000", q.lastParams.Get("urlat"), "token")
-	gt.AssertEqualM(t, "4.0000000000000000", q.lastParams.Get("urlng"), "token")
-	gt.AssertEqualM(t, "5", q.lastParams.Get("start"), "token")
-	gt.AssertEqualM(t, "6", q.lastParams.Get("end"), "token")
-	gt.AssertEqualM(t, "tok", q.lastParams.Get("oauth_token"), "token")
-	gt.AssertEqualM(t, "ver", q.lastParams.Get("oauth_verifier"), "token")
+	rawS := q.lastParams.Get("state")
+	rawS, err := url.QueryUnescape(rawS)
+	gt.AssertNil(t, err)
+	parsedS, err := url.ParseQuery(rawS)
+
+	gt.AssertEqualM(t, "1.0000000000000000", parsedS.Get("lllat"), "token")
+	gt.AssertEqualM(t, "2.0000000000000000", parsedS.Get("lllng"), "token")
+	gt.AssertEqualM(t, "3.0000000000000000", parsedS.Get("urlat"), "token")
+	gt.AssertEqualM(t, "4.0000000000000000", parsedS.Get("urlng"), "token")
+	gt.AssertEqualM(t, "5", parsedS.Get("start"), "token")
+	gt.AssertEqualM(t, "6", parsedS.Get("end"), "token")
+//	gt.AssertEqualM(t, "tok", q.lastParams.Get("oauth_token"), "token")
+//	gt.AssertEqualM(t, "ver", q.lastParams.Get("oauth_verifier"), "token")
 }
 
 func TestAsyncWorker(t *testing.T) {
 	mockEngine := &MockRenderEngine{}
-	cfg := &ServerConfig{renderEngine: mockEngine}
+	cfg := &ServerConfig{renderEngine: mockEngine, oauthFactory: &MockOauthFactory{}}
 
-	s := "lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0&start=5&end=6&hStamp=100&h1=1&h2=2&h3=3"
-	u := "http://myhost.com/drawmap_worker/?state=" + url.QueryEscape(s)
+	s := "lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0&start=5&end=6"
+	u := "http://myhost.com/drawmap_worker/?state=" + url.QueryEscape(s) + "&access_token=abc&refresh_token=def&expiration_time=1234567890&hStamp=100&h1=1&h2=2&h3=3"
 
 	res := execute(t, u, DrawMapWorker, cfg)
 
@@ -125,8 +131,8 @@ func TestAsyncWorker(t *testing.T) {
 	gt.AssertEqualM(t, time.Unix(5, 0).UTC(), mockEngine.lastRenderRequest.start, "")
 	gt.AssertEqualM(t, time.Unix(6, 0).UTC(), mockEngine.lastRenderRequest.end, "")
 
-	gt.AssertEqualM(t, "tok", mockEngine.lastRenderRequest.oauthToken, "")
-	gt.AssertEqualM(t, "ver", mockEngine.lastRenderRequest.oauthVerifier, "")
+//	gt.AssertEqualM(t, "tok", mockEngine.lastRenderRequest.oauthToken, "")
+//	gt.AssertEqualM(t, "ver", mockEngine.lastRenderRequest.oauthVerifier, "")
 
 	gt.AssertEqualM(t, int64(100), mockEngine.lastHandle.timestamp, "")
 	gt.AssertEqualM(t, int64(1), mockEngine.lastHandle.n1, "")
@@ -175,13 +181,32 @@ func randomDirectoryName() string {
 	return "test-dir-" + strconv.Itoa(rand.Int())
 }
 
+// MockOauthFactory
+
+type MockOauthFactory struct { }
+
+func (r *MockOauthFactory) OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error) {
+	t := &oauth.Token{AccessToken: "abc", RefreshToken: "def", Expiry: time.Now()}
+	return t, nil, nil
+}
+
+func (r *MockOauthFactory) OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error) {
+	return nil, nil
+}
+
+
 // MockRenderEngine
 type MockRenderEngine struct {
 	lastRenderRequest *RenderRequest
 	lastHandle        *Handle
 }
 
-func (m *MockRenderEngine) Render(renderReq *RenderRequest, httpClient *http.Client, httpReq *http.Request, h *Handle) error {
+func (m *MockRenderEngine) FetchImage(handle *Handle,httpRequest *http.Request) (*Blob, error) {
+	return nil, nil
+}
+
+
+func (m *MockRenderEngine) Execute(renderReq *RenderRequest, httpClient *http.Client, httpReq *http.Request, h *Handle) error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
 
