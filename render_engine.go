@@ -188,7 +188,10 @@ func (r *RenderEngine) Render(renderRequest *RenderRequest,
 	httpRequest *http.Request,
 	handle *Handle) error {
 
-	httpClient := OauthClientFromSavedToken(oauthToken)
+	httpClient, err := OauthClientFromSavedToken(oauthToken)
+	if err != nil {
+		return err
+	}
 	authorizedConnection := NewDataStreamFromOauthHttpClient(httpClient)
 
 	history, err := authorizedConnection.FetchRange(

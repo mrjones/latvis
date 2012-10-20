@@ -146,8 +146,6 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
-//	connection := config.latitude.NewConnection(request)
-
 	request.ParseForm()
 	state := ""
 	state = propogateParameter(state, &request.Form, "lllat")
@@ -187,6 +185,10 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	handle := generateNewHandle()
 
 	token, _, err := OauthClientFromVerificationCode(request.FormValue("code"))
+	if token == nil {
+		serveErrorWithLabel(response, "Unable to get OauthToken", fmt.Errorf("foo"))
+		return
+	}
 	fmt.Println("GOT TOKEN: " + token.AccessToken + "/" + token.RefreshToken + " expiring at: " + token.Expiry.String()  + " using code: " + request.FormValue("code"))
 
 	if err != nil {

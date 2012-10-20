@@ -37,6 +37,11 @@ func NewOauthConfig(callbackUrl string) *oauth.Config {
 	}
 }
 
+type OauthClientFactoryInterface interface {
+	OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error);
+	OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error)
+}
+
 func OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error) {
 	transport := &oauth.Transport{Config: configHolder}
 	token, err := transport.Exchange(code)
@@ -46,10 +51,10 @@ func OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,err
 	return token, transport.Client(), nil
 }
 
-func OauthClientFromSavedToken(token *oauth.Token) *http.Client {
+func OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error) {
 	transport := &oauth.Transport{Config: configHolder}
 	transport.Token = token
-	return transport.Client()
+	return transport.Client(), nil
 }
 
 
@@ -58,14 +63,14 @@ func OauthClientFromSavedToken(token *oauth.Token) *http.Client {
 // from the latitude API.
 
 type DataStream struct {
-	client *ApiClient
+	client ApiClientInterface
 }
 
 func NewDataStreamFromOauthHttpClient(client *http.Client) *DataStream {
 	return &DataStream{client: &ApiClient{Client: client} }
 }
 
-func NewDataStreamFromLatitudeClient(client *ApiClient) *DataStream {
+func NewDataStreamFromLatitudeClient(client ApiClientInterface) *DataStream {
 	return &DataStream{client: client}
 }
 
@@ -99,7 +104,7 @@ func (stream *DataStream) fetchJsonForRange(startMs int64, endMs int64) (*JsonRo
 	if err != nil {
 		return nil, wrapError("fetchJsonForRange error / "+LOCATION_HISTORY_URL, err)
 	}
-	//	fmt.Println("JSON: ", body)
+//	fmt.Println("JSON: ", body)
 
 	var jsonObject JsonRoot
 	err = json.Unmarshal([]byte(body), &jsonObject)
@@ -175,6 +180,10 @@ func (stream *DataStream) FetchRange(start, end time.Time) (*History, error) {
 // API CLIENT ----------
 // Simple ApiClient supports raw (authenticated) HTTP requests to the
 // latitude API.
+
+type ApiClientInterface interface {
+	FetchUrl(url string, params url.Values) (responseBody string, err error)
+}
 
 type ApiClient struct {
 	Client *http.Client
