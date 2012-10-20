@@ -107,9 +107,8 @@ func TestAsyncTaskCreation(t *testing.T) {
 	gt.AssertEqualM(t, "4.0000000000000000", parsedS.Get("urlng"), "token")
 	gt.AssertEqualM(t, "5", parsedS.Get("start"), "token")
 	gt.AssertEqualM(t, "6", parsedS.Get("end"), "token")
-	gt.AssertEqualM(t, "abc", parsedS.Get("end"), "access_token")
-//	gt.AssertEqualM(t, "tok", q.lastParams.Get("oauth_token"), "token")
-//	gt.AssertEqualM(t, "ver", q.lastParams.Get("oauth_verifier"), "token")
+	gt.AssertEqualM(t, "abc", q.lastParams.Get("access_token"), "token")
+	gt.AssertEqualM(t, "def", q.lastParams.Get("refresh_token"), "token")
 }
 
 func TestAsyncWorker(t *testing.T) {
@@ -131,9 +130,6 @@ func TestAsyncWorker(t *testing.T) {
 
 	gt.AssertEqualM(t, time.Unix(5, 0).UTC(), mockEngine.lastRenderRequest.start, "")
 	gt.AssertEqualM(t, time.Unix(6, 0).UTC(), mockEngine.lastRenderRequest.end, "")
-
-//	gt.AssertEqualM(t, "tok", mockEngine.lastRenderRequest.oauthToken, "")
-//	gt.AssertEqualM(t, "ver", mockEngine.lastRenderRequest.oauthVerifier, "")
 
 	gt.AssertEqualM(t, int64(100), mockEngine.lastHandle.timestamp, "")
 	gt.AssertEqualM(t, int64(1), mockEngine.lastHandle.n1, "")
