@@ -1,7 +1,6 @@
 package latvis
 
 import (
-	"code.google.com/p/goauth2/oauth"
 	"github.com/mrjones/gt"
 
 	"math/rand"
@@ -182,7 +181,7 @@ type MockRenderEngine struct {
 	lastHandle        *Handle
 }
 
-func (m *MockRenderEngine) Render(renderReq *RenderRequest, oauthToken *oauth.Token, httpReq *http.Request, h *Handle) error {
+func (m *MockRenderEngine) Render(renderReq *RenderRequest, httpClient *http.Client, httpReq *http.Request, h *Handle) error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
 

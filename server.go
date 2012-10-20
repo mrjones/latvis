@@ -235,7 +235,13 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = config.renderEngine.Render(rr, oauthToken, request, handle)
+	httpClient, err := OauthClientFromSavedToken(oauthToken)
+	if err != nil {
+		serveErrorWithLabel(response, "OauthClientFromSavedToken error", err)
+		return
+	}
+
+	err = config.renderEngine.Render(rr, httpClient, request, handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)

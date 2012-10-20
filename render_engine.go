@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"code.google.com/p/goauth2/oauth"
 )
 
 const (
@@ -167,8 +166,7 @@ func propogateParameter(base string, params *url.Values, key string) string {
 // Capable of executing RenderRequests.
 type RenderEngineInterface interface {
 	Render(renderRequest *RenderRequest,
-		// TODO(mrjones): make this a http client?
-		oauthToken *oauth.Token,
+		httpClient *http.Client,
 		httpRequest *http.Request,
 		handle *Handle) error
 }
@@ -184,14 +182,10 @@ type RenderEngine struct {
 
 
 func (r *RenderEngine) Render(renderRequest *RenderRequest,
-	oauthToken *oauth.Token,
+	httpClient *http.Client,
 	httpRequest *http.Request,
 	handle *Handle) error {
 
-	httpClient, err := OauthClientFromSavedToken(oauthToken)
-	if err != nil {
-		return err
-	}
 	authorizedConnection := NewDataStreamFromOauthHttpClient(httpClient)
 
 	history, err := authorizedConnection.FetchRange(
