@@ -176,8 +176,6 @@ type RenderEngineInterface interface {
 // (2) Split Render2/Draw off into some graphics-specific object
 type RenderEngine struct {
 	blobStorage           HttpBlobStoreProvider
-	httpClientProvider    HttpClientProvider
-	secretStorageProvider HttpOauthSecretStoreProvider
 }
 
 
