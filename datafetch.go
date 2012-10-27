@@ -62,10 +62,10 @@ func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream
 	transport := &oauth.Transport{Config: configHolder}
 
 //  TODO(mrjones): ok to remove?
-//	_, err := transport.Exchange(verificationCode)
-//	if err != nil {
-//		return nil, err
-//	}
+	_, err := transport.Exchange(verificationCode)
+	if err != nil {
+		return nil, err
+	}
 
 	return &DataStreamImpl{client: &ApiClient{Client: transport.Client()}}, nil
 }

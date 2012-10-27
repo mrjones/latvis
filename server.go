@@ -63,6 +63,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 	blob, err := config.blobStorage.OpenStore(request).Fetch(handle)
 
 	if err != nil || blob == nil {
+		log.Println(err)
 		response.Write([]byte("fail"))
 	} else {
 		response.Write([]byte("ok"))
@@ -173,17 +174,6 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
-//	token, _, err := config.oauthFactory.OauthClientFromVerificationCode(
-//		request.FormValue("code"))
-//
-//	if err != nil {
-//		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken1", err)
-//		return
-//	}
-//	if token == nil {
-//		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken2", fmt.Errorf("token == nil"))
-//		return
-//	}
 	request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
@@ -196,10 +186,8 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
-	serializeHandleToParams(GenerateHandle(), &params)
+	serializeHandleToParams(handle, &params)
 	params.Set("verification_code", request.Form.Get("code"))
-
-//	appendTokenToQueryParams(token, &params)
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
@@ -211,6 +199,7 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	fmt.Println("DrawMapWorker: ", request.URL.String())
 	request.ParseForm()
 
+	// TODO(mrjones): deal with redirect url shenanigans
 	authorizer := GetAuthorizer("ehh")
 	dataStream, err := authorizer.FinishAuthorize(request.Form.Get("verification_code"))
 	if err != nil {
@@ -223,28 +212,13 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-//	oauthToken, err := parseTokenFromQueryParams(&request.Form)
-//	if err != nil {
-//		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken3", err)
-//		return
-//	}
-	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Unix(), rr.end.Unix())
-
-	// parse from URL
 	handle, err := parseHandleFromParams(&request.Form)
 	if err != nil {
 		serveErrorWithLabel(response, "parseHandleFromParams error", err)
 		return
 	}
 
-//	httpClient, err := config.oauthFactory.OauthClientFromSavedToken(oauthToken)
-//	if err != nil {
-//		serveErrorWithLabel(response, "OauthClientFromSavedToken error", err)
-//		return
-//	}
-
 	err = config.renderEngine.Execute(rr, dataStream, request, handle)
-
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)
 		return
