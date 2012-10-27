@@ -85,7 +85,7 @@ func TestAsyncTaskCreation(t *testing.T) {
 	q := &MockTaskQueue{}
 	cfg := &ServerConfig{taskQueue: &MockTaskQueueProvider{target: q}, oauthFactory: &MockOauthFactory{}}
 	s := "lllat=1.0&lllng=2.0&urlat%3d3.0&urlng=4.0&start=5&end=6"
-	u := "http://myhost.com/async_drawmap/?state=" + url.QueryEscape(s)
+	u := "http://myhost.com/async_drawmap/?code=vercode&state=" + url.QueryEscape(s)
 
 	res := execute(t, u, AsyncDrawMapHandler, cfg)
 
@@ -107,8 +107,9 @@ func TestAsyncTaskCreation(t *testing.T) {
 	gt.AssertEqualM(t, "4.0000000000000000", parsedS.Get("urlng"), "token")
 	gt.AssertEqualM(t, "5", parsedS.Get("start"), "token")
 	gt.AssertEqualM(t, "6", parsedS.Get("end"), "token")
-	gt.AssertEqualM(t, "abc", q.lastParams.Get("access_token"), "token")
-	gt.AssertEqualM(t, "def", q.lastParams.Get("refresh_token"), "token")
+	gt.AssertEqualM(t, "vercode", q.lastParams.Get("verification_code"), "code")
+//	gt.AssertEqualM(t, "abc", q.lastParams.Get("access_token"), "token")
+//	gt.AssertEqualM(t, "def", q.lastParams.Get("refresh_token"), "token")
 }
 
 func TestAsyncWorker(t *testing.T) {

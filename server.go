@@ -173,6 +173,17 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
+//	token, _, err := config.oauthFactory.OauthClientFromVerificationCode(
+//		request.FormValue("code"))
+//
+//	if err != nil {
+//		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken1", err)
+//		return
+//	}
+//	if token == nil {
+//		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken2", fmt.Errorf("token == nil"))
+//		return
+//	}
 	request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
@@ -181,28 +192,14 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-
-	token, _, err := config.oauthFactory.OauthClientFromVerificationCode(
-		request.FormValue("code"))
-	if token == nil {
-		serveErrorWithLabel(response, "Unable to get OauthToken", fmt.Errorf("token == nil"))
-		return
-	}
-
-	if err != nil {
-		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken1", err)
-		return
-	}
-	if token == nil {
-		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken2", fmt.Errorf("token == nil"))
-		return
-	}
-
 	handle := GenerateHandle()
+
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
 	serializeHandleToParams(GenerateHandle(), &params)
-	appendTokenToQueryParams(token, &params)
+	params.Set("verification_code", request.Form.Get("code"))
+
+//	appendTokenToQueryParams(token, &params)
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
