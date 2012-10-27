@@ -200,10 +200,10 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	handle := generateNewHandle()
+	handle := GenerateHandle()
 	var params = make(url.Values)
 	serializeRenderRequest(rr, &params)
-	serializeHandleToParams(generateNewHandle(), &params)
+	serializeHandleToParams(GenerateHandle(), &params)
 	appendTokenToQueryParams(token, &params)
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)

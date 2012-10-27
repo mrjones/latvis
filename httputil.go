@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// TODO(mrjones): move these to httpserver?
 func serializeHandleToParams(h *Handle, p *url.Values) {
 	p.Add("hStamp", strconv.FormatInt(h.timestamp, 10))
 	p.Add("h1", strconv.FormatInt(h.n1, 10))

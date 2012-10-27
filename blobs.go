@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+// ======================================
+// ========== BLOB STORAGE API ==========
+// ======================================
+
 type Blob struct {
 	Data []byte
 }
@@ -30,9 +34,9 @@ type BlobStore interface {
 	Fetch(handle *Handle) (*Blob, error)
 }
 
-func generateNewHandle() *Handle {
+func GenerateHandle() *Handle {
 	return &Handle{
-	timestamp: time.Now().Unix(),
+		timestamp: time.Now().Unix(),
 		n1:        rand.Int63(),
 		n2:        rand.Int63(),
 		n3:        rand.Int63(),
