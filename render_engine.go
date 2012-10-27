@@ -38,8 +38,6 @@ func serializeRenderRequest(r *RenderRequest, m *url.Values) {
 	m2.Add("urlat", strconv.FormatFloat(r.bounds.UpperRight().Lat, 'f', 16, 64))
 	m2.Add("urlng", strconv.FormatFloat(r.bounds.UpperRight().Lng, 'f', 16, 64))
 
-//	m.Add("oauth_token", r.oauthToken)
-//	m.Add("oauth_verifier", r.oauthVerifier)
 	m.Add("state", m2.Encode())
 }
 
@@ -152,7 +150,6 @@ func propogateParameter(base string, params *url.Values, key string) string {
 }
 
 // TODO(mrjones): I think I want to call this something like "LatvisController"
-// Capable of executing RenderRequests.
 type RenderEngineInterface interface {
 	FetchImage(
 		handle *Handle,
@@ -164,16 +161,12 @@ type RenderEngineInterface interface {
 		handle *Handle) error
 }
 
-// TODO(mrjones):
-// (1) Give this a much better name
-// (2) Split Render2/Draw off into some graphics-specific object
 type RenderEngine struct {
 	blobStorage           HttpBlobStoreProvider
 }
 
 func (r *RenderEngine) FetchImage(handle *Handle, httpRequest *http.Request) (*Blob, error) {
 	return r.blobStorage.OpenStore(httpRequest).Fetch(handle)
-
 }
 
 func (r *RenderEngine) Execute(renderRequest *RenderRequest,
