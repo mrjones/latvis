@@ -30,28 +30,48 @@ const (
 // ========== DATA FETCH API ============
 // ======================================
 
-// Simple ApiClient supports raw (authenticated) HTTP requests to the
-// latitude API.
-type ApiClientInterface interface {
-	FetchUrl(url string, params url.Values) (responseBody string, err error)
+// TODO(mrjones): document object lifetime
+type Authorizer interface {
+	StartAuthorize() *url.URL
+	FinishAuthorize(verificationCode string) (*DataStream, error)
+}
+
+func GetAuthorizer() Authorizer {
+	return &AuthorizerImpl{}
 }
 
 type DataStream interface {
 	FetchRange(start, end time.Time) (*History, error)
 }
 
-func NewDataStreamFromOauthHttpClient(client *http.Client) DataStream {
-	return &DataStreamImpl{client: &ApiClient{Client: client} }
-}
-
-func NewDataStreamFromLatitudeClient(client ApiClientInterface) DataStream {
-	return &DataStreamImpl{client: client}
-}
-
 // ======================================
 // ========== IMPLEMENTATION ============
 // ======================================
 
+type AuthorizerImpl struct {
+}
+
+func (auth *AuthorizerImpl) StartAuthorize() *url.URL {
+	return nil
+}
+
+func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (*DataStream, error) {
+	return nil, nil
+}
+
+
+
+// OLD STUFF ============================
+
+func NewDataStreamFromOauthHttpClient(client *http.Client) DataStream {
+	return &DataStreamImpl{client: &ApiClient{Client: client} }
+}
+
+// Simple ApiClient supports raw (authenticated) HTTP requests to the
+// latitude API.
+type ApiClientInterface interface {
+	FetchUrl(url string, params url.Values) (responseBody string, err error)
+}
 
 // TODO(mrjones): gross
 var inited = false
