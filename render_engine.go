@@ -18,8 +18,6 @@ const (
 type RenderRequest struct {
 	bounds        *BoundingBox
 	start, end    time.Time
-	oauthToken    string
-	oauthVerifier string
 }
 
 // Serializes a RenderRequest to a url.Values so that it can be

@@ -73,9 +73,6 @@ func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream
 
 // OLD STUFF ============================
 
-func NewDataStreamFromOauthHttpClient(client *http.Client) DataStream {
-	return &DataStreamImpl{client: &ApiClient{Client: client} }
-}
 
 // Simple ApiClient supports raw (authenticated) HTTP requests to the
 // latitude API.
@@ -98,27 +95,6 @@ func NewOauthConfig(callbackUrl string) *oauth.Config {
 	}
 }
 
-type OauthFactoryInterface interface {
-	OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error);
-	OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error)
-}
-
-type RealOauthFactory struct { }
-
-func (r *RealOauthFactory) OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error) {
-	transport := &oauth.Transport{Config: configHolder}
-	token, err := transport.Exchange(code)
-	if err != nil {
-		return nil, nil, err
-	}
-	return token, transport.Client(), nil
-}
-
-func (r *RealOauthFactory) OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error) {
-	transport := &oauth.Transport{Config: configHolder}
-	transport.Token = token
-	return transport.Client(), nil
-}
 
 
 // DataStream implementation

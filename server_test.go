@@ -83,7 +83,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 
 func TestAsyncTaskCreation(t *testing.T) {
 	q := &MockTaskQueue{}
-	cfg := &ServerConfig{taskQueue: &MockTaskQueueProvider{target: q}, oauthFactory: &MockOauthFactory{}}
+	cfg := &ServerConfig{taskQueue: &MockTaskQueueProvider{target: q}}
 	s := "lllat=1.0&lllng=2.0&urlat%3d3.0&urlng=4.0&start=5&end=6"
 	u := "http://myhost.com/async_drawmap/?code=vercode&state=" + url.QueryEscape(s)
 
@@ -114,7 +114,7 @@ func TestAsyncTaskCreation(t *testing.T) {
 
 func TestAsyncWorker(t *testing.T) {
 	mockEngine := &MockRenderEngine{}
-	cfg := &ServerConfig{renderEngine: mockEngine, oauthFactory: &MockOauthFactory{}}
+	cfg := &ServerConfig{renderEngine: mockEngine}
 
 	s := "lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0&start=5&end=6"
 	u := "http://myhost.com/drawmap_worker/?state=" + url.QueryEscape(s) + "&access_token=abc&refresh_token=def&expiration_time=1234567890&hStamp=100&h1=1&h2=2&h3=3"
