@@ -13,8 +13,6 @@
 package latvis
 
 import (
-	"github.com/mrjones/oauth"
-
 	"net/http"
 	"net/url"
 )
@@ -76,10 +74,6 @@ type UrlTaskQueue interface {
 	Enqueue(url string, params *url.Values) error
 }
 
-type OauthConsumerProvider interface {
-	NewConsumer() *oauth.Consumer
-}
-
 // DEFAULT IMPLEMENTATIONS
 //
 // Provided when running outside of the appengine framework, these are mostly
@@ -98,7 +92,6 @@ func (p *SyncUrlTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
 
 type SyncUrlTaskQueue struct {
 	baseUrl    string
-	httpClient oauth.HttpClient
 }
 
 func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) error {
