@@ -66,11 +66,8 @@ func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream
 		return nil, err
 	}
 
-	return &DataStreamImpl{client: &ApiClient{Client: transport.Client()}}, nil
+	return &DataStreamImpl{client: &ApiClient{httpClient: transport.Client()}}, nil
 }
-
-
-// OLD STUFF ============================
 
 
 // TODO(mrjones): gross
@@ -202,13 +199,13 @@ func (stream *DataStreamImpl) FetchRange(start, end time.Time) (*History, error)
 }
 
 type ApiClient struct {
-	Client *http.Client
+	httpClient *http.Client
 }
 
 func (conn *ApiClient) FetchUrl(url string, params url.Values) (responseBody string, err error) {
 	params.Set("key", API_KEY)
 
-	response, err := conn.Client.Get(url + "?" + params.Encode())
+	response, err := conn.httpClient.Get(url + "?" + params.Encode())
 
 	if err != nil {
 		return "", err
