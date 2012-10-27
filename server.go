@@ -187,7 +187,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	token, _, err := config.oauthFactory.OauthClientFromVerificationCode(
 		request.FormValue("code"))
 	if token == nil {
-		serveErrorWithLabel(response, "Unable to get OauthToken", fmt.Errorf("foo"))
+		serveErrorWithLabel(response, "Unable to get OauthToken", fmt.Errorf("token == nil"))
 		return
 	}
 
@@ -196,7 +196,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	if token == nil {
-		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken2", fmt.Errorf("foo"))
+		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken2", fmt.Errorf("token == nil"))
 		return
 	}
 
