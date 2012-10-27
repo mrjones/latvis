@@ -33,7 +33,7 @@ const (
 // TODO(mrjones): document object lifetime
 type Authorizer interface {
 	StartAuthorize(applicationStats string) string
-	FinishAuthorize(verificationCode string) (*DataStream, error)
+	FinishAuthorize(verificationCode string) (DataStream, error)
 }
 
 // TODO(mrjones): remove callback url?
@@ -57,8 +57,15 @@ func (auth *AuthorizerImpl) StartAuthorize(applicationState string) string {
 	return auth.oauthConfig.AuthCodeURL(applicationState)
 }
 
-func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (*DataStream, error) {
-	return nil, nil
+func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream, error) {
+	// TODO(mrjones): remove reference to configHolder
+	transport := &oauth.Transport{Config: configHolder}
+//	_, err := transport.Exchange(verificationCode)
+//	if err != nil {
+//		return nil, err
+//	}
+
+	return &DataStreamImpl{client: &ApiClient{Client: transport.Client()}}, nil
 }
 
 
