@@ -155,15 +155,12 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	state = propogateParameter(state, &request.Form, "start")
 	state = propogateParameter(state, &request.Form, "end")
 
-	// TODO(mrjones): fix
-//	if !inited {
-		protocol := "http"
-		if request.TLS != nil {
-			protocol = "https"
-		}
-		redirectUrl := fmt.Sprintf("%s://%s/async_drawmap", protocol, request.Host)
-
-		log.Printf("Redirect URL: '%s' + '%s'\n", redirectUrl, state)
+	protocol := "http"
+	if request.TLS != nil {
+		protocol = "https"
+	}
+	redirectUrl := fmt.Sprintf("%s://%s/async_drawmap", protocol, request.Host)
+	log.Printf("Redirect URL: '%s' + '%s'\n", redirectUrl, state)
 
 	// TODO(mrjones): remove
 		configHolder = NewOauthConfig(redirectUrl)
@@ -217,17 +214,23 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	fmt.Println("DrawMapWorker: ", request.URL.String())
 	request.ParseForm()
 
+	authorizer := GetAuthorizer("ehh")
+	dataStream, err := authorizer.FinishAuthorize(request.Form.Get("verification_code"))
+	if err != nil {
+		serveErrorWithLabel(response, "FinishAuthorize error", err)
+	}
+
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
 		serveErrorWithLabel(response, "deserializeRenderRequest() error", err)
 		return
 	}
 
-	oauthToken, err := parseTokenFromQueryParams(&request.Form)
-	if err != nil {
-		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken3", err)
-		return
-	}
+//	oauthToken, err := parseTokenFromQueryParams(&request.Form)
+//	if err != nil {
+//		serveErrorWithLabel(response, "AsyncDrawMapHandler/getToken3", err)
+//		return
+//	}
 	fmt.Printf("DrawMapWorker: start %d -> end %d\n ", rr.start.Unix(), rr.end.Unix())
 
 	// parse from URL
@@ -237,13 +240,13 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	httpClient, err := config.oauthFactory.OauthClientFromSavedToken(oauthToken)
-	if err != nil {
-		serveErrorWithLabel(response, "OauthClientFromSavedToken error", err)
-		return
-	}
+//	httpClient, err := config.oauthFactory.OauthClientFromSavedToken(oauthToken)
+//	if err != nil {
+//		serveErrorWithLabel(response, "OauthClientFromSavedToken error", err)
+//		return
+//	}
 
-	err = config.renderEngine.Execute(rr, httpClient, request, handle)
+	err = config.renderEngine.Execute(rr, dataStream, request, handle)
 
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)

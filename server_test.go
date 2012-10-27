@@ -203,7 +203,7 @@ func (m *MockRenderEngine) FetchImage(handle *Handle,httpRequest *http.Request) 
 }
 
 
-func (m *MockRenderEngine) Execute(renderReq *RenderRequest, httpClient *http.Client, httpReq *http.Request, h *Handle) error {
+func (m *MockRenderEngine) Execute(renderReq *RenderRequest, dataStream DataStream, httpReq *http.Request, h *Handle) error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
 

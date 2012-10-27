@@ -60,6 +60,8 @@ func (auth *AuthorizerImpl) StartAuthorize(applicationState string) string {
 func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream, error) {
 	// TODO(mrjones): remove reference to configHolder
 	transport := &oauth.Transport{Config: configHolder}
+
+//  TODO(mrjones): ok to remove?
 //	_, err := transport.Exchange(verificationCode)
 //	if err != nil {
 //		return nil, err

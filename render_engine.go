@@ -156,7 +156,7 @@ type RenderEngineInterface interface {
 		httpRequest *http.Request) (*Blob, error)
 
 	Execute(renderRequest *RenderRequest,
-		httpClient *http.Client,
+		dataStream DataStream,
 		httpRequest *http.Request,
 		handle *Handle) error
 }
@@ -170,13 +170,11 @@ func (r *RenderEngine) FetchImage(handle *Handle, httpRequest *http.Request) (*B
 }
 
 func (r *RenderEngine) Execute(renderRequest *RenderRequest,
-	httpClient *http.Client,
+	dataStream DataStream,
 	httpRequest *http.Request,
 	handle *Handle) error {
 
-	authorizedConnection := NewDataStreamFromOauthHttpClient(httpClient)
-
-	history, err := authorizedConnection.FetchRange(
+	history, err := dataStream.FetchRange(
 		renderRequest.start, renderRequest.end)
 	if err != nil {
 		return err
