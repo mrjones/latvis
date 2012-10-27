@@ -61,7 +61,6 @@ func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream
 	// TODO(mrjones): remove reference to configHolder
 	transport := &oauth.Transport{Config: configHolder}
 
-//  TODO(mrjones): ok to remove?
 	_, err := transport.Exchange(verificationCode)
 	if err != nil {
 		return nil, err
@@ -73,12 +72,6 @@ func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream
 
 // OLD STUFF ============================
 
-
-// Simple ApiClient supports raw (authenticated) HTTP requests to the
-// latitude API.
-type ApiClientInterface interface {
-	FetchUrl(url string, params url.Values) (responseBody string, err error)
-}
 
 // TODO(mrjones): gross
 var inited = false
@@ -102,7 +95,7 @@ func NewOauthConfig(callbackUrl string) *oauth.Config {
 // from the latitude API.
 
 type DataStreamImpl struct {
-	client ApiClientInterface
+	client *ApiClient
 }
 
 
@@ -208,7 +201,6 @@ func (stream *DataStreamImpl) FetchRange(start, end time.Time) (*History, error)
 	return history,nil
 }
 
-// ApiClientInterface implementation
 type ApiClient struct {
 	Client *http.Client
 }
