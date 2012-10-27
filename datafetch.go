@@ -32,12 +32,13 @@ const (
 
 // TODO(mrjones): document object lifetime
 type Authorizer interface {
-	StartAuthorize() *url.URL
+	StartAuthorize(applicationStats string) string
 	FinishAuthorize(verificationCode string) (*DataStream, error)
 }
 
-func GetAuthorizer() Authorizer {
-	return &AuthorizerImpl{}
+// TODO(mrjones): remove callback url?
+func GetAuthorizer(callbackUrl string) Authorizer {
+	return &AuthorizerImpl{oauthConfig: NewOauthConfig(callbackUrl)}
 }
 
 type DataStream interface {
@@ -49,16 +50,16 @@ type DataStream interface {
 // ======================================
 
 type AuthorizerImpl struct {
+	oauthConfig *oauth.Config
 }
 
-func (auth *AuthorizerImpl) StartAuthorize() *url.URL {
-	return nil
+func (auth *AuthorizerImpl) StartAuthorize(applicationState string) string {
+	return auth.oauthConfig.AuthCodeURL(applicationState)
 }
 
 func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (*DataStream, error) {
 	return nil, nil
 }
-
 
 
 // OLD STUFF ============================

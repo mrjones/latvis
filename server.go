@@ -156,9 +156,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	state = propogateParameter(state, &request.Form, "end")
 
 	// TODO(mrjones): fix
-	if !inited {
-		fmt.Println("INITTING")
-		inited = true
+//	if !inited {
 		protocol := "http"
 		if request.TLS != nil {
 			protocol = "https"
@@ -167,9 +165,12 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 
 		log.Printf("Redirect URL: '%s' + '%s'\n", redirectUrl, state)
 
+	// TODO(mrjones): remove
 		configHolder = NewOauthConfig(redirectUrl)
-	}
-	authUrl := configHolder.AuthCodeURL(state)
+//	}
+//	authUrl := configHolder.AuthCodeURL(state)
+
+	authUrl := GetAuthorizer(redirectUrl).StartAuthorize(state)
 
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
