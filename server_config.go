@@ -50,8 +50,7 @@ func NewConfig(blobStorage HttpBlobStoreProvider,
 // on http.Request, meaning it can have a clean interface.  This feels more
 // like Java than Go, and I'm not yet sure it was the right decision, however
 // it means the other interfaces can all be clean (without dumb http.Request
-// params floating everywhere, and in some cases means we can even use external
-// interfaces such as oauth.HttpClient.
+// params floating everywhere).
 type HttpBlobStoreProvider interface {
 	// BlobStore is defined in blobs.go
 	OpenStore(req *http.Request) BlobStore
