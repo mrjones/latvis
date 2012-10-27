@@ -13,14 +13,45 @@ import (
 	"code.google.com/p/goauth2/oauth"
 )
 
+
 const (
+	// TODO(mrjones): flag/config file?
 	API_KEY              = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
+	// TODO(mrjones): flag/config file?
 	CLIENT_ID            = "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com"
+	// TODO(mrjones): flag/config file?
 	CLIENT_SECRET        = "s-DSmW16VVC6tW-9BSctdML5"
 	LOCATION_HISTORY_URL = "https://www.googleapis.com/latitude/v1/location"
 	OUT_OF_BAND_CALLBACK = "oob"
 	MAX_RESULTS          = 1000
 )
+
+// ======================================
+// ========== DATA FETCH API ============
+// ======================================
+
+// Simple ApiClient supports raw (authenticated) HTTP requests to the
+// latitude API.
+type ApiClientInterface interface {
+	FetchUrl(url string, params url.Values) (responseBody string, err error)
+}
+
+type DataStream interface {
+	FetchRange(start, end time.Time) (*History, error)
+}
+
+func NewDataStreamFromOauthHttpClient(client *http.Client) DataStream {
+	return &DataStreamImpl{client: &ApiClient{Client: client} }
+}
+
+func NewDataStreamFromLatitudeClient(client ApiClientInterface) DataStream {
+	return &DataStreamImpl{client: client}
+}
+
+// ======================================
+// ========== IMPLEMENTATION ============
+// ======================================
+
 
 // TODO(mrjones): gross
 var inited = false
@@ -60,21 +91,14 @@ func (r *RealOauthFactory) OauthClientFromSavedToken(token *oauth.Token) (*http.
 }
 
 
-// DATA STREAM ----------
+// DataStream implementation
 // Layer on top of ApiClient to support latvis-specific history fetching
 // from the latitude API.
 
-type DataStream struct {
+type DataStreamImpl struct {
 	client ApiClientInterface
 }
 
-func NewDataStreamFromOauthHttpClient(client *http.Client) *DataStream {
-	return &DataStream{client: &ApiClient{Client: client} }
-}
-
-func NewDataStreamFromLatitudeClient(client ApiClientInterface) *DataStream {
-	return &DataStream{client: client}
-}
 
 // JSON Data Model of Latitude API Responses
 type JsonRoot struct {
@@ -93,8 +117,7 @@ type JsonItem struct {
 	TimestampMs string
 }
 
-// TODO(mrjones): convert int64 to time.Time (?)
-func (stream *DataStream) fetchJsonForRange(startMs int64, endMs int64) (*JsonRoot, error) {
+func (stream *DataStreamImpl) fetchJsonForRange(startMs int64, endMs int64) (*JsonRoot, error) {
 	fmt.Printf("fetchJsonForRange: %d - %d\n", startMs, endMs)
 	params := make(url.Values)
 	params.Set("granularity", "best")
@@ -116,7 +139,7 @@ func (stream *DataStream) fetchJsonForRange(startMs int64, endMs int64) (*JsonRo
 	return &jsonObject, nil
 }
 
-func (stream *DataStream) parseJson(jsonObject *JsonRoot, out *History) (startMs int64, endMs int64, count int, err error) {
+func (stream *DataStreamImpl) parseJson(jsonObject *JsonRoot, out *History) (startMs int64, endMs int64, count int, err error) {
 	minTs := int64(-1)
 	maxTs := int64(-1)
 
@@ -149,7 +172,7 @@ func (stream *DataStream) parseJson(jsonObject *JsonRoot, out *History) (startMs
 	return minTs, maxTs, len(jsonObject.Data.Items), nil
 }
 
-func (stream *DataStream) FetchRange(start, end time.Time) (*History, error) {
+func (stream *DataStreamImpl) FetchRange(start, end time.Time) (*History, error) {
 	history := &History{}
 
 	startTs := 1000 * start.Unix()
@@ -179,14 +202,7 @@ func (stream *DataStream) FetchRange(start, end time.Time) (*History, error) {
 	return history,nil
 }
 
-// API CLIENT ----------
-// Simple ApiClient supports raw (authenticated) HTTP requests to the
-// latitude API.
-
-type ApiClientInterface interface {
-	FetchUrl(url string, params url.Values) (responseBody string, err error)
-}
-
+// ApiClientInterface implementation
 type ApiClient struct {
 	Client *http.Client
 }
