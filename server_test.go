@@ -1,7 +1,6 @@
 package latvis
 
 import (
-	"code.google.com/p/goauth2/oauth"
 	"github.com/mrjones/gt"
 
 	"math/rand"
@@ -178,20 +177,6 @@ func execute(t *testing.T,
 func randomDirectoryName() string {
 	return "test-dir-" + strconv.Itoa(rand.Int())
 }
-
-// MockOauthFactory
-
-type MockOauthFactory struct { }
-
-func (r *MockOauthFactory) OauthClientFromVerificationCode(code string) (*oauth.Token,*http.Client,error) {
-	t := &oauth.Token{AccessToken: "abc", RefreshToken: "def", Expiry: time.Now()}
-	return t, nil, nil
-}
-
-func (r *MockOauthFactory) OauthClientFromSavedToken(token *oauth.Token) (*http.Client,error) {
-	return nil, nil
-}
-
 
 // MockRenderEngine
 type MockRenderEngine struct {
