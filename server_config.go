@@ -113,14 +113,3 @@ type LocalFSBlobStoreProvider struct {
 func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
 	return NewLocalFSBlobStore(p.Location)
 }
-
-//// StandardLatitudeConnectionProvider
-//type StandardLatitudeConnector struct {
-//	httpClient HttpClientProvider
-//}
-
-//func (p *StandardLatitudeConnector) NewConnection(req *http.Request) LatitudeConnection {
-//	consumer := NewConsumer()
-//	consumer.HttpClient = p.httpClient.GetClient(req)
-//	return NewConnectionForConsumer(consumer)
-//}
