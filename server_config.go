@@ -26,7 +26,6 @@ import (
 type ServerConfig struct {
 	blobStorage   HttpBlobStoreProvider
 	taskQueue     HttpUrlTaskQueueProvider
-//	oauthFactory  OauthFactoryInterface
 	renderEngine RenderEngineInterface
 }
 
@@ -38,7 +37,6 @@ func NewConfig(blobStorage HttpBlobStoreProvider,
 	return &ServerConfig{
 		blobStorage:   blobStorage,
 		taskQueue:     taskQueue,
-//		oauthFactory:  &RealOauthFactory{},
 		renderEngine: &RenderEngine{
 			blobStorage:           blobStorage,
 		},
