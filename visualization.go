@@ -33,6 +33,10 @@ func Draw(history *History, bounds *BoundingBox, styler Styler, width, height in
 	return imageToPNGBytes(img)
 }
 
+// =============================
+// ======== INTERNALS ==========
+// =============================
+
 func imageToPNGBytes(img image.Image) (*[]byte, error) {
 	buffer := bytes.NewBuffer(make([]byte, 0))
 
