@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"errors"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -69,6 +70,9 @@ func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream
 	return &DataStreamImpl{client: &ApiClient{httpClient: transport.Client()}}, nil
 }
 
+func wrapError(wrapMsg string, cause error) error {
+	return errors.New(wrapMsg + ": " + cause.Error())
+}
 
 // TODO(mrjones): gross
 var inited = false
