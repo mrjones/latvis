@@ -23,18 +23,15 @@ func TestBWStyler2By2(t *testing.T) {
 	h := make(History, 0)
 	h = append(h, &Coordinate{Lat: .5, Lng: .5})
 
-	styler := &BWStyler{}
-
-	img, err := styler.Style(&h, bounds, 2, 2)
-	gt.AssertNil(t, err)
+	styler := &BWStyler{} 
+	img := styler.makeImage(&h, bounds, 2, 2)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, W},
 		[]color.Color{B, W}}, img)
 
 	h = append(h, &Coordinate{Lat: 1.5, Lng: 1.5})
 
-	img, err = styler.Style(&h, bounds, 2, 2)
-	gt.AssertNil(t, err)
+	img = styler.makeImage(&h, bounds, 2, 2)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, B},
 		[]color.Color{B, W}}, img)
@@ -55,8 +52,7 @@ func TestBWStylerNotSquare(t *testing.T) {
 
 	styler := &BWStyler{}
 
-	img, err := styler.Style(&h, bounds, 5, 3)
-	gt.AssertNil(t, err)
+	img := styler.makeImage(&h, bounds, 5, 3)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, W, B, W, W},
 		[]color.Color{W, B, W, B, W},
@@ -79,8 +75,7 @@ func TestBWStylerSmushed(t *testing.T) {
 
 	styler := &BWStyler{}
 
-	img, err := styler.Style(&h, bounds, 2, 2)
-	gt.AssertNil(t, err)
+	img := styler.makeImage(&h, bounds, 2, 2)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, W},
 		[]color.Color{B, W}}, img)
