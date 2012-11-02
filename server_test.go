@@ -181,9 +181,14 @@ func randomDirectoryName() string {
 
 // MockRenderEngine
 type MockRenderEngine struct {
+	lastVerificationCode string
 	lastRenderRequest *RenderRequest
 	lastHandle        *Handle
 	blobStore HttpBlobStoreProvider
+}
+
+func (m *MockRenderEngine) GetOAuthUrl(callbackUrl, applicationState string) string {
+	return "http://example.com/callback"
 }
 
 func (m *MockRenderEngine) FetchImage(handle *Handle,httpRequest *http.Request) (*Blob, error) {
@@ -196,9 +201,10 @@ func (m *MockRenderEngine) FetchImage(handle *Handle,httpRequest *http.Request) 
 }
 
 
-func (m *MockRenderEngine) Execute(renderReq *RenderRequest, dataStream DataStream, httpReq *http.Request, h *Handle) error {
+func (m *MockRenderEngine) Execute(renderReq *RenderRequest, verificationCode string, httpReq *http.Request, h *Handle) error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
+	m.lastVerificationCode = verificationCode
 
 	return nil
 }

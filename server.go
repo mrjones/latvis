@@ -180,7 +180,9 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 //	}
 //	authUrl := configHolder.AuthCodeURL(state)
 
-	authUrl := GetAuthorizer(redirectUrl).StartAuthorize(state)
+
+//	authUrl := GetAuthorizer(redirectUrl).StartAuthorize(state)
+	authUrl := config.renderEngine.GetOAuthUrl(redirectUrl, state)
 
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
@@ -211,12 +213,12 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	fmt.Println("DrawMapWorker: ", request.URL.String())
 	request.ParseForm()
 
-	// TODO(mrjones): deal with redirect url shenanigans
-	authorizer := GetAuthorizer("ehh")
-	dataStream, err := authorizer.FinishAuthorize(request.Form.Get("verification_code"))
-	if err != nil {
-		serveErrorWithLabel(response, "FinishAuthorize error", err)
-	}
+//	// TODO(mrjones): deal with redirect url shenanigans
+//	authorizer := GetAuthorizer("ehh")
+//	dataStream, err := authorizer.FinishAuthorize(request.Form.Get("verification_code"))
+//	if err != nil {
+//		serveErrorWithLabel(response, "FinishAuthorize error", err)
+//	}
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
@@ -230,7 +232,12 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = config.renderEngine.Execute(rr, dataStream, request, handle)
+	verificationCode := request.FormValue("verification_code")
+	if verificationCode == "" {
+		serveErrorWithLabel(response, "get verificationcode", errors.New("verification_code query parameter missing"))
+	}
+
+	err = config.renderEngine.Execute(rr, verificationCode, request, handle)
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)
 		return

@@ -19,11 +19,13 @@ type RenderRequest struct {
 // TODO(mrjones): I think I want to call this something like "LatvisController"
 // TODO(mrjones): remove the http.Request from here
 type RenderEngineInterface interface {
+	GetOAuthUrl(callbackUrl string, applicationState string) string
+
 	// Download and visualize a Latitude history.  The resulting visualization
 	// will be stored using the given handle, and can be retrieved using
 	// FecthImage with the same handle.
 	Execute(renderRequest *RenderRequest,
-		dataStream DataStream,
+		verificationCode string,
 		httpRequest *http.Request,
 		handle *Handle) error
 
@@ -38,6 +40,11 @@ type RenderEngineInterface interface {
 
 type RenderEngine struct {
 	blobStorage           HttpBlobStoreProvider
+	authorizer            Authorizer
+}
+
+func (r *RenderEngine) GetOAuthUrl(callbackUrl string, applicationState string) string {
+	return GetAuthorizer(callbackUrl).StartAuthorize(applicationState)
 }
 
 func (r *RenderEngine) FetchImage(handle *Handle, httpRequest *http.Request) (*Blob, error) {
@@ -45,9 +52,14 @@ func (r *RenderEngine) FetchImage(handle *Handle, httpRequest *http.Request) (*B
 }
 
 func (r *RenderEngine) Execute(renderRequest *RenderRequest,
-	dataStream DataStream,
+	verificationCode string,
 	httpRequest *http.Request,
 	handle *Handle) error {
+
+	dataStream, err := GetAuthorizer("TODO(mrjones): remove this?").FinishAuthorize(verificationCode)
+	if err != nil {
+		return err
+	}
 
 	history, err := dataStream.FetchRange(
 		renderRequest.start, renderRequest.end)
