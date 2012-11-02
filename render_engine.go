@@ -56,13 +56,12 @@ func (r *RenderEngine) Execute(renderRequest *RenderRequest,
 		return err
 	}
 
-	history, err := dataStream.FetchRange(
-		renderRequest.start, renderRequest.end)
+	history, err := dataStream.FetchRange(renderRequest.start, renderRequest.end)
 	if err != nil {
 		return err
 	}
 
-	blob, err := r.Render2(history, renderRequest.bounds)
+	blob, err := r.MakePng(history, renderRequest.bounds)
 	if err != nil {
 		return err
 	}
@@ -75,7 +74,7 @@ func (r *RenderEngine) Execute(renderRequest *RenderRequest,
 	return nil
 }
 
-func (r *RenderEngine) Render2(history *History, bounds *BoundingBox) (*Blob, error) {
+func (r *RenderEngine) MakePng(history *History, bounds *BoundingBox) (*Blob, error) {
 	w, h := imgSize(bounds, IMAGE_SIZE_PX)
 
 	visualizer := &BwPngVisualizer{}
