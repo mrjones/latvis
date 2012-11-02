@@ -49,7 +49,7 @@ func (r *BwPngVisualizer) Visualize(history *History, bounds *BoundingBox, width
 }
 
 // Seam for testing
-func (r* BwPngVisualizer) makeImage(history *History, bounds *BoundingBox, width int, height int) image.Image {
+func (r *BwPngVisualizer) makeImage(history *History, bounds *BoundingBox, width int, height int) image.Image {
 	grid := aggregateHistory(history, bounds, width, height)
 	intensityGrid := formatAsIntensityGrid(grid, width, height)
 	return intensityGridToBWImage(intensityGrid)

@@ -20,7 +20,7 @@ func serializeRenderRequest(r *RenderRequest, m *url.Values) {
 		panic("nil map")
 	}
 	var m2 = make(url.Values)
-	
+
 	m2.Add("start", strconv.FormatInt(r.start.Unix(), 10))
 	m2.Add("end", strconv.FormatInt(r.end.Unix(), 10))
 
@@ -46,7 +46,6 @@ func deserializeRenderRequest(rawParams *url.Values) (*RenderRequest, error) {
 		return nil, err
 	}
 	fmt.Println("llat? " + params.Get("lllat"))
-	
 
 	// Parse all input parameters from the URL
 	lowerLeft, err := extractCoordinateFromUrl(&params, "lllat", "lllng")
@@ -78,9 +77,9 @@ func deserializeRenderRequest(rawParams *url.Values) (*RenderRequest, error) {
 	}
 
 	return &RenderRequest{
-		bounds:        bounds,
-		start:         start,
-		end:           end,
+		bounds: bounds,
+		start:  start,
+		end:    end,
 	}, nil
 }
 
@@ -127,7 +126,6 @@ func extractStringFromUrl(params *url.Values, param string) (string, error) {
 	}
 	return params.Get(param), nil
 }
-
 
 // ======================================
 // ============== HANDLES ===============

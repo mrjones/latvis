@@ -3,7 +3,6 @@ package latvis
 import (
 	"net/http"
 	"time"
-
 )
 
 const (
@@ -12,8 +11,8 @@ const (
 
 // All the information necessary to specify a visualization.
 type RenderRequest struct {
-	bounds        *BoundingBox
-	start, end    time.Time
+	bounds     *BoundingBox
+	start, end time.Time
 }
 
 // TODO(mrjones): I think I want to call this something like "LatvisController"
@@ -35,12 +34,11 @@ type RenderEngineInterface interface {
 	FetchImage(
 		handle *Handle,
 		httpRequest *http.Request) (*Blob, error)
-
 }
 
 type RenderEngine struct {
-	blobStorage           HttpBlobStoreProvider
-	authorizer            Authorizer
+	blobStorage HttpBlobStoreProvider
+	authorizer  Authorizer
 }
 
 func (r *RenderEngine) GetOAuthUrl(callbackUrl string, applicationState string) string {
@@ -83,7 +81,7 @@ func (r *RenderEngine) Execute(renderRequest *RenderRequest,
 func (r *RenderEngine) Render2(history *History, bounds *BoundingBox) (*Blob, error) {
 	w, h := imgSize(bounds, IMAGE_SIZE_PX)
 
-	visualizer := &BwPngVisualizer{};
+	visualizer := &BwPngVisualizer{}
 
 	data, err := visualizer.Visualize(
 		history,

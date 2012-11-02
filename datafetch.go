@@ -14,12 +14,11 @@ import (
 	"code.google.com/p/goauth2/oauth"
 )
 
-
 const (
 	// TODO(mrjones): flag/config file?
-	API_KEY              = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
+	API_KEY = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
 	// TODO(mrjones): flag/config file?
-	CLIENT_ID            = "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com"
+	CLIENT_ID = "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com"
 	// TODO(mrjones): flag/config file?
 	CLIENT_SECRET        = "s-DSmW16VVC6tW-9BSctdML5"
 	LOCATION_HISTORY_URL = "https://www.googleapis.com/latitude/v1/location"
@@ -79,17 +78,15 @@ var inited = false
 var configHolder = &oauth.Config{}
 
 func NewOauthConfig(callbackUrl string) *oauth.Config {
-	return &oauth.Config {
+	return &oauth.Config{
 		ClientId:     CLIENT_ID,
 		ClientSecret: CLIENT_SECRET,
 		Scope:        "https://www.googleapis.com/auth/latitude.all.best",
 		AuthURL:      "https://accounts.google.com/o/oauth2/auth",
 		TokenURL:     "https://accounts.google.com/o/oauth2/token",
-	  RedirectURL:  callbackUrl,
+		RedirectURL:  callbackUrl,
 	}
 }
-
-
 
 // DataStream implementation
 // Layer on top of ApiClient to support latvis-specific history fetching
@@ -98,7 +95,6 @@ func NewOauthConfig(callbackUrl string) *oauth.Config {
 type DataStreamImpl struct {
 	client *ApiClient
 }
-
 
 // JSON Data Model of Latitude API Responses
 type JsonRoot struct {
@@ -129,7 +125,7 @@ func (stream *DataStreamImpl) fetchJsonForRange(startMs int64, endMs int64) (*Js
 	if err != nil {
 		return nil, wrapError("fetchJsonForRange error / "+LOCATION_HISTORY_URL, err)
 	}
-//	fmt.Println("JSON: ", body)
+	//	fmt.Println("JSON: ", body)
 
 	var jsonObject JsonRoot
 	err = json.Unmarshal([]byte(body), &jsonObject)
@@ -197,9 +193,9 @@ func (stream *DataStreamImpl) FetchRange(start, end time.Time) (*History, error)
 		}
 		keepGoing = (itemsReturned > 0)
 		// Make sure we exclude everything we've seen: ask for the min, minus 1ms
-		endTs = minTs - 1  
+		endTs = minTs - 1
 	}
-	return history,nil
+	return history, nil
 }
 
 type ApiClient struct {

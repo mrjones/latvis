@@ -18,7 +18,7 @@ func TestObjectReady(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	mockEngine := &MockRenderEngine{blobStore: &DumbBlobStoreProvider{Target: blobStore}}
-	cfg := &ServerConfig{renderEngine: mockEngine }
+	cfg := &ServerConfig{renderEngine: mockEngine}
 
 	res1 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusOK, res1.StatusCode, "Request should have succeeded")
@@ -90,7 +90,7 @@ func TestAsyncTaskCreation(t *testing.T) {
 	res := execute(t, u, AsyncDrawMapHandler, cfg)
 
 	gt.AssertEqualM(t, http.StatusFound, res.StatusCode,
-		"Should redirect. Body: " + res.Body)
+		"Should redirect. Body: "+res.Body)
 	// TODO(mrjones): verify URL better.
 	//	gt.AssertEqualM(t, "/display/100-1-2-3.png", res.Headers.Get("Location"),
 	//		"Should redirect to specified URL")
@@ -108,8 +108,8 @@ func TestAsyncTaskCreation(t *testing.T) {
 	gt.AssertEqualM(t, "5", parsedS.Get("start"), "token")
 	gt.AssertEqualM(t, "6", parsedS.Get("end"), "token")
 	gt.AssertEqualM(t, "vercode", q.lastParams.Get("verification_code"), "code")
-//	gt.AssertEqualM(t, "abc", q.lastParams.Get("access_token"), "token")
-//	gt.AssertEqualM(t, "def", q.lastParams.Get("refresh_token"), "token")
+	//	gt.AssertEqualM(t, "abc", q.lastParams.Get("access_token"), "token")
+	//	gt.AssertEqualM(t, "def", q.lastParams.Get("refresh_token"), "token")
 }
 
 func TestAsyncWorker(t *testing.T) {
@@ -182,16 +182,16 @@ func randomDirectoryName() string {
 // MockRenderEngine
 type MockRenderEngine struct {
 	lastVerificationCode string
-	lastRenderRequest *RenderRequest
-	lastHandle        *Handle
-	blobStore HttpBlobStoreProvider
+	lastRenderRequest    *RenderRequest
+	lastHandle           *Handle
+	blobStore            HttpBlobStoreProvider
 }
 
 func (m *MockRenderEngine) GetOAuthUrl(callbackUrl, applicationState string) string {
 	return "http://example.com/callback"
 }
 
-func (m *MockRenderEngine) FetchImage(handle *Handle,httpRequest *http.Request) (*Blob, error) {
+func (m *MockRenderEngine) FetchImage(handle *Handle, httpRequest *http.Request) (*Blob, error) {
 	if m.blobStore == nil {
 		panic("No BlobStore configured!")
 	} else {
@@ -199,7 +199,6 @@ func (m *MockRenderEngine) FetchImage(handle *Handle,httpRequest *http.Request) 
 	}
 	return nil, nil
 }
-
 
 func (m *MockRenderEngine) Execute(renderReq *RenderRequest, verificationCode string, httpReq *http.Request, h *Handle) error {
 	m.lastRenderRequest = renderReq
@@ -228,7 +227,6 @@ func (q *MockTaskQueue) Enqueue(url string, params *url.Values) error {
 	q.lastParams = params
 	return nil
 }
-
 
 //
 // DumbBlobStoreProvider

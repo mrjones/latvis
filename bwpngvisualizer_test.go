@@ -23,7 +23,7 @@ func TestBwPngVisualizer2By2(t *testing.T) {
 	h := make(History, 0)
 	h = append(h, &Coordinate{Lat: .5, Lng: .5})
 
-	visualizer := &BwPngVisualizer{} 
+	visualizer := &BwPngVisualizer{}
 	img := visualizer.makeImage(&h, bounds, 2, 2)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, W},

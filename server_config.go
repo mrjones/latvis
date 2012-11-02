@@ -22,22 +22,21 @@ import (
 // Primarily designed to separate framework-specific components (like storage)
 // from the main application logic.
 type ServerConfig struct {
-	blobStorage   HttpBlobStoreProvider
-	taskQueue     HttpUrlTaskQueueProvider
+	blobStorage  HttpBlobStoreProvider
+	taskQueue    HttpUrlTaskQueueProvider
 	renderEngine RenderEngineInterface
 }
 
 // Use this instead of &ServerConfig{...} directly to get compile-timer
 // errors when new dependencies are introduced.
 func NewConfig(blobStorage HttpBlobStoreProvider,
-	
+
 	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
 	return &ServerConfig{
-		taskQueue:     taskQueue,
+		taskQueue: taskQueue,
 		renderEngine: &RenderEngine{
-			blobStorage:           blobStorage,
+			blobStorage: blobStorage,
 		},
-
 	}
 }
 
@@ -89,7 +88,7 @@ func (p *SyncUrlTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
 }
 
 type SyncUrlTaskQueue struct {
-	baseUrl    string
+	baseUrl string
 }
 
 func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) error {
