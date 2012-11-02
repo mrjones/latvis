@@ -33,7 +33,7 @@ func NewConfig(blobStorage HttpBlobStoreProvider,
 	
 	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
 	return &ServerConfig{
-		blobStorage:   blobStorage,
+//		blobStorage:   blobStorage,
 		taskQueue:     taskQueue,
 		renderEngine: &RenderEngine{
 			blobStorage:           blobStorage,
