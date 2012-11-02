@@ -24,20 +24,22 @@ import (
 type ServerConfig struct {
 	blobStorage  HttpBlobStoreProvider
 	taskQueue    HttpUrlTaskQueueProvider
-	renderEngine RenderEngineInterface
+	mockRenderEngine RenderEngineInterface
 }
+
+func (config *ServerConfig) RenderEngineForRequest(request *http.Request) RenderEngineInterface {
+	if config.mockRenderEngine != nil {
+		return config.mockRenderEngine
+	}
+	return NewRenderEngine(config.blobStorage.OpenStore(request))
+}
+
 
 // Use this instead of &ServerConfig{...} directly to get compile-timer
 // errors when new dependencies are introduced.
 func NewConfig(blobStorage HttpBlobStoreProvider,
-
 	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
-	return &ServerConfig{
-		taskQueue: taskQueue,
-		renderEngine: &RenderEngine{
-			blobStorage: blobStorage,
-		},
-	}
+	return &ServerConfig{blobStorage: blobStorage, taskQueue: taskQueue}
 }
 
 // PROVIDERS

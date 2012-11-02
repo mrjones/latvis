@@ -17,8 +17,8 @@ func TestObjectReady(t *testing.T) {
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
 
-	mockEngine := &MockRenderEngine{blobStore: &DumbBlobStoreProvider{Target: blobStore}}
-	cfg := &ServerConfig{renderEngine: mockEngine}
+	mockEngine := &MockRenderEngine{blobStore: blobStore}
+	cfg := &ServerConfig{mockRenderEngine: mockEngine}
 
 	res1 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusOK, res1.StatusCode, "Request should have succeeded")
@@ -114,7 +114,7 @@ func TestAsyncTaskCreation(t *testing.T) {
 
 func TestAsyncWorker(t *testing.T) {
 	mockEngine := &MockRenderEngine{}
-	cfg := &ServerConfig{renderEngine: mockEngine}
+	cfg := &ServerConfig{mockRenderEngine: mockEngine}
 
 	s := "lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0&start=5&end=6"
 	u := "http://myhost.com/drawmap_worker/?state=" + url.QueryEscape(s) + "&access_token=abc&refresh_token=def&expiration_time=1234567890&hStamp=100&h1=1&h2=2&h3=3"
@@ -184,23 +184,23 @@ type MockRenderEngine struct {
 	lastVerificationCode string
 	lastRenderRequest    *RenderRequest
 	lastHandle           *Handle
-	blobStore            HttpBlobStoreProvider
+	blobStore            BlobStore
 }
 
 func (m *MockRenderEngine) GetOAuthUrl(callbackUrl, applicationState string) string {
 	return "http://example.com/callback"
 }
 
-func (m *MockRenderEngine) FetchImage(handle *Handle, httpRequest *http.Request) (*Blob, error) {
+func (m *MockRenderEngine) FetchImage(handle *Handle) (*Blob, error) {
 	if m.blobStore == nil {
 		panic("No BlobStore configured!")
 	} else {
-		return m.blobStore.OpenStore(httpRequest).Fetch(handle)
+		return m.blobStore.Fetch(handle)
 	}
 	return nil, nil
 }
 
-func (m *MockRenderEngine) Execute(renderReq *RenderRequest, verificationCode string, httpReq *http.Request, h *Handle) error {
+func (m *MockRenderEngine) Execute(renderReq *RenderRequest, verificationCode string, h *Handle) error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
 	m.lastVerificationCode = verificationCode

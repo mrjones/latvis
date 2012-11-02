@@ -60,7 +60,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := config.renderEngine.FetchImage(handle, request)
+	blob, err := config.RenderEngineForRequest(request).FetchImage(handle)
 
 	if err != nil || blob == nil {
 		log.Println(err)
@@ -131,7 +131,7 @@ func RenderHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := config.renderEngine.FetchImage(handle, request)
+	blob, err := config.RenderEngineForRequest(request).FetchImage(handle)
 	if err != nil {
 		serveErrorWithLabel(response, "RenderHandler/OpenStore error", err)
 		return
@@ -178,7 +178,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	// TODO(mrjones): remove
 	configHolder = NewOauthConfig(redirectUrl)
 
-	authUrl := config.renderEngine.GetOAuthUrl(redirectUrl, state)
+	authUrl := config.RenderEngineForRequest(request).GetOAuthUrl(redirectUrl, state)
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
 
@@ -225,7 +225,7 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		serveErrorWithLabel(response, "get verificationcode", errors.New("verification_code query parameter missing"))
 	}
 
-	err = config.renderEngine.Execute(rr, verificationCode, request, handle)
+	err = config.RenderEngineForRequest(request).Execute(rr, verificationCode, handle)
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)
 		return
