@@ -38,7 +38,6 @@ type RenderEngineInterface interface {
 
 type RenderEngine struct {
 	blobStorage HttpBlobStoreProvider
-	authorizer  Authorizer
 }
 
 func (r *RenderEngine) GetOAuthUrl(callbackUrl string, applicationState string) string {
