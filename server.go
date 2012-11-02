@@ -176,14 +176,9 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	log.Printf("Redirect URL: '%s' + '%s'\n", redirectUrl, state)
 
 	// TODO(mrjones): remove
-		configHolder = NewOauthConfig(redirectUrl)
-//	}
-//	authUrl := configHolder.AuthCodeURL(state)
+	configHolder = NewOauthConfig(redirectUrl)
 
-
-//	authUrl := GetAuthorizer(redirectUrl).StartAuthorize(state)
 	authUrl := config.renderEngine.GetOAuthUrl(redirectUrl, state)
-
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
 
@@ -205,20 +200,13 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 
 	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
-	url := serializeHandleToUrl(handle, "png", "display")
-	http.Redirect(response, request, url, http.StatusFound)
+	displayImageUrl := serializeHandleToUrl(handle, "png", "display")
+	http.Redirect(response, request, displayImageUrl, http.StatusFound)
 }
 
 func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	fmt.Println("DrawMapWorker: ", request.URL.String())
 	request.ParseForm()
-
-//	// TODO(mrjones): deal with redirect url shenanigans
-//	authorizer := GetAuthorizer("ehh")
-//	dataStream, err := authorizer.FinishAuthorize(request.Form.Get("verification_code"))
-//	if err != nil {
-//		serveErrorWithLabel(response, "FinishAuthorize error", err)
-//	}
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
