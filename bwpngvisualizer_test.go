@@ -14,7 +14,7 @@ var (
 	W = WHITE
 )
 
-func TestBWStyler2By2(t *testing.T) {
+func TestBwPngVisualizer2By2(t *testing.T) {
 	bounds, err := NewBoundingBox(
 		Coordinate{Lat: 0, Lng: 0},
 		Coordinate{Lat: 2, Lng: 2})
@@ -23,21 +23,21 @@ func TestBWStyler2By2(t *testing.T) {
 	h := make(History, 0)
 	h = append(h, &Coordinate{Lat: .5, Lng: .5})
 
-	styler := &BWStyler{} 
-	img := styler.makeImage(&h, bounds, 2, 2)
+	visualizer := &BwPngVisualizer{} 
+	img := visualizer.makeImage(&h, bounds, 2, 2)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, W},
 		[]color.Color{B, W}}, img)
 
 	h = append(h, &Coordinate{Lat: 1.5, Lng: 1.5})
 
-	img = styler.makeImage(&h, bounds, 2, 2)
+	img = visualizer.makeImage(&h, bounds, 2, 2)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, B},
 		[]color.Color{B, W}}, img)
 }
 
-func TestBWStylerNotSquare(t *testing.T) {
+func TestBwPngVisualizerNotSquare(t *testing.T) {
 	bounds, err := NewBoundingBox(
 		Coordinate{Lat: 0, Lng: 0},
 		Coordinate{Lat: 3, Lng: 5})
@@ -50,16 +50,16 @@ func TestBWStylerNotSquare(t *testing.T) {
 	h = append(h, &Coordinate{Lat: 1.5, Lng: 3.5})
 	h = append(h, &Coordinate{Lat: .5, Lng: 4.5})
 
-	styler := &BWStyler{}
+	visualizer := &BwPngVisualizer{}
 
-	img := styler.makeImage(&h, bounds, 5, 3)
+	img := visualizer.makeImage(&h, bounds, 5, 3)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, W, B, W, W},
 		[]color.Color{W, B, W, B, W},
 		[]color.Color{B, W, W, W, B}}, img)
 }
 
-func TestBWStylerSmushed(t *testing.T) {
+func TestBwPngVisualizerSmushed(t *testing.T) {
 	bounds, err := NewBoundingBox(
 		Coordinate{Lat: 0, Lng: 0},
 		Coordinate{Lat: 50, Lng: 50})
@@ -73,9 +73,9 @@ func TestBWStylerSmushed(t *testing.T) {
 	h = append(h, &Coordinate{Lat: 4, Lng: 4})
 	h = append(h, &Coordinate{Lat: 5, Lng: 5})
 
-	styler := &BWStyler{}
+	visualizer := &BwPngVisualizer{}
 
-	img := styler.makeImage(&h, bounds, 2, 2)
+	img := visualizer.makeImage(&h, bounds, 2, 2)
 	assertImage(t, [][]color.Color{
 		[]color.Color{W, W},
 		[]color.Color{B, W}}, img)

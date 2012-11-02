@@ -197,7 +197,7 @@ func (r *RenderEngine) Render2(history *History, bounds *BoundingBox) (*Blob, er
 	data, err := Draw(
 		history,
 		bounds,
-		&BWStyler{},
+		&BwPngVisualizer{},
 		w,
 		h)
 	if err != nil {

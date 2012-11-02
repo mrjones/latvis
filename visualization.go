@@ -9,13 +9,13 @@ import (
 )
 
 // TODO(mrjones): kill this
-func Draw(history *History, bounds *BoundingBox, styler Styler, width, height int) (*[]byte, error) {
+func Draw(history *History, bounds *BoundingBox, visualizer Visualizer, width, height int) (*[]byte, error) {
 
-	return styler.Style(history, bounds, width, height)
+	return visualizer.Visualize(history, bounds, width, height)
 }
 
 // ======================================
-// ============== STYLE API =============
+// ========== VISUALIZATION API =========
 // ======================================
 
 // Turns a location history into a representation of that history
@@ -28,16 +28,15 @@ func Draw(history *History, bounds *BoundingBox, styler Styler, width, height in
 //
 // TODO(mrjones): return a ContentType along with []bytes
 // TODO(mrjones): do width & height make sense for non-PNG return types?
-// TODO(mrjones): does 'Styler' make sense as a name (especially for non-PNG)?
-type Styler interface {
-	Style(history *History,
+type Visualizer interface {
+	Visualize(history *History,
 		bounds *BoundingBox,
 		imageWidth,
 		imageHeight int) (*[]byte, error)
 }
 
 // ======================================
-// ============== BW STYLER =============
+// ========== BW PNG VISUALIZER =========
 // ======================================
 
 var (
@@ -49,14 +48,14 @@ type IntensityGrid struct {
 	Points [][]float64
 }
 
-type BWStyler struct{}
+type BwPngVisualizer struct{}
 
-func (r *BWStyler) Style(history *History, bounds *BoundingBox, width int, height int) (*[]byte, error) {
+func (r *BwPngVisualizer) Visualize(history *History, bounds *BoundingBox, width int, height int) (*[]byte, error) {
 	return imageToPNGBytes(r.makeImage(history, bounds, width, height))
 }
 
 // Seam for testing
-func (r* BWStyler) makeImage(history *History, bounds *BoundingBox, width int, height int) image.Image {
+func (r* BwPngVisualizer) makeImage(history *History, bounds *BoundingBox, width int, height int) image.Image {
 	grid := aggregateHistory(history, bounds, width, height)
 	intensityGrid := formatAsIntensityGrid(grid, width, height)
 	return intensityGridToBWImage(intensityGrid)
