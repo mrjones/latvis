@@ -194,10 +194,11 @@ func (r *RenderEngine) Execute(renderRequest *RenderRequest,
 func (r *RenderEngine) Render2(history *History, bounds *BoundingBox) (*Blob, error) {
 	w, h := imgSize(bounds, IMAGE_SIZE_PX)
 
-	data, err := Draw(
+	visualizer := &BwPngVisualizer{};
+
+	data, err := visualizer.Visualize(
 		history,
 		bounds,
-		&BwPngVisualizer{},
 		w,
 		h)
 	if err != nil {

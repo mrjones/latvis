@@ -8,12 +8,6 @@ import (
 	"math"
 )
 
-// TODO(mrjones): kill this
-func Draw(history *History, bounds *BoundingBox, visualizer Visualizer, width, height int) (*[]byte, error) {
-
-	return visualizer.Visualize(history, bounds, width, height)
-}
-
 // ======================================
 // ========== VISUALIZATION API =========
 // ======================================
