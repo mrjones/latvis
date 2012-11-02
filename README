@@ -15,3 +15,24 @@ $ appengineserver/appengine.sh run
 
 ### Uploading to the real appengine server ###
 appcfg.py update .
+
+
+Intended Architecture (in-progress):
+
+     +-----------------------------------+
+     |            HTTP / SERVER          |
+     | All HTTP (but non-OAuth) code     |
+     +-----------------------------------+
+                        |
+                       \|/
+     +-----------------------------------+
+     |         LATVIS CONTROLLER         |
+     | Currently called 'render_engine'  |
+     +-----------------------------------+
+       |                |              |
+      \|/              \|/            \|/
+ +-----------+  +---------------+  +---------+
+ | DATAFETCH |  | VISUALIZATION |  | BLOBS   |
+ | - OAuth   |  | - Interface + |  | Storage |
+ | - Lat API |  |   Impls.      |  |         |
+ +-----------+  +---------------+  +---------+
