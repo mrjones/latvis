@@ -44,7 +44,6 @@ appcfg.py update .
 
 List of significant TODOs
 =========================
-- Remove configHolder/inited from datafetch.go
 - Cleanup the sometimes extraneous need for callbackUrl in datafetch.go
 - Tests for the DataFetch module
 - Differentiate between in-progress Blob lookup and actual errors

@@ -200,7 +200,7 @@ func (m *MockRenderEngine) FetchImage(handle *Handle) (*Blob, error) {
 	return nil, nil
 }
 
-func (m *MockRenderEngine) Execute(renderReq *RenderRequest, verificationCode string, h *Handle) error {
+func (m *MockRenderEngine) Execute(renderReq *RenderRequest, verificationCode string, callbackUrl string, h *Handle) error {
 	m.lastRenderRequest = renderReq
 	m.lastHandle = h
 	m.lastVerificationCode = verificationCode

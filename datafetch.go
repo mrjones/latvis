@@ -32,7 +32,7 @@ const (
 
 // TODO(mrjones): document object lifetime
 type Authorizer interface {
-	StartAuthorize(applicationStats string) string
+	StartAuthorize(callbackUrl string, applicationStats string) string
 	FinishAuthorize(verificationCode string) (DataStream, error)
 }
 
@@ -53,13 +53,13 @@ type AuthorizerImpl struct {
 	oauthConfig *oauth.Config
 }
 
-func (auth *AuthorizerImpl) StartAuthorize(applicationState string) string {
-	return auth.oauthConfig.AuthCodeURL(applicationState)
+func (auth *AuthorizerImpl) StartAuthorize(callbackUrl, applicationState string) string {
+	return NewOauthConfig(callbackUrl).AuthCodeURL(applicationState)
 }
 
 func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream, error) {
 	// TODO(mrjones): remove reference to configHolder
-	transport := &oauth.Transport{Config: configHolder}
+	transport := &oauth.Transport{Config: auth.oauthConfig}
 
 	_, err := transport.Exchange(verificationCode)
 	if err != nil {
@@ -72,10 +72,6 @@ func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream
 func wrapError(wrapMsg string, cause error) error {
 	return errors.New(wrapMsg + ": " + cause.Error())
 }
-
-// TODO(mrjones): gross
-var inited = false
-var configHolder = &oauth.Config{}
 
 func NewOauthConfig(callbackUrl string) *oauth.Config {
 	return &oauth.Config{

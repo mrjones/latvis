@@ -158,6 +158,15 @@ func propogateParameter(base string, params *url.Values, key string) string {
 	return base
 }
 
+func callbackUrlFor(request *http.Request) string {
+	protocol := "http"
+	if request.TLS != nil {
+		protocol = "https"
+	}
+	return fmt.Sprintf("%s://%s/async_drawmap", protocol, request.Host)
+
+}
+
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	request.ParseForm()
 	state := ""
@@ -168,21 +177,15 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	state = propogateParameter(state, &request.Form, "start")
 	state = propogateParameter(state, &request.Form, "end")
 
-	protocol := "http"
-	if request.TLS != nil {
-		protocol = "https"
-	}
-	redirectUrl := fmt.Sprintf("%s://%s/async_drawmap", protocol, request.Host)
-	log.Printf("Redirect URL: '%s' + '%s'\n", redirectUrl, state)
+	callbackUrl := callbackUrlFor(request)
+	log.Printf("Callback URL: '%s' + '%s'\n", callbackUrl, state)
 
-	// TODO(mrjones): remove
-	configHolder = NewOauthConfig(redirectUrl)
-
-	authUrl := config.RenderEngineForRequest(request).GetOAuthUrl(redirectUrl, state)
+	authUrl := config.RenderEngineForRequest(request).GetOAuthUrl(callbackUrl, state)
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
 
-func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
+func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {	
+	fmt.Println("--> AsyncDrawMapHandler: " + request.Host + " / " + request.RequestURI)
 	request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
@@ -205,7 +208,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
-	fmt.Println("DrawMapWorker: ", request.URL.String())
+	fmt.Println("--> DrawMapWorker: " + request.Host + " / " + request.RequestURI)
 	request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
@@ -225,7 +228,9 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 		serveErrorWithLabel(response, "get verificationcode", errors.New("verification_code query parameter missing"))
 	}
 
-	err = config.RenderEngineForRequest(request).Execute(rr, verificationCode, handle)
+	callbackUrl := callbackUrlFor(request)
+	log.Printf("Callback URL: '%s'\n", callbackUrl)
+	err = config.RenderEngineForRequest(request).Execute(rr, verificationCode, callbackUrl, handle)
 	if err != nil {
 		serveErrorWithLabel(response, "engine.Render error", err)
 		return
