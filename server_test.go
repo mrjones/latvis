@@ -17,14 +17,15 @@ func TestObjectReady(t *testing.T) {
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
 
-	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
+	mockEngine := &MockRenderEngine{blobStore: &DumbBlobStoreProvider{Target: blobStore}}
+	cfg := &ServerConfig{renderEngine: mockEngine }
 
 	res1 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusOK, res1.StatusCode, "Request should have succeeded")
 	gt.AssertEqualM(t, "fail", res1.Body, "Should not have found the object")
 
 	h := &Handle{n1: 1, n2: 2, n3: 3, timestamp: 100}
-	err := cfg.blobStorage.OpenStore(nil).Store(h, &Blob{})
+	err := blobStore.Store(h, &Blob{})
 	gt.AssertNil(t, err)
 
 	res2 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
@@ -182,9 +183,15 @@ func randomDirectoryName() string {
 type MockRenderEngine struct {
 	lastRenderRequest *RenderRequest
 	lastHandle        *Handle
+	blobStore HttpBlobStoreProvider
 }
 
 func (m *MockRenderEngine) FetchImage(handle *Handle,httpRequest *http.Request) (*Blob, error) {
+	if m.blobStore == nil {
+		panic("No BlobStore configured!")
+	} else {
+		return m.blobStore.OpenStore(httpRequest).Fetch(handle)
+	}
 	return nil, nil
 }
 

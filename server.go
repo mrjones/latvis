@@ -60,7 +60,7 @@ func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	blob, err := config.blobStorage.OpenStore(request).Fetch(handle)
+	blob, err := config.renderEngine.FetchImage(handle, request)
 
 	if err != nil || blob == nil {
 		log.Println(err)
