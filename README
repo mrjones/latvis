@@ -1,4 +1,29 @@
+Application Architecture
+========================
 
+         +-----------------------------------+
+         |            HTTP / SERVER          |
+         | All HTTP (but non-OAuth) code     |
+         +-----------------------------------+
+                            |
+                           \|/
+         +-----------------------------------+
+         |         LATVIS CONTROLLER         |
+         | Currently called 'render_engine'  |
+         +-----------------------------------+
+           |                |              |
+          \|/              \|/            \|/
+     +-----------+  +---------------+  +---------+
+     | DATAFETCH |  | VISUALIZATION |  | BLOBS   |
+     | - OAuth   |  | - Interface + |  | Storage |
+     | - Lat API |  |   Impls.      |  |         |
+     +-----------+  +---------------+  +---------+
+
+
+Building and Installing
+=======================
+
+TODO(mrjones): Update these given the split into appengine and non-appengine packages.
 
 ### Dependencies ###
 goinstall -u github.com/mrjones/oauth
@@ -17,22 +42,14 @@ $ appengineserver/appengine.sh run
 appcfg.py update .
 
 
-Intended Architecture (in-progress):
-
-     +-----------------------------------+
-     |            HTTP / SERVER          |
-     | All HTTP (but non-OAuth) code     |
-     +-----------------------------------+
-                        |
-                       \|/
-     +-----------------------------------+
-     |         LATVIS CONTROLLER         |
-     | Currently called 'render_engine'  |
-     +-----------------------------------+
-       |                |              |
-      \|/              \|/            \|/
- +-----------+  +---------------+  +---------+
- | DATAFETCH |  | VISUALIZATION |  | BLOBS   |
- | - OAuth   |  | - Interface + |  | Storage |
- | - Lat API |  |   Impls.      |  |         |
- +-----------+  +---------------+  +---------+
+List of significant TODOs
+=========================
+- Remove configHolder/inited from datafetch.go
+- Cleanup the sometimes extraneous need for callbackUrl in datafetch.go
+- Tests for the DataFetch module
+- Differentiate between in-progress Blob lookup and actual errors
+- Automate, or at least clean up all the URL marshalling and unmarshalling
+- Create more visualizers
+- Make sure RenderEngine isn't coupled to server.go by writing a command-line version of Latvis
+- Bring back localserver.go (non-Appengine HTTP server)
+- Fix TextAuthorization in server_test.go
