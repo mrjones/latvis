@@ -42,7 +42,13 @@ func NewEnvironment(blobStore BlobStore,
 	taskQueue UrlTaskQueue,
 	logger Logger,
 	httpTransport http.RoundTripper) *Environment {
-	return &Environment{blobStore: blobStore, taskQueue: taskQueue, logger: logger, httpTransport: httpTransport}
+
+	return &Environment{
+		blobStore: blobStore,
+		taskQueue: taskQueue,
+		logger: logger,
+		httpTransport: httpTransport,
+	}
 }
 
 // It's assumed that an Environment will be request-specific (it is for Appengine),

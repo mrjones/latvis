@@ -17,8 +17,7 @@ func TestObjectReady(t *testing.T) {
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
 
-	mockEngine := &MockRenderEngine{blobStore: blobStore}
-	cfg := &Environment{mockRenderEngine: mockEngine}
+	cfg := NewEnvironment(blobStore, nil, nil, nil)
 
 	res1 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusOK, res1.StatusCode, "Request should have succeeded")
