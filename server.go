@@ -187,7 +187,7 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
 
-func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {	
+func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	env := envFactory.ForRequest(request)
 
 	fmt.Println("--> AsyncDrawMapHandler: " + request.Host + " / " + request.RequestURI)
@@ -219,21 +219,21 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
-    env.Errorf("deserializeRenderRequest: %s", err)
+		env.Errorf("deserializeRenderRequest: %s", err)
 		serveErrorWithLabel(response, "deserializeRenderRequest() error", err)
 		return
 	}
 
 	handle, err := parseHandleFromParams(&request.Form)
 	if err != nil {
-    env.Errorf("parseHandleFromParams: %s", err)
+		env.Errorf("parseHandleFromParams: %s", err)
 		serveErrorWithLabel(response, "parseHandleFromParams error", err)
 		return
 	}
 
 	verificationCode := request.FormValue("verification_code")
 	if verificationCode == "" {
-    env.Errorf("verification_code query parameter missing")
+		env.Errorf("verification_code query parameter missing")
 		serveErrorWithLabel(response, "get verificationcode", errors.New("verification_code query parameter missing"))
 	}
 
@@ -241,7 +241,7 @@ func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
 	log.Printf("Callback URL: '%s'\n", callbackUrl)
 	err = env.RenderEngineForRequest(request).Execute(rr, verificationCode, callbackUrl, handle)
 	if err != nil {
-    env.Errorf("renderEngine error: %s", err)
+		env.Errorf("renderEngine error: %s", err)
 		serveErrorWithLabel(response, "engine.Render error", err)
 		return
 	}

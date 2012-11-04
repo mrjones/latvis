@@ -39,7 +39,7 @@ type Authorizer interface {
 // TODO(mrjones): remove callback url?
 func GetAuthorizer(callbackUrl string, httpTransport http.RoundTripper) Authorizer {
 	return &AuthorizerImpl{
-		oauthConfig: NewOauthConfig(callbackUrl),
+		oauthConfig:   NewOauthConfig(callbackUrl),
 		httpTransport: httpTransport,
 	}
 }
@@ -53,7 +53,7 @@ type DataStream interface {
 // ======================================
 
 type AuthorizerImpl struct {
-	oauthConfig *oauth.Config
+	oauthConfig   *oauth.Config
 	httpTransport http.RoundTripper
 }
 
@@ -63,7 +63,7 @@ func (auth *AuthorizerImpl) StartAuthorize(callbackUrl, applicationState string)
 
 func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream, error) {
 	oauthTransport := &oauth.Transport{
-		Config: auth.oauthConfig,
+		Config:    auth.oauthConfig,
 		Transport: auth.httpTransport,
 	}
 

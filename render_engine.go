@@ -14,7 +14,7 @@ import (
 type RenderRequest struct {
 	// The geographic area, specified with a box of latitude/longitude
 	// coordinates, to consider when rendering.
-	bounds     *BoundingBox
+	bounds *BoundingBox
 
 	// The time period to consider when rendering.
 	start, end time.Time
@@ -58,7 +58,7 @@ func NewRenderEngine(blobStore BlobStore, httpTransport http.RoundTripper) Rende
 // ======================================
 
 type RenderEngine struct {
-	blobStore BlobStore
+	blobStore     BlobStore
 	httpTransport http.RoundTripper
 }
 

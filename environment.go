@@ -28,11 +28,11 @@ import (
 // requests, etc.) via the Environment rather than directly in order to support
 // both unit-testing, and also portability (e.g. to the Google Appengine sandbox).
 type Environment struct {
-	blobStore  BlobStore
-	taskQueue    UrlTaskQueue
+	blobStore        BlobStore
+	taskQueue        UrlTaskQueue
 	mockRenderEngine RenderEngineInterface
-	logger       Logger
-	httpTransport http.RoundTripper
+	logger           Logger
+	httpTransport    http.RoundTripper
 }
 
 func (env *Environment) Errorf(format string, args ...interface{}) {
@@ -106,7 +106,7 @@ func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) error {
 	panic("Not Implemented")
 }
 
-type DefaultLogger struct { }
+type DefaultLogger struct{}
 
 func (l DefaultLogger) Errorf(format string, args ...interface{}) {
 	log.Printf(format, args)
