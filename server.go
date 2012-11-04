@@ -206,7 +206,7 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	serializeHandleToParams(handle, &params)
 	params.Set("verification_code", request.Form.Get("code"))
 
-	env.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
+	env.taskQueue.Enqueue("/drawmap_worker", &params)
 
 	displayImageUrl := serializeHandleToUrl(handle, "png", "display")
 	http.Redirect(response, request, displayImageUrl, http.StatusFound)

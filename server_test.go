@@ -37,7 +37,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
 
-	cfg := &Environment{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
+	cfg := &Environment{blobStore: blobStore}
 
 	// TODO(mrjones): check error messages
 
@@ -83,7 +83,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 
 func TestAsyncTaskCreation(t *testing.T) {
 	q := &MockTaskQueue{}
-	cfg := &Environment{taskQueue: &MockTaskQueueProvider{target: q}}
+	cfg := &Environment{taskQueue: q}
 	s := "lllat=1.0&lllng=2.0&urlat%3d3.0&urlng=4.0&start=5&end=6"
 	u := "http://myhost.com/async_drawmap/?code=vercode&state=" + url.QueryEscape(s)
 
@@ -208,15 +208,6 @@ func (m *MockRenderEngine) Execute(renderReq *RenderRequest, verificationCode st
 	return nil
 }
 
-// MockTaskQueue
-type MockTaskQueueProvider struct {
-	target *MockTaskQueue
-}
-
-func (f *MockTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
-	return f.target
-}
-
 type MockTaskQueue struct {
 	lastUrl    string
 	lastParams *url.Values
@@ -226,17 +217,6 @@ func (q *MockTaskQueue) Enqueue(url string, params *url.Values) error {
 	q.lastUrl = url
 	q.lastParams = params
 	return nil
-}
-
-//
-// DumbBlobStoreProvider
-//
-type DumbBlobStoreProvider struct {
-	Target BlobStore
-}
-
-func (p *DumbBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
-	return p.Target
 }
 
 //

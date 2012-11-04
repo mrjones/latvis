@@ -39,15 +39,11 @@ func (cf *StaticEnvironmentFactory) ForRequest(request *http.Request) *Environme
 // Primarily designed to separate framework-specific components (like storage)
 // from the main application logic.
 type Environment struct {
-	blobStorage  HttpBlobStoreProvider
-	taskQueue    HttpUrlTaskQueueProvider
+	blobStore  BlobStore
+	taskQueue    UrlTaskQueue
 	mockRenderEngine RenderEngineInterface
 	logger       Logger
 	httpTransport http.RoundTripper
-}
-
-type Logger interface {
-	Errorf(format string, args ...interface{})
 }
 
 func (env *Environment) Errorf(format string, args ...interface{}) {
@@ -60,41 +56,28 @@ func (env *Environment) RenderEngineForRequest(request *http.Request) RenderEngi
 	if env.mockRenderEngine != nil {
 		return env.mockRenderEngine
 	}
-	return NewRenderEngine(env.blobStorage.OpenStore(request), env.httpTransport)
+	return NewRenderEngine(env.blobStore, env.httpTransport)
 }
 
 
 // Use this instead of &Environment{...} directly to get compile-timer
 // errors when new dependencies are introduced.
-func NewEnvironment(blobStorage HttpBlobStoreProvider,
-	taskQueue HttpUrlTaskQueueProvider,
-	logger Logger) *Environment {
-	return &Environment{blobStorage: blobStorage, taskQueue: taskQueue, logger: logger}
+func NewEnvironment(blobStore BlobStore,
+	taskQueue UrlTaskQueue,
+	logger Logger,
+	httpTransport http.RoundTripper) *Environment {
+	return &Environment{blobStore: blobStore, taskQueue: taskQueue, logger: logger, httpTransport: httpTransport}
 }
 
+type Logger interface {
+	Errorf(format string, args ...interface{})
+}
 type DefaultLogger struct { }
 
 func (l DefaultLogger) Errorf(format string, args ...interface{}) {
 	log.Printf(format, args)
 }
 
-// PROVIDERS
-//
-// Since Appengine libraries depend on a http.Request (indirectly, through
-// appengine.Context), I've introduced these "provider" classes.  You pass
-// the http.Request to a provider, and get back a class that doesn't depend
-// on http.Request, meaning it can have a clean interface.  This feels more
-// like Java than Go, and I'm not yet sure it was the right decision, however
-// it means the other interfaces can all be clean (without dumb http.Request
-// params floating everywhere).
-type HttpBlobStoreProvider interface {
-	// BlobStore is defined in blobs.go
-	OpenStore(req *http.Request) BlobStore
-}
-
-type HttpUrlTaskQueueProvider interface {
-	GetQueue(req *http.Request) UrlTaskQueue
-}
 
 // UrlTaskQueue
 //
@@ -119,12 +102,6 @@ type UrlTaskQueue interface {
 //
 // This hasn't been implemented yet, but the idea is that it would just call
 // the URL over HTTP direcly, and block waiting for a response.
-type SyncUrlTaskQueueProvider struct{}
-
-func (p *SyncUrlTaskQueueProvider) GetQueue(req *http.Request) UrlTaskQueue {
-	panic("You need to implement me")
-}
-
 type SyncUrlTaskQueue struct {
 	baseUrl string
 }
@@ -137,15 +114,4 @@ func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) error {
 	//	req.header = http.Header{}
 	//	req.URL = u
 	panic("Not Implemented")
-}
-
-// LocalFsBlobStore
-//
-// Defers all the work to LocalFsBlobStore in blobs.go
-type LocalFSBlobStoreProvider struct {
-	Location string
-}
-
-func (p *LocalFSBlobStoreProvider) OpenStore(req *http.Request) BlobStore {
-	return NewLocalFSBlobStore(p.Location)
 }
