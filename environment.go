@@ -1,15 +1,3 @@
-// High level note about this file
-//
-// Using appengine services (datastore, urlfetcher) need an appengine.Context
-// which requires the http.Request at construction time.
-//
-// These interfaces are for isolating the appengine specific code, but are still
-// awkward since they require an http.Request to construct seemingly unrelated
-// objects.
-//
-// Some default implementations are also provided in this file, however, a
-// number of them are only for testing and shouldn't be used in deployed
-// servers.
 package latvis
 
 import (
