@@ -44,9 +44,9 @@ func NewEnvironment(blobStore BlobStore,
 	httpTransport http.RoundTripper) *Environment {
 
 	return &Environment{
-		blobStore: blobStore,
-		taskQueue: taskQueue,
-		logger: logger,
+		blobStore:     blobStore,
+		taskQueue:     taskQueue,
+		logger:        logger,
 		httpTransport: httpTransport,
 	}
 }
