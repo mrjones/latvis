@@ -1,6 +1,8 @@
 package latvis
 
 import (
+	"fmt"
+	"net/http"
 	"time"
 )
 
@@ -47,8 +49,8 @@ type RenderEngineInterface interface {
 	FetchImage(handle *Handle) (*Blob, error)
 }
 
-func NewRenderEngine(blobStore BlobStore) RenderEngineInterface {
-	return &RenderEngine{blobStore: blobStore}
+func NewRenderEngine(blobStore BlobStore, httpTransport http.RoundTripper) RenderEngineInterface {
+	return &RenderEngine{blobStore: blobStore, httpTransport: httpTransport}
 }
 
 // ======================================
@@ -57,10 +59,11 @@ func NewRenderEngine(blobStore BlobStore) RenderEngineInterface {
 
 type RenderEngine struct {
 	blobStore BlobStore
+	httpTransport http.RoundTripper
 }
 
 func (r *RenderEngine) GetOAuthUrl(callbackUrl string, applicationState string) string {
-	return GetAuthorizer(callbackUrl).StartAuthorize(callbackUrl, applicationState)
+	return GetAuthorizer(callbackUrl, r.httpTransport).StartAuthorize(callbackUrl, applicationState)
 }
 
 func (r *RenderEngine) FetchImage(handle *Handle) (*Blob, error) {
@@ -72,24 +75,24 @@ func (r *RenderEngine) Execute(renderRequest *RenderRequest,
 	callbackUrl string, // TODO(mrjones): make better?
 	handle *Handle) error {
 
-	dataStream, err := GetAuthorizer(callbackUrl).FinishAuthorize(verificationCode)
+	dataStream, err := GetAuthorizer(callbackUrl, r.httpTransport).FinishAuthorize(verificationCode)
 	if err != nil {
-		return err
+		return fmt.Errorf("FinishAuthorize failed: %s", err)
 	}
 
 	history, err := dataStream.FetchRange(renderRequest.start, renderRequest.end)
 	if err != nil {
-		return err
+		return fmt.Errorf("FetchRange failed: %s", err)
 	}
 
 	blob, err := r.MakePng(history, renderRequest.bounds)
 	if err != nil {
-		return err
+		return fmt.Errorf("MakePng failed: %s", err)
 	}
 
 	err = r.blobStore.Store(handle, blob)
 	if err != nil {
-		return err
+		return fmt.Errorf("Store failed: %s", err)
 	}
 
 	return nil

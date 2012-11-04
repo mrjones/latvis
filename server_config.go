@@ -13,33 +13,69 @@
 package latvis
 
 import (
+	"log"
 	"net/http"
 	"net/url"
 )
 
-// ServerConfig represents all the dependencies for a latvis server.
+type EnvironmentFactory interface {
+	ForRequest(request *http.Request) *Environment
+}
+
+type StaticEnvironmentFactory struct {
+	staticEnvironment *Environment
+}
+
+func NewStaticEnvironmentFactory(staticEnvironment *Environment) EnvironmentFactory {
+	return &StaticEnvironmentFactory{staticEnvironment: staticEnvironment}
+}
+
+func (cf *StaticEnvironmentFactory) ForRequest(request *http.Request) *Environment {
+	return cf.staticEnvironment
+}
+
+// Environment represents all the dependencies for a latvis server.
 //
 // Primarily designed to separate framework-specific components (like storage)
 // from the main application logic.
-type ServerConfig struct {
+type Environment struct {
 	blobStorage  HttpBlobStoreProvider
 	taskQueue    HttpUrlTaskQueueProvider
 	mockRenderEngine RenderEngineInterface
+	logger       Logger
+	httpTransport http.RoundTripper
 }
 
-func (config *ServerConfig) RenderEngineForRequest(request *http.Request) RenderEngineInterface {
-	if config.mockRenderEngine != nil {
-		return config.mockRenderEngine
+type Logger interface {
+	Errorf(format string, args ...interface{})
+}
+
+func (env *Environment) Errorf(format string, args ...interface{}) {
+	if env.logger != nil {
+		env.logger.Errorf(format, args)
 	}
-	return NewRenderEngine(config.blobStorage.OpenStore(request))
+}
+
+func (env *Environment) RenderEngineForRequest(request *http.Request) RenderEngineInterface {
+	if env.mockRenderEngine != nil {
+		return env.mockRenderEngine
+	}
+	return NewRenderEngine(env.blobStorage.OpenStore(request), env.httpTransport)
 }
 
 
-// Use this instead of &ServerConfig{...} directly to get compile-timer
+// Use this instead of &Environment{...} directly to get compile-timer
 // errors when new dependencies are introduced.
-func NewConfig(blobStorage HttpBlobStoreProvider,
-	taskQueue HttpUrlTaskQueueProvider) *ServerConfig {
-	return &ServerConfig{blobStorage: blobStorage, taskQueue: taskQueue}
+func NewEnvironment(blobStorage HttpBlobStoreProvider,
+	taskQueue HttpUrlTaskQueueProvider,
+	logger Logger) *Environment {
+	return &Environment{blobStorage: blobStorage, taskQueue: taskQueue, logger: logger}
+}
+
+type DefaultLogger struct { }
+
+func (l DefaultLogger) Errorf(format string, args ...interface{}) {
+	log.Printf(format, args)
 }
 
 // PROVIDERS

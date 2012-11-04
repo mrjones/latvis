@@ -10,14 +10,14 @@ import (
 	"text/template"
 )
 
-var config *ServerConfig
+var envFactory EnvironmentFactory
 
-func UseConfig(serverConfig *ServerConfig) {
-	config = serverConfig
+func UseEnvironmentFactory(serverEnvFactory EnvironmentFactory) {
+	envFactory = serverEnvFactory
 }
 
-func Setup(serverConfig *ServerConfig) {
-	UseConfig(serverConfig)
+func Setup(serverEnvFactory EnvironmentFactory) {
+	UseEnvironmentFactory(serverEnvFactory)
 
 	// Starts the process, redirecting to Google for OAuth credentials
 	http.HandleFunc("/authorize", AuthorizeHandler)
@@ -54,13 +54,14 @@ func Serve() {
 }
 
 func IsReadyHandler(response http.ResponseWriter, request *http.Request) {
+	env := envFactory.ForRequest(request)
 	handle, err := parseHandleFromUrl(request.URL.Path)
 	if err != nil {
 		serveErrorWithLabel(response, "error parsing blob handle", err)
 		return
 	}
 
-	blob, err := config.RenderEngineForRequest(request).FetchImage(handle)
+	blob, err := env.RenderEngineForRequest(request).FetchImage(handle)
 
 	if err != nil || blob == nil {
 		log.Println(err)
@@ -125,13 +126,14 @@ func ResultPageHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func RenderHandler(response http.ResponseWriter, request *http.Request) {
+	env := envFactory.ForRequest(request)
 	handle, err := parseHandleFromUrl(request.URL.Path)
 	if err != nil {
 		serveErrorWithLabel(response, "(Sync) parseHandleFromUrl error", err)
 		return
 	}
 
-	blob, err := config.RenderEngineForRequest(request).FetchImage(handle)
+	blob, err := env.RenderEngineForRequest(request).FetchImage(handle)
 	if err != nil {
 		serveErrorWithLabel(response, "RenderHandler/OpenStore error", err)
 		return
@@ -168,6 +170,7 @@ func callbackUrlFor(request *http.Request) string {
 }
 
 func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
+	env := envFactory.ForRequest(request)
 	request.ParseForm()
 	state := ""
 	state = propogateParameter(state, &request.Form, "lllat")
@@ -180,11 +183,13 @@ func AuthorizeHandler(response http.ResponseWriter, request *http.Request) {
 	callbackUrl := callbackUrlFor(request)
 	log.Printf("Callback URL: '%s' + '%s'\n", callbackUrl, state)
 
-	authUrl := config.RenderEngineForRequest(request).GetOAuthUrl(callbackUrl, state)
+	authUrl := env.RenderEngineForRequest(request).GetOAuthUrl(callbackUrl, state)
 	http.Redirect(response, request, authUrl, http.StatusFound)
 }
 
 func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {	
+	env := envFactory.ForRequest(request)
+
 	fmt.Println("--> AsyncDrawMapHandler: " + request.Host + " / " + request.RequestURI)
 	request.ParseForm()
 
@@ -201,37 +206,42 @@ func AsyncDrawMapHandler(response http.ResponseWriter, request *http.Request) {
 	serializeHandleToParams(handle, &params)
 	params.Set("verification_code", request.Form.Get("code"))
 
-	config.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
+	env.taskQueue.GetQueue(request).Enqueue("/drawmap_worker", &params)
 
 	displayImageUrl := serializeHandleToUrl(handle, "png", "display")
 	http.Redirect(response, request, displayImageUrl, http.StatusFound)
 }
 
 func DrawMapWorker(response http.ResponseWriter, request *http.Request) {
+	env := envFactory.ForRequest(request)
 	fmt.Println("--> DrawMapWorker: " + request.Host + " / " + request.RequestURI)
 	request.ParseForm()
 
 	rr, err := deserializeRenderRequest(&request.Form)
 	if err != nil {
+    env.Errorf("deserializeRenderRequest: %s", err)
 		serveErrorWithLabel(response, "deserializeRenderRequest() error", err)
 		return
 	}
 
 	handle, err := parseHandleFromParams(&request.Form)
 	if err != nil {
+    env.Errorf("parseHandleFromParams: %s", err)
 		serveErrorWithLabel(response, "parseHandleFromParams error", err)
 		return
 	}
 
 	verificationCode := request.FormValue("verification_code")
 	if verificationCode == "" {
+    env.Errorf("verification_code query parameter missing")
 		serveErrorWithLabel(response, "get verificationcode", errors.New("verification_code query parameter missing"))
 	}
 
 	callbackUrl := callbackUrlFor(request)
 	log.Printf("Callback URL: '%s'\n", callbackUrl)
-	err = config.RenderEngineForRequest(request).Execute(rr, verificationCode, callbackUrl, handle)
+	err = env.RenderEngineForRequest(request).Execute(rr, verificationCode, callbackUrl, handle)
 	if err != nil {
+    env.Errorf("renderEngine error: %s", err)
 		serveErrorWithLabel(response, "engine.Render error", err)
 		return
 	}

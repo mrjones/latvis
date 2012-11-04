@@ -18,7 +18,7 @@ func TestObjectReady(t *testing.T) {
 	defer os.RemoveAll(dir)
 
 	mockEngine := &MockRenderEngine{blobStore: blobStore}
-	cfg := &ServerConfig{mockRenderEngine: mockEngine}
+	cfg := &Environment{mockRenderEngine: mockEngine}
 
 	res1 := execute(t, "http://myhost.com/is_ready/100-1-2-3.png", IsReadyHandler, cfg)
 	gt.AssertEqualM(t, http.StatusOK, res1.StatusCode, "Request should have succeeded")
@@ -37,7 +37,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 	dir, blobStore := setUpFakeBlobStore(t)
 	defer os.RemoveAll(dir)
 
-	cfg := &ServerConfig{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
+	cfg := &Environment{blobStorage: &DumbBlobStoreProvider{Target: blobStore}}
 
 	// TODO(mrjones): check error messages
 
@@ -63,7 +63,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 }
 
 //func TestAuthorization(t *testing.T) {
-//	cfg := &ServerConfig{
+//	cfg := &Environment{
 //		secretStorage: &InMemoryOauthSecretStoreProvider{},
 //		httpClient:    &StandardHttpClientProvider{},
 //	}
@@ -83,7 +83,7 @@ func TestObjectReadyMalformedUrl(t *testing.T) {
 
 func TestAsyncTaskCreation(t *testing.T) {
 	q := &MockTaskQueue{}
-	cfg := &ServerConfig{taskQueue: &MockTaskQueueProvider{target: q}}
+	cfg := &Environment{taskQueue: &MockTaskQueueProvider{target: q}}
 	s := "lllat=1.0&lllng=2.0&urlat%3d3.0&urlng=4.0&start=5&end=6"
 	u := "http://myhost.com/async_drawmap/?code=vercode&state=" + url.QueryEscape(s)
 
@@ -114,7 +114,7 @@ func TestAsyncTaskCreation(t *testing.T) {
 
 func TestAsyncWorker(t *testing.T) {
 	mockEngine := &MockRenderEngine{}
-	cfg := &ServerConfig{mockRenderEngine: mockEngine}
+	cfg := &Environment{mockRenderEngine: mockEngine}
 
 	s := "lllat=1.0&lllng=2.0&urlat=3.0&urlng=4.0&start=5&end=6"
 	u := "http://myhost.com/drawmap_worker/?state=" + url.QueryEscape(s) + "&access_token=abc&refresh_token=def&expiration_time=1234567890&hStamp=100&h1=1&h2=2&h3=3"
@@ -141,7 +141,7 @@ func TestAsyncWorker(t *testing.T) {
 }
 
 func TestDisplayPage(t *testing.T) {
-	cfg := &ServerConfig{}
+	cfg := &Environment{}
 
 	u := "http://myhost.com/display/100-1-2-3.png"
 	res := execute(t, u, ResultPageHandler, cfg)
@@ -163,8 +163,8 @@ func setUpFakeBlobStore(t *testing.T) (string, BlobStore) {
 func execute(t *testing.T,
 	url string,
 	handler func(http.ResponseWriter, *http.Request),
-	cfg *ServerConfig) *FakeResponse {
-	UseConfig(cfg)
+	env *Environment) *FakeResponse {
+	UseEnvironmentFactory(NewStaticEnvironmentFactory(env))
 
 	req, err := http.NewRequest("GET", url, nil)
 	gt.AssertNil(t, err)

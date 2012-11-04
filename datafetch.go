@@ -37,8 +37,11 @@ type Authorizer interface {
 }
 
 // TODO(mrjones): remove callback url?
-func GetAuthorizer(callbackUrl string) Authorizer {
-	return &AuthorizerImpl{oauthConfig: NewOauthConfig(callbackUrl)}
+func GetAuthorizer(callbackUrl string, httpTransport http.RoundTripper) Authorizer {
+	return &AuthorizerImpl{
+		oauthConfig: NewOauthConfig(callbackUrl),
+		httpTransport: httpTransport,
+	}
 }
 
 type DataStream interface {
@@ -51,6 +54,7 @@ type DataStream interface {
 
 type AuthorizerImpl struct {
 	oauthConfig *oauth.Config
+	httpTransport http.RoundTripper
 }
 
 func (auth *AuthorizerImpl) StartAuthorize(callbackUrl, applicationState string) string {
@@ -58,15 +62,17 @@ func (auth *AuthorizerImpl) StartAuthorize(callbackUrl, applicationState string)
 }
 
 func (auth *AuthorizerImpl) FinishAuthorize(verificationCode string) (DataStream, error) {
-	// TODO(mrjones): remove reference to configHolder
-	transport := &oauth.Transport{Config: auth.oauthConfig}
-
-	_, err := transport.Exchange(verificationCode)
-	if err != nil {
-		return nil, err
+	oauthTransport := &oauth.Transport{
+		Config: auth.oauthConfig,
+		Transport: auth.httpTransport,
 	}
 
-	return &DataStreamImpl{client: &ApiClient{httpClient: transport.Client()}}, nil
+	_, err := oauthTransport.Exchange(verificationCode)
+	if err != nil {
+		return nil, fmt.Errorf("transport.Exchange failed: %s", err)
+	}
+
+	return &DataStreamImpl{client: &ApiClient{httpClient: oauthTransport.Client()}}, nil
 }
 
 func wrapError(wrapMsg string, cause error) error {
