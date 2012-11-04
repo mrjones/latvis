@@ -18,26 +18,15 @@ import (
 	"net/url"
 )
 
-type EnvironmentFactory interface {
-	ForRequest(request *http.Request) *Environment
-}
+// ======================================
+// ========== ENVIRONMENT API ===========
+// ======================================
 
-type StaticEnvironmentFactory struct {
-	staticEnvironment *Environment
-}
-
-func NewStaticEnvironmentFactory(staticEnvironment *Environment) EnvironmentFactory {
-	return &StaticEnvironmentFactory{staticEnvironment: staticEnvironment}
-}
-
-func (cf *StaticEnvironmentFactory) ForRequest(request *http.Request) *Environment {
-	return cf.staticEnvironment
-}
-
-// Environment represents all the dependencies for a latvis server.
+// Environment encapsulates the dependencies for a latvis server.
 //
-// Primarily designed to separate framework-specific components (like storage)
-// from the main application logic.
+// Applications should prefer to access system level services (data storage, network
+// requests, etc.) via the Environment rather than directly in order to support
+// both unit-testing, and also portability (e.g. to the Google Appengine sandbox).
 type Environment struct {
 	blobStore  BlobStore
 	taskQueue    UrlTaskQueue
@@ -59,7 +48,6 @@ func (env *Environment) RenderEngineForRequest(request *http.Request) RenderEngi
 	return NewRenderEngine(env.blobStore, env.httpTransport)
 }
 
-
 // Use this instead of &Environment{...} directly to get compile-timer
 // errors when new dependencies are introduced.
 func NewEnvironment(blobStore BlobStore,
@@ -69,15 +57,19 @@ func NewEnvironment(blobStore BlobStore,
 	return &Environment{blobStore: blobStore, taskQueue: taskQueue, logger: logger, httpTransport: httpTransport}
 }
 
+// It's assumed that an Environment will be request-specific (it is for Appengine),
+// an EnvironmentFactory will create a new Environment for any given request.
+type EnvironmentFactory interface {
+	ForRequest(request *http.Request) *Environment
+}
+
+// ======================================
+// ========= SYSTEM/SERVICE APIS ========
+// ======================================
+
 type Logger interface {
 	Errorf(format string, args ...interface{})
 }
-type DefaultLogger struct { }
-
-func (l DefaultLogger) Errorf(format string, args ...interface{}) {
-	log.Printf(format, args)
-}
-
 
 // UrlTaskQueue
 //
@@ -92,11 +84,9 @@ type UrlTaskQueue interface {
 	Enqueue(url string, params *url.Values) error
 }
 
-// DEFAULT IMPLEMENTATIONS
-//
-// Provided when running outside of the appengine framework, these are mostly
-// simple implementations that can be used for testing, but might not make
-// sense for a deployed, production server
+// ======================================
+// ======= DEFAULT IMPLEMENTATIONS ======
+// ======================================
 
 // SyncUrlTaskQueue
 //
@@ -114,4 +104,22 @@ func (q *SyncUrlTaskQueue) Enqueue(url string, params *url.Values) error {
 	//	req.header = http.Header{}
 	//	req.URL = u
 	panic("Not Implemented")
+}
+
+type DefaultLogger struct { }
+
+func (l DefaultLogger) Errorf(format string, args ...interface{}) {
+	log.Printf(format, args)
+}
+
+type StaticEnvironmentFactory struct {
+	staticEnvironment *Environment
+}
+
+func NewStaticEnvironmentFactory(staticEnvironment *Environment) EnvironmentFactory {
+	return &StaticEnvironmentFactory{staticEnvironment: staticEnvironment}
+}
+
+func (cf *StaticEnvironmentFactory) ForRequest(request *http.Request) *Environment {
+	return cf.staticEnvironment
 }
