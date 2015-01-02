@@ -21,13 +21,13 @@ func serializeRenderRequest(r *RenderRequest, m *url.Values) {
 	}
 	var m2 = make(url.Values)
 
-	m2.Add("start", strconv.FormatInt(r.start.Unix(), 10))
-	m2.Add("end", strconv.FormatInt(r.end.Unix(), 10))
+	m2.Add("start", strconv.FormatInt(r.Start.Unix(), 10))
+	m2.Add("end", strconv.FormatInt(r.End.Unix(), 10))
 
-	m2.Add("lllat", strconv.FormatFloat(r.bounds.LowerLeft().Lat, 'f', 16, 64))
-	m2.Add("lllng", strconv.FormatFloat(r.bounds.LowerLeft().Lng, 'f', 16, 64))
-	m2.Add("urlat", strconv.FormatFloat(r.bounds.UpperRight().Lat, 'f', 16, 64))
-	m2.Add("urlng", strconv.FormatFloat(r.bounds.UpperRight().Lng, 'f', 16, 64))
+	m2.Add("lllat", strconv.FormatFloat(r.Bounds.LowerLeft().Lat, 'f', 16, 64))
+	m2.Add("lllng", strconv.FormatFloat(r.Bounds.LowerLeft().Lng, 'f', 16, 64))
+	m2.Add("urlat", strconv.FormatFloat(r.Bounds.UpperRight().Lat, 'f', 16, 64))
+	m2.Add("urlng", strconv.FormatFloat(r.Bounds.UpperRight().Lng, 'f', 16, 64))
 
 	m.Add("state", m2.Encode())
 }
@@ -77,9 +77,9 @@ func deserializeRenderRequest(rawParams *url.Values) (*RenderRequest, error) {
 	}
 
 	return &RenderRequest{
-		bounds: bounds,
-		start:  start,
-		end:    end,
+		Bounds: bounds,
+		Start:  start,
+		End:    end,
 	}, nil
 }
 

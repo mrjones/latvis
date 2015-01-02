@@ -14,10 +14,13 @@ import (
 type RenderRequest struct {
 	// The geographic area, specified with a box of latitude/longitude
 	// coordinates, to consider when rendering.
-	bounds *BoundingBox
+	Bounds *BoundingBox
 
 	// The time period to consider when rendering.
-	start, end time.Time
+	Start, End time.Time
+
+	// TODO(mrjones): make this a better API
+	VisualizationStyle string
 }
 
 // TODO(mrjones): I think I want to call this something like "LatvisController"
@@ -80,14 +83,14 @@ func (r *RenderEngine) Execute(renderRequest *RenderRequest,
 		return fmt.Errorf("FinishAuthorize failed: %s", err)
 	}
 
-	history, err := dataStream.FetchRange(renderRequest.start, renderRequest.end)
+	history, err := dataStream.FetchRange(renderRequest.Start, renderRequest.End)
 	if err != nil {
 		return fmt.Errorf("FetchRange failed: %s", err)
 	}
 
-	blob, err := r.MakePng(history, renderRequest.bounds)
+	blob, err := r.MakeVisualization(history, renderRequest.Bounds, renderRequest.VisualizationStyle)
 	if err != nil {
-		return fmt.Errorf("MakePng failed: %s", err)
+		return fmt.Errorf("MakeVisualization failed: %s", err)
 	}
 
 	err = r.blobStore.Store(handle, blob)
@@ -102,10 +105,16 @@ const (
 	IMAGE_SIZE_PX = 512
 )
 
-func (r *RenderEngine) MakePng(history *History, bounds *BoundingBox) (*Blob, error) {
+func (r *RenderEngine) MakeVisualization(
+	history *History, bounds *BoundingBox, style string) (*Blob, error) {
 	w, h := imgSize(bounds, IMAGE_SIZE_PX)
 
-	visualizer := &BwPngVisualizer{}
+	var visualizer Visualizer
+	if (style == "svg") {
+		visualizer = &SvgVisualizer{}
+	} else {
+		visualizer = &BwPngVisualizer{}
+	}
 
 	data, err := visualizer.Visualize(
 		history,

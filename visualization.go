@@ -2,6 +2,7 @@ package latvis
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -186,4 +187,83 @@ func (g *Grid) Width() int {
 
 func (g *Grid) Height() int {
 	return g.height
+}
+
+// ======================================
+// =========== SVG VISUALIZER ===========
+// ======================================
+
+type SvgVisualizer struct{}
+
+func histogram(grid *Grid, resolution int64) {
+	max := int64(0)
+	sum := int64(0)
+	count := int64(0)
+	for x := 0 ; x < grid.Width(); x++ {
+		for y := 0 ; y < grid.Height(); y++ {
+			d := int64(grid.Get(x,y))
+			if d > max {
+				max = d
+			}
+			if d > 0 {
+				count++
+			}
+			sum += d
+		}
+	}
+
+	fmt.Printf("Max: %d\n", max)
+	fmt.Printf("Sum: %d\n", sum)
+
+	numBuckets := (max / resolution) + 1
+	buckets := make([]int64, numBuckets)
+	fmt.Printf("NumBuckets: %d\n", numBuckets)
+	for x := 0 ; x < grid.Width(); x++ {
+		for y := 0 ; y < grid.Height(); y++ {
+			d := int64(grid.Get(x,y))
+			if d > 0 {
+//				fmt.Printf("%d -> %d\n", d, d/resolution)
+				buckets[d / resolution]++
+			}
+		}
+	}
+
+
+	acc := int64(0)
+	for i := int64(0) ; i < numBuckets; i++ {
+		acc += buckets[i]
+		if buckets[i] > 0 {
+			fmt.Printf("%4d - %4d: %4d (%2.2f)\n", i * resolution, (i + 1) * resolution - 1, buckets[i], 100.0 * float64(acc) / float64(count))
+		}
+	}
+}
+
+func (s *SvgVisualizer) Visualize(history *History, bounds *BoundingBox, width int, height int) (*[]byte, error) {
+	grid := aggregateHistory(history, bounds, width, height)
+	histogram(grid, 5)
+
+	var buf bytes.Buffer
+
+	buf.WriteString("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">")
+	for x := 0 ; x < grid.Width(); x++ {
+		for y := 0 ; y < grid.Height(); y++ {
+			if grid.Get(x,y) > 0 {
+//				r := (float64(grid.Get(x,y)) / 10) + 3
+//				if (r < 3) { r = 3 }
+//				if (r > 5) { r = 5 }
+
+				cnt := grid.Get(x,y)
+				r := 5 / (1 + math.Pow(math.E, -(float64(cnt)/10.0)))
+				
+				buf.WriteString(fmt.Sprintf(
+					"<circle cx=\"%d\" cy=\"%d\" r=\"%.1f\" style=\"fill:rgb(0,0,0);\"/>", x * 10 , y * 10, r));
+//				buf.WriteString(fmt.Sprintf(
+//				"<rect x=\"%d\" y=\"%d\" width=\"3\" height=\"3\" style=\"fill:rgb(99,99,99);stroke-width:1;stroke:rgb(0,0,0)\" />", x * 3 , y * 3));
+			}
+		}
+	}
+	buf.WriteString("</svg>")
+
+	dataBytes := buf.Bytes();
+	return &dataBytes, nil
 }

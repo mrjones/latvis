@@ -17,10 +17,19 @@ import (
 const (
 	// TODO(mrjones): flag/config file?
 	API_KEY = "AIzaSyDd0W4n2lc03aPFtT0bHJAb2xkNHSduAGE"
+
 	// TODO(mrjones): flag/config file?
-	CLIENT_ID = "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com"
+// WEB:
+//	CLIENT_ID = "202917186305-0l82gmi2lg74nc1v62r364ec3e2240u9.apps.googleusercontent.com"
+// OOB:
+		CLIENT_ID = "202917186305-6jglr20omsd56hksfr5r7o573h8uh1n1.apps.googleusercontent.com"
+
 	// TODO(mrjones): flag/config file?
-	CLIENT_SECRET        = "s-DSmW16VVC6tW-9BSctdML5"
+// WEB:
+//	CLIENT_SECRET        = "s-DSmW16VVC6tW-9BSctdML5"
+// OOB
+	CLIENT_SECRET = "Qf1Huxg4tZ4Gf1mKnJJShm9x"
+
 	LOCATION_HISTORY_URL = "https://www.googleapis.com/latitude/v1/location"
 	OUT_OF_BAND_CALLBACK = "oob"
 	MAX_RESULTS          = 1000

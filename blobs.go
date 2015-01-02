@@ -3,7 +3,9 @@ package latvis
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -52,6 +54,19 @@ type LocalFSBlobStore struct {
 }
 
 func NewLocalFSBlobStore(location string) *LocalFSBlobStore {
+	fi, err := os.Stat(location)
+
+	if err != nil && os.IsNotExist(err) {
+		log.Fatalf("Directory '%s' does not exist\n", location)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !fi.IsDir() {
+		log.Fatalf("'%s' is not a directory\n", location)
+	}
+
+
 	return &LocalFSBlobStore{location: location}
 }
 
